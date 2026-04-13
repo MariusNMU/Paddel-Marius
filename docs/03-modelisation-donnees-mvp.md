@@ -251,6 +251,9 @@ Le modèle permet de représenter :
 
 ## 7. Schéma visuel
 
+## 7. Schéma visuel
+
+```mermaid
 erDiagram
     SITE {
         int idSite PK

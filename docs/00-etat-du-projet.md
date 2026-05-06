@@ -271,3 +271,14 @@ Le prochain travail concret est :
 - créer `/api/health`
 - écrire les 2 premiers tests
 - pousser le premier vrai code backend sur GitHub
+
+- ## Contraintes professorales supplémentaires confirmées
+- aucun accès DB dans le frontend
+- backend REST API obligatoire
+- séparation stricte controller / service / repository
+- tests backend obligatoires sur controller, service, repository
+- Git obligatoire avec issues, branches, commits, PR
+- script DB à remettre
+- démo orientée métier
+- users DB avec droits spécifiques à expliquer
+- pas de login user, accès joueur par matricule uniquement

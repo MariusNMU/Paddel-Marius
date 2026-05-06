@@ -81,6 +81,7 @@ Le MVP doit couvrir au minimum :
 - modélisation des données du MVP
 - diagramme Mermaid du MCD
 - modèle relationnel SQL du MVP
+- état du projet mis à jour après les entités JPA coeur et complémentaires
 
 ### Fichiers de référence
 - `docs/01-plan-metier.md`
@@ -96,30 +97,29 @@ Le MVP doit couvrir au minimum :
 ### Déjà mis en place
 - dépôt GitHub du projet
 - logique de travail avec issues / branches / PR
-- plusieurs issues de documentation créées
 - issues backend créées
 - backend Spring Boot initialisé
 - branche backend de base réalisée
-- branche `back/entities-core` créée et poussée sur GitHub
+- branche `back/entities-core` réalisée et mergée
+- branche `back/entities-extra` réalisée pour les entités complémentaires
+- `.gitignore` ajouté pour éviter de versionner `.idea/`, `*.iml` et `backend/target/`
+- `backend/target/` retiré du suivi Git si nécessaire
 
 ### Issues backend créées ou utilisées
 - `[BACK] Initialiser le backend Java et la configuration de base`
 - `[BACK] Créer les entités JPA coeur et repositories`
+- `[BACK] Créer les entités JPA complémentaires et repositories`
 - `[TEST] Mettre en place la stratégie de tests backend`
 
 ### Branches backend importantes
 - `back/init-backend-base` : initialisation backend, endpoint de santé et premiers tests
 - `back/entities-core` : entités JPA coeur, repositories et tests repository
+- `back/entities-extra` : entités JPA complémentaires, repositories complémentaires et tests repository complémentaires
 
-### Commits importants réalisés dans la branche `back/entities-core`
+### Commits importants réalisés
 - `chore(git): ignore generated build files`
 - `feat(back): add core JPA entities and repositories`
-
-### Point à vérifier sur GitHub
-- vérifier que la Pull Request de `back/entities-core` vers `main` est bien ouverte
-- vérifier que la PR ne contient pas de fichiers `.idea/`
-- vérifier que `backend/target/` est bien retiré du suivi Git
-- merger la PR uniquement si les fichiers modifiés sont propres et cohérents
+- `feat(back): add complementary JPA entities and repositories`
 
 ---
 
@@ -137,18 +137,20 @@ Je suis dans la phase de développement backend.
 - les premiers tests backend passent
 - les entités JPA coeur sont créées
 - les repositories Spring Data JPA coeur sont créés
-- un test repository global existe pour vérifier la persistance des entités coeur
+- les entités JPA complémentaires sont créées
+- les repositories Spring Data JPA complémentaires sont créés
+- les tests repository vérifient la persistance des entités coeur et complémentaires
 
 ### Choix techniques déjà fixés
 - backend : Spring Boot
 - build tool : Maven
 - base de démarrage : H2 pour aller vite
 - dépendances utilisées :
-  - Spring Web MVC
-  - Spring Data JPA
-  - Validation
-  - H2 Database
-  - Lombok
+    - Spring Web MVC
+    - Spring Data JPA
+    - Validation
+    - H2 Database
+    - Lombok
 - package racine : `com.padelMarius.backend`
 
 ---
@@ -236,72 +238,143 @@ Créer les entités JPA coeur du MVP et leurs repositories.
 - `BUILD SUCCESS`
 
 ### État du Jour 2
-Le programme technique du Jour 2 est terminé.
+Le programme technique et GitHub du Jour 2 est terminé si la PR `back/entities-core` a été mergée dans `main`.
 
-Le Jour 2 est considéré complètement terminé dans le workflow GitHub seulement si :
-- la branche `back/entities-core` est poussée sur GitHub ;
+---
+
+## 9. Travail terminé — Jour 3
+
+### Date
+2026-05-06
+
+### Issue
+`[BACK] Créer les entités JPA complémentaires et repositories`
+
+### Branche
+`back/entities-extra`
+
+### Objectif
+Créer les entités JPA complémentaires du MVP et leurs repositories.
+
+### Entités JPA créées
+- `HoraireAnnuelSite`
+- `Fermeture`
+- `Administrateur`
+- `Dette`
+- `Penalite`
+- `Paiement`
+
+### Enums métier créés
+- `PorteeFermeture`
+- `RoleAdministrateur`
+- `NaturePaiement`
+- `StatutPaiement`
+- `StatutDette`
+- `StatutPenalite`
+
+### Repositories créés
+- `HoraireAnnuelSiteRepository`
+- `FermetureRepository`
+- `AdministrateurRepository`
+- `DetteRepository`
+- `PenaliteRepository`
+- `PaiementRepository`
+
+### Test repository créé
+- `ComplementaryRepositoryTest`
+
+### Vérifications couvertes par le test repository
+- persistance d’un horaire annuel par site et par année
+- recherche d’un horaire annuel par site et année civile
+- persistance d’une fermeture globale
+- persistance d’une fermeture locale rattachée à un site
+- recherche d’un administrateur par email ou login
+- recherche des administrateurs par rôle et par site
+- persistance d’une dette liée à un match et à un membre responsable
+- recherche d’une dette ouverte par membre responsable
+- persistance d’une pénalité liée à un membre et à un match source
+- recherche d’une pénalité active par membre
+- persistance d’un paiement de participation
+- persistance d’un paiement de dette
+- recherche d’un paiement par participation et par dette
+
+### Résultat de test local
+- `Tests run: 10`
+- `Failures: 0`
+- `Errors: 0`
+- `Skipped: 0`
+- `BUILD SUCCESS`
+
+### État du Jour 3
+Le programme technique du Jour 3 est terminé.
+
+Le Jour 3 est considéré complètement terminé dans le workflow GitHub seulement si :
+- la branche `back/entities-extra` est poussée sur GitHub ;
 - la Pull Request vers `main` est ouverte ;
 - la PR est relue ;
-- la PR est mergée dans `main`.
-
-À ce stade, le code du Jour 2 est prêt. Il reste uniquement à confirmer l’état exact de la PR si elle n’a pas encore été mergée.
+- la PR est mergée dans `main` ;
+- le poste local est revenu sur `main` ;
+- `main` local a été mis à jour avec `git pull` ;
+- les tests repassent sur `main`.
 
 ---
 
-## 9. Ce que je dois faire maintenant
+## 10. Ce que je dois faire maintenant
 
 ### Priorité immédiate
-Finaliser administrativement le Jour 2 sur GitHub.
+Clôturer administrativement le Jour 3 sur GitHub et préparer le dépôt local pour le prochain bloc.
 
 ### Étapes concrètes immédiates
-1. ouvrir GitHub online
-2. ouvrir la Pull Request depuis `back/entities-core` vers `main`
-3. vérifier l’onglet `Files changed`
-4. confirmer que la PR contient seulement :
-   - `.gitignore`
-   - les entités JPA coeur
-   - les repositories coeur
-   - `CoreRepositoryTest`
-   - les suppressions de `backend/target/` si ces fichiers étaient déjà suivis avant
-5. confirmer qu’il n’y a pas de fichiers `.idea/`
-6. vérifier que la description de PR mentionne les tests passants
-7. merger la PR si tout est propre
-8. revenir localement sur `main`
-9. faire `git pull`
+1. vérifier que la branche active est `back/entities-extra`
+2. vérifier que les tests Maven passent avec `Tests run: 10`
+3. vérifier `git status`
+4. committer le code du Jour 3 si ce n’est pas encore fait
+5. pousser la branche `back/entities-extra`
+6. ouvrir la Pull Request vers `main`
+7. vérifier l’onglet `Files changed`
+8. confirmer que la PR ne contient pas `.idea/`, `*.iml` ou `backend/target/`
+9. confirmer que `ComplementaryRepositoryTest.java` est bien dans `src/test/java`
+10. merger la PR si tout est propre
+11. revenir localement sur `main`
+12. faire `git pull`
+13. supprimer la branche locale `back/entities-extra`
+14. relancer les tests sur `main`
 
 ---
 
-## 10. Ce que je ferai juste après
+## 11. Ce que je ferai juste après
 
-Après la PR du Jour 2 :
+Après le Jour 3, le prochain bloc logique est la couche service métier.
 
-1. créer les entités JPA complémentaires :
-   - `HoraireAnnuelSite`
-   - `Fermeture`
-   - `Administrateur`
-   - `Paiement`
-   - `Dette`
-   - `Penalite`
-2. créer les repositories associés
-3. écrire les tests repository complémentaires
-4. implémenter ensuite les premiers services métier de réservation
-5. commencer par les règles les plus importantes :
-   - durée de match de 1h30
-   - 15 minutes entre deux matches
-   - maximum 4 joueurs
-   - organisateur obligatoire
-   - blocage si dette active
+### Prochain objectif recommandé
+Créer les premiers services métier pour la réservation.
+
+### Priorité technique du prochain bloc
+- créer une couche `service`
+- garder les controllers minces
+- placer les règles métier dans les services
+- utiliser les repositories uniquement pour l’accès aux données
+- ajouter des tests unitaires de service
+
+### Premières règles métier à implémenter
+- durée fixe d’un match : 1h30
+- 15 minutes entre deux matches sur un même terrain
+- interdiction de chevauchement de deux matches sur un même terrain
+- maximum 4 joueurs par match
+- exactement 1 organisateur par match
+- blocage de création si dette ouverte
+- blocage de création si pénalité active
 
 ---
 
-## 11. Priorité absolue pour la semaine restante
+## 12. Priorité absolue pour la semaine restante
 
 Le projet doit avancer plus vite que prévu.
 
 ### Priorité de travail
 1. backend fonctionnel
 2. tests backend visibles
-3. réservations / paiement / dette / stats
+3. réservations / paiement / dette / statistiques
 4. frontend simple mais démontrable
 5. documentation minimale mais propre
 
@@ -314,7 +387,7 @@ Le projet doit avancer plus vite que prévu.
 
 ---
 
-## 12. Tests backend obligatoires
+## 13. Tests backend obligatoires
 
 Le backend devra montrer des tests dans les 3 couches suivantes :
 
@@ -338,12 +411,13 @@ Le backend devra montrer des tests dans les 3 couches suivantes :
 
 ### État actuel des tests
 - tests controller : démarrés avec `HealthControllerTest`
-- tests repository : démarrés avec `CoreRepositoryTest`
+- tests repository : présents avec `CoreRepositoryTest` et `ComplementaryRepositoryTest`
 - tests service : à créer dans les prochains blocs métier
+- total actuel confirmé localement : `Tests run: 10`, `Failures: 0`, `Errors: 0`
 
 ---
 
-## 13. Règles de travail GitHub
+## 14. Règles de travail GitHub
 
 - 1 issue = 1 objectif clair
 - 1 branche = 1 issue
@@ -368,15 +442,15 @@ Quand on travaille sur le backend, toujours donner :
 
 ---
 
-## 14. Planning sprint final
+## 15. Planning sprint final
 
 ### Objectif global
 Finir un MVP démontrable en environ une semaine.
 
 ### Ordre réel de travail
 1. initialisation backend — fait
-2. entités JPA coeur + repositories — fait techniquement
-3. entités JPA complémentaires + repositories
+2. entités JPA coeur + repositories — fait
+3. entités JPA complémentaires + repositories — fait techniquement
 4. services réservation
 5. paiements et dette
 6. statistiques
@@ -385,23 +459,22 @@ Finir un MVP démontrable en environ une semaine.
 
 ---
 
-## 15. Dernier point d’arrêt
+## 16. Dernier point d’arrêt
 
 Le dernier point d’arrêt confirmé est :
 
-- branche `back/entities-core` poussée sur GitHub
-- entités JPA coeur créées
-- repositories coeur créés
-- `CoreRepositoryTest` créé
-- tests Maven passants avec 5 tests
-- `.gitignore` ajouté pour ignorer `.idea/`, `*.iml` et `backend/target/`
-- `backend/target/` retiré du suivi Git si nécessaire
+- branche `back/entities-extra` utilisée pour le Jour 3
+- entités JPA complémentaires créées
+- repositories complémentaires créés
+- `ComplementaryRepositoryTest` créé au bon endroit : `backend/src/test/java/com/padelMarius/backend/repository/ComplementaryRepositoryTest.java`
+- tests Maven passants avec 10 tests
+- aucun fichier `.idea/` ou `backend/target/` ne doit être commité
 
-Le prochain travail concret est :
+Le prochain travail concret, après merge du Jour 3, est :
 
-- ouvrir ou vérifier la PR `[BACK] Entités JPA coeur et repositories`
-- vérifier les fichiers modifiés dans la PR
-- merger la PR dans `main` si tout est propre
 - revenir localement sur `main`
 - faire `git pull`
-- démarrer le prochain bloc : entités JPA complémentaires
+- supprimer la branche locale `back/entities-extra`
+- relancer les tests Maven sur `main`
+- créer la prochaine issue backend service
+- démarrer une nouvelle branche pour les premiers services métier de réservation

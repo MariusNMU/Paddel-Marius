@@ -45,7 +45,24 @@ Le MVP doit couvrir au minimum :
 
 ---
 
-## 3. Règles métier validées
+## 3. Contraintes professorales confirmées
+
+- le backend doit être une REST API obligatoire
+- le frontend ne doit jamais accéder directement à la base de données
+- le frontend ne contient jamais de SQL
+- le backend doit respecter une séparation claire controller / service / repository
+- les tests backend sont obligatoires sur controllers, services et repositories
+- Git est obligatoire avec issues
+- branche par issue
+- commits réguliers et cohérents
+- démo orientée métier / business
+- un script DB ou artefact de schéma doit être prévu à la remise
+- il faudra pouvoir expliquer les users DB et les droits associés
+- pas de login nécessaire pour les users, uniquement le matricule
+
+---
+
+## 4. Règles métier validées
 
 - le système est multi-sites
 - un site possède plusieurs terrains
@@ -68,66 +85,70 @@ Le MVP doit couvrir au minimum :
 
 ---
 
-## 4. Documents déjà produits
+## 5. Documents déjà produits
 
 ### Faits et validés
 - plan métier
 - spécification fonctionnelle détaillée du MVP
 - modélisation des données du MVP
 - diagramme Mermaid du MCD
-
-### Fait ou en cours de finalisation GitHub
 - modèle relationnel SQL du MVP
 
 ### Fichiers de référence
-- `docs/01-plan-metier.md`
-- `docs/02-specification-fonctionnelle-mvp.md`
+- `docs/00-etat-du-projet.md`
 - `docs/03-modelisation-donnees-mvp.md`
 - `docs/04-modele-relationnel-sql.md`
-- `docs/00-etat-du-projet.md`
+- `recommandations professeur sgbd (backend).docx`
+- `settings.docx`
 
 ---
 
-## 5. État GitHub actuel
+## 6. État GitHub actuel
 
 ### Déjà mis en place
 - dépôt GitHub du projet
 - logique de travail avec issues / branches / PR
-- plusieurs issues de documentation créées
 - issues backend créées
+- branche backend d’initialisation créée
 
 ### Issues backend créées
 - `[BACK] Initialiser le backend Java et la configuration de base`
 - `[BACK] Créer les entités JPA et les repositories`
 - `[TEST] Mettre en place la stratégie de tests backend`
 
-### Branche backend actuelle
-- `back/init-backend-base`
+### Bloc backend initialisation
+- backend Spring Boot initialisé
+- package racine : `com.padelMarius.backend`
+- configuration Maven / H2 / JPA en place
+- endpoint `/api/health` créé
+- premiers tests backend passants
 
 ### Point à vérifier sur GitHub
-- vérifier si la PR du modèle relationnel SQL a bien été ouverte et mergée
-- si besoin, finaliser ou nettoyer les branches de documentation
+- vérifier si la PR du bloc backend initial a bien été mergée
+- si oui, créer ou utiliser la branche suivante pour les entités JPA
+- si non, finaliser le merge avant de passer au bloc suivant
 
 ---
 
-## 6. Où j’en suis maintenant
+## 7. Où j’en suis maintenant
 
-Je passe de la phase de documentation à la phase de développement backend.
+Je suis entré dans la phase de développement backend.
 
 ### Situation actuelle
 - le métier est cadré
 - le MVP est défini
 - la modélisation de données est faite
-- le modèle relationnel SQL est prêt ou presque prêt côté documentation
-- les issues backend existent
-- la branche backend de départ existe
-- le backend Spring Boot n’est pas encore réellement généré ou codé
+- le modèle relationnel SQL est prêt
+- le backend Spring Boot de base fonctionne
+- les premiers tests backend passent
+- la prochaine vraie étape est le bloc entités JPA + repositories
 
 ### Choix techniques déjà fixés
 - backend : Spring Boot
+- package racine : `com.padelMarius.backend`
 - build tool : Maven
 - base de démarrage : H2 pour aller vite
-- dépendances prévues :
+- dépendances utilisées :
   - Spring Web
   - Spring Data JPA
   - Validation
@@ -136,49 +157,49 @@ Je passe de la phase de documentation à la phase de développement backend.
 
 ---
 
-## 7. Ce que je dois faire maintenant
+## 8. Ce que je dois faire maintenant
 
 ### Priorité immédiate
-Initialiser le backend Spring Boot.
+Créer les entités JPA et les repositories du MVP.
 
-### Étapes concrètes immédiates
-1. générer le projet Spring Boot avec Spring Initializr
-2. mettre le projet dans le dossier `backend`
-3. ouvrir le projet dans l’IDE
-4. configurer `application.yml`
-5. créer l’arborescence de base :
-   - `config`
-   - `controller`
-   - `dto`
-   - `entity`
-   - `repository`
-   - `service`
-6. ajouter un endpoint simple `/api/health`
-7. faire démarrer l’application
-8. ajouter les premiers tests :
-   - test de démarrage du contexte
-   - test controller sur `/api/health`
-9. commit / push / PR de la branche `back/init-backend-base`
+### Bloc de travail suivant
+1. vérifier que le bloc `back/init-backend-base` est bien poussé et mergé
+2. ouvrir ou utiliser l’issue :
+   - `[BACK] Créer les entités JPA et les repositories`
+3. créer la branche :
+   - `back/entities-repositories`
+4. créer les premières entités cœur :
+   - `Site`
+   - `Terrain`
+   - `Membre`
+   - `PadelMatch`
+   - `Participation`
+5. créer les repositories associés
+6. écrire les premiers tests repository
+7. faire commit / push / PR du bloc
 
 ---
 
-## 8. Ce que je ferai juste après
+## 9. Ce que je ferai juste après
 
-Après l’initialisation du backend :
+Après les entités JPA et repositories :
 
-1. créer les entités JPA principales
-2. créer les repositories
-3. écrire les premiers tests repository
-4. implémenter la consultation des disponibilités
-5. implémenter la création de match privé/public
-6. implémenter les paiements, la dette et les statistiques
-7. connecter ensuite un frontend Angular simple
+1. ajouter les entités complémentaires :
+   - `HoraireAnnuelSite`
+   - `Fermeture`
+   - `Administrateur`
+   - `Paiement`
+   - `Dette`
+   - `Penalite`
+2. compléter les repositories
+3. implémenter la consultation des disponibilités
+4. implémenter la création de match privé/public
+5. implémenter les paiements, la dette et les statistiques
+6. connecter ensuite un frontend Angular simple
 
 ---
 
-## 9. Priorité absolue pour la semaine restante
-
-Le projet doit avancer plus vite que prévu.
+## 10. Priorité absolue pour les deux prochaines semaines
 
 ### Priorité de travail
 1. backend fonctionnel
@@ -196,7 +217,7 @@ Le projet doit avancer plus vite que prévu.
 
 ---
 
-## 10. Tests backend obligatoires
+## 11. Tests backend obligatoires
 
 Le backend devra montrer des tests dans les 3 couches suivantes :
 
@@ -220,7 +241,7 @@ Le backend devra montrer des tests dans les 3 couches suivantes :
 
 ---
 
-## 11. Règles de travail GitHub
+## 12. Règles de travail GitHub
 
 - 1 issue = 1 objectif clair
 - 1 branche = 1 issue
@@ -245,10 +266,45 @@ Quand on travaille sur le backend, toujours donner :
 
 ---
 
-## 12. Planning sprint final
+## 13. Architecture technique cible
+
+Architecture minimale obligatoire :
+
+Frontend Angular
+-> appels HTTP
+Backend Spring Boot REST API
+-> Controller
+-> Service
+-> Repository
+-> Base de données relationnelle SQL
+
+### Règles strictes
+- aucun accès DB dans le frontend
+- aucun SQL dans le frontend
+- controller = HTTP + validation + DTO
+- service = logique métier
+- repository = accès aux données
+
+---
+
+## 14. Livrables de remise à prévoir
+
+- code source complet
+- accès GitHub
+- analyse / documentation
+- tests backend visibles
+- artefact DB :
+  - changelog / schéma
+  - ou `schema.sql`
+- capacité à expliquer les users DB et leurs droits
+- démonstration orientée métier
+
+---
+
+## 15. Planning sprint final
 
 ### Objectif global
-Finir un MVP démontrable en environ une semaine.
+Finir un MVP démontrable en environ deux semaines.
 
 ### Ordre réel de travail
 1. initialisation backend
@@ -261,24 +317,20 @@ Finir un MVP démontrable en environ une semaine.
 
 ---
 
-## 13. Dernier point d’arrêt
+## 16. Dernier point d’arrêt
+
+Le dernier bloc terminé est :
+
+- initialisation backend Spring Boot
+- configuration `application.yml`
+- création de `/api/health`
+- exécution locale OK
+- premiers tests backend OK
 
 Le prochain travail concret est :
 
-- me mettre sur la branche `back/init-backend-base`
-- générer le projet Spring Boot
-- configurer le backend
-- créer `/api/health`
-- écrire les 2 premiers tests
-- pousser le premier vrai code backend sur GitHub
-
-- ## Contraintes professorales supplémentaires confirmées
-- aucun accès DB dans le frontend
-- backend REST API obligatoire
-- séparation stricte controller / service / repository
-- tests backend obligatoires sur controller, service, repository
-- Git obligatoire avec issues, branches, commits, PR
-- script DB à remettre
-- démo orientée métier
-- users DB avec droits spécifiques à expliquer
-- pas de login user, accès joueur par matricule uniquement
+- vérifier / finaliser la PR du bloc d’initialisation backend
+- passer sur l’issue entités JPA + repositories
+- créer la branche `back/entities-repositories`
+- coder les premières entités
+- écrire les premiers tests repository

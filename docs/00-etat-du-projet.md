@@ -1,5 +1,7 @@
 # État du projet
 
+Dernière mise à jour : 2026-05-06
+
 ## 1. Résumé du projet
 
 Application web de réservation de terrains de padel.
@@ -17,6 +19,9 @@ Livrer rapidement un MVP fonctionnel, propre et démontrable.
 - tests backend visibles
 - GitHub bien suivi avec issues, branches, commits et pull requests
 - projet démontrable de bout en bout
+- séparation stricte entre frontend et backend
+- backend exposé sous forme de REST API
+- aucun SQL ni accès direct à la base de données depuis le frontend
 
 ---
 
@@ -45,24 +50,7 @@ Le MVP doit couvrir au minimum :
 
 ---
 
-## 3. Contraintes professorales confirmées
-
-- le backend doit être une REST API obligatoire
-- le frontend ne doit jamais accéder directement à la base de données
-- le frontend ne contient jamais de SQL
-- le backend doit respecter une séparation claire controller / service / repository
-- les tests backend sont obligatoires sur controllers, services et repositories
-- Git est obligatoire avec issues
-- branche par issue
-- commits réguliers et cohérents
-- démo orientée métier / business
-- un script DB ou artefact de schéma doit être prévu à la remise
-- il faudra pouvoir expliquer les users DB et les droits associés
-- pas de login nécessaire pour les users, uniquement le matricule
-
----
-
-## 4. Règles métier validées
+## 3. Règles métier validées
 
 - le système est multi-sites
 - un site possède plusieurs terrains
@@ -85,7 +73,7 @@ Le MVP doit couvrir au minimum :
 
 ---
 
-## 5. Documents déjà produits
+## 4. Documents déjà produits
 
 ### Faits et validés
 - plan métier
@@ -95,111 +83,220 @@ Le MVP doit couvrir au minimum :
 - modèle relationnel SQL du MVP
 
 ### Fichiers de référence
-- `docs/00-etat-du-projet.md`
+- `docs/01-plan-metier.md`
+- `docs/02-specification-fonctionnelle-mvp.md`
 - `docs/03-modelisation-donnees-mvp.md`
 - `docs/04-modele-relationnel-sql.md`
-- `recommandations professeur sgbd (backend).docx`
-- `settings.docx`
+- `docs/00-etat-du-projet.md`
 
 ---
 
-## 6. État GitHub actuel
+## 5. État GitHub actuel
 
 ### Déjà mis en place
 - dépôt GitHub du projet
 - logique de travail avec issues / branches / PR
+- plusieurs issues de documentation créées
 - issues backend créées
-- branche backend d’initialisation créée
+- backend Spring Boot initialisé
+- branche backend de base réalisée
+- branche `back/entities-core` créée et poussée sur GitHub
 
-### Issues backend créées
+### Issues backend créées ou utilisées
 - `[BACK] Initialiser le backend Java et la configuration de base`
-- `[BACK] Créer les entités JPA et les repositories`
+- `[BACK] Créer les entités JPA coeur et repositories`
 - `[TEST] Mettre en place la stratégie de tests backend`
 
-### Bloc backend initialisation
-- backend Spring Boot initialisé
-- package racine : `com.padelMarius.backend`
-- configuration Maven / H2 / JPA en place
-- endpoint `/api/health` créé
-- premiers tests backend passants
+### Branches backend importantes
+- `back/init-backend-base` : initialisation backend, endpoint de santé et premiers tests
+- `back/entities-core` : entités JPA coeur, repositories et tests repository
+
+### Commits importants réalisés dans la branche `back/entities-core`
+- `chore(git): ignore generated build files`
+- `feat(back): add core JPA entities and repositories`
 
 ### Point à vérifier sur GitHub
-- vérifier si la PR du bloc backend initial a bien été mergée
-- si oui, créer ou utiliser la branche suivante pour les entités JPA
-- si non, finaliser le merge avant de passer au bloc suivant
+- vérifier que la Pull Request de `back/entities-core` vers `main` est bien ouverte
+- vérifier que la PR ne contient pas de fichiers `.idea/`
+- vérifier que `backend/target/` est bien retiré du suivi Git
+- merger la PR uniquement si les fichiers modifiés sont propres et cohérents
 
 ---
 
-## 7. Où j’en suis maintenant
+## 6. Où j’en suis maintenant
 
-Je suis entré dans la phase de développement backend.
+Je suis dans la phase de développement backend.
 
 ### Situation actuelle
 - le métier est cadré
 - le MVP est défini
 - la modélisation de données est faite
-- le modèle relationnel SQL est prêt
-- le backend Spring Boot de base fonctionne
+- le modèle relationnel SQL est prêt côté documentation
+- le backend Spring Boot est initialisé
+- le endpoint `/api/health` existe
 - les premiers tests backend passent
-- la prochaine vraie étape est le bloc entités JPA + repositories
+- les entités JPA coeur sont créées
+- les repositories Spring Data JPA coeur sont créés
+- un test repository global existe pour vérifier la persistance des entités coeur
 
 ### Choix techniques déjà fixés
 - backend : Spring Boot
-- package racine : `com.padelMarius.backend`
 - build tool : Maven
 - base de démarrage : H2 pour aller vite
 - dépendances utilisées :
-  - Spring Web
+  - Spring Web MVC
   - Spring Data JPA
   - Validation
   - H2 Database
   - Lombok
+- package racine : `com.padelMarius.backend`
 
 ---
 
-## 8. Ce que je dois faire maintenant
+## 7. Travail terminé — Jour 1
+
+### Objectif
+Initialiser le backend Spring Boot.
+
+### Réalisé
+- projet Spring Boot placé dans le dossier `backend`
+- configuration Maven en place
+- configuration H2/JPA en place
+- application Spring Boot démarrable
+- endpoint `/api/health` créé
+- test de démarrage du contexte créé
+- test controller du endpoint `/api/health` créé
+- premiers tests backend passants
+
+### Tests connus
+- `BackendApplicationTests`
+- `HealthControllerTest`
+
+### Résultat
+- `BUILD SUCCESS`
+
+---
+
+## 8. Travail terminé — Jour 2
+
+### Date
+2026-05-06
+
+### Issue
+`[BACK] Créer les entités JPA coeur et repositories`
+
+### Branche
+`back/entities-core`
+
+### Objectif
+Créer les entités JPA coeur du MVP et leurs repositories.
+
+### Entités JPA créées
+- `Site`
+- `Terrain`
+- `Membre`
+- `PadelMatch`
+- `Participation`
+
+### Enums métier créés
+- `CategorieMembre`
+- `ModeCreation`
+- `VisibiliteMatch`
+- `EtatCycleMatch`
+- `RoleParticipation`
+- `ModeEntreeParticipation`
+- `StatutParticipation`
+
+### Repositories créés
+- `SiteRepository`
+- `TerrainRepository`
+- `MembreRepository`
+- `PadelMatchRepository`
+- `ParticipationRepository`
+
+### Test repository créé
+- `CoreRepositoryTest`
+
+### Vérifications couvertes par le test repository
+- persistance d’un site et d’un terrain
+- recherche d’un site par code
+- recherche des terrains par site
+- persistance d’un membre
+- recherche d’un membre par matricule
+- persistance d’un match
+- persistance d’une participation
+- comptage des participations d’un match
+- vérification de l’existence d’une participation par couple match/membre
+
+### Résultat de test local
+- `Tests run: 5`
+- `Failures: 0`
+- `Errors: 0`
+- `Skipped: 0`
+- `BUILD SUCCESS`
+
+### État du Jour 2
+Le programme technique du Jour 2 est terminé.
+
+Le Jour 2 est considéré complètement terminé dans le workflow GitHub seulement si :
+- la branche `back/entities-core` est poussée sur GitHub ;
+- la Pull Request vers `main` est ouverte ;
+- la PR est relue ;
+- la PR est mergée dans `main`.
+
+À ce stade, le code du Jour 2 est prêt. Il reste uniquement à confirmer l’état exact de la PR si elle n’a pas encore été mergée.
+
+---
+
+## 9. Ce que je dois faire maintenant
 
 ### Priorité immédiate
-Créer les entités JPA et les repositories du MVP.
+Finaliser administrativement le Jour 2 sur GitHub.
 
-### Bloc de travail suivant
-1. vérifier que le bloc `back/init-backend-base` est bien poussé et mergé
-2. ouvrir ou utiliser l’issue :
-   - `[BACK] Créer les entités JPA et les repositories`
-3. créer la branche :
-   - `back/entities-repositories`
-4. créer les premières entités cœur :
-   - `Site`
-   - `Terrain`
-   - `Membre`
-   - `PadelMatch`
-   - `Participation`
-5. créer les repositories associés
-6. écrire les premiers tests repository
-7. faire commit / push / PR du bloc
+### Étapes concrètes immédiates
+1. ouvrir GitHub online
+2. ouvrir la Pull Request depuis `back/entities-core` vers `main`
+3. vérifier l’onglet `Files changed`
+4. confirmer que la PR contient seulement :
+   - `.gitignore`
+   - les entités JPA coeur
+   - les repositories coeur
+   - `CoreRepositoryTest`
+   - les suppressions de `backend/target/` si ces fichiers étaient déjà suivis avant
+5. confirmer qu’il n’y a pas de fichiers `.idea/`
+6. vérifier que la description de PR mentionne les tests passants
+7. merger la PR si tout est propre
+8. revenir localement sur `main`
+9. faire `git pull`
 
 ---
 
-## 9. Ce que je ferai juste après
+## 10. Ce que je ferai juste après
 
-Après les entités JPA et repositories :
+Après la PR du Jour 2 :
 
-1. ajouter les entités complémentaires :
+1. créer les entités JPA complémentaires :
    - `HoraireAnnuelSite`
    - `Fermeture`
    - `Administrateur`
    - `Paiement`
    - `Dette`
    - `Penalite`
-2. compléter les repositories
-3. implémenter la consultation des disponibilités
-4. implémenter la création de match privé/public
-5. implémenter les paiements, la dette et les statistiques
-6. connecter ensuite un frontend Angular simple
+2. créer les repositories associés
+3. écrire les tests repository complémentaires
+4. implémenter ensuite les premiers services métier de réservation
+5. commencer par les règles les plus importantes :
+   - durée de match de 1h30
+   - 15 minutes entre deux matches
+   - maximum 4 joueurs
+   - organisateur obligatoire
+   - blocage si dette active
 
 ---
 
-## 10. Priorité absolue pour les deux prochaines semaines
+## 11. Priorité absolue pour la semaine restante
+
+Le projet doit avancer plus vite que prévu.
 
 ### Priorité de travail
 1. backend fonctionnel
@@ -217,7 +314,7 @@ Après les entités JPA et repositories :
 
 ---
 
-## 11. Tests backend obligatoires
+## 12. Tests backend obligatoires
 
 Le backend devra montrer des tests dans les 3 couches suivantes :
 
@@ -239,9 +336,14 @@ Le backend devra montrer des tests dans les 3 couches suivantes :
 - cas refusés
 - réponses HTTP attendues
 
+### État actuel des tests
+- tests controller : démarrés avec `HealthControllerTest`
+- tests repository : démarrés avec `CoreRepositoryTest`
+- tests service : à créer dans les prochains blocs métier
+
 ---
 
-## 12. Règles de travail GitHub
+## 13. Règles de travail GitHub
 
 - 1 issue = 1 objectif clair
 - 1 branche = 1 issue
@@ -266,71 +368,40 @@ Quand on travaille sur le backend, toujours donner :
 
 ---
 
-## 13. Architecture technique cible
-
-Architecture minimale obligatoire :
-
-Frontend Angular
--> appels HTTP
-Backend Spring Boot REST API
--> Controller
--> Service
--> Repository
--> Base de données relationnelle SQL
-
-### Règles strictes
-- aucun accès DB dans le frontend
-- aucun SQL dans le frontend
-- controller = HTTP + validation + DTO
-- service = logique métier
-- repository = accès aux données
-
----
-
-## 14. Livrables de remise à prévoir
-
-- code source complet
-- accès GitHub
-- analyse / documentation
-- tests backend visibles
-- artefact DB :
-  - changelog / schéma
-  - ou `schema.sql`
-- capacité à expliquer les users DB et leurs droits
-- démonstration orientée métier
-
----
-
-## 15. Planning sprint final
+## 14. Planning sprint final
 
 ### Objectif global
-Finir un MVP démontrable en environ deux semaines.
+Finir un MVP démontrable en environ une semaine.
 
 ### Ordre réel de travail
-1. initialisation backend
-2. entités JPA + repositories
-3. services réservation
-4. paiements et dette
-5. statistiques
-6. frontend minimal
-7. stabilisation et démo
+1. initialisation backend — fait
+2. entités JPA coeur + repositories — fait techniquement
+3. entités JPA complémentaires + repositories
+4. services réservation
+5. paiements et dette
+6. statistiques
+7. frontend minimal
+8. stabilisation et démo
 
 ---
 
-## 16. Dernier point d’arrêt
+## 15. Dernier point d’arrêt
 
-Le dernier bloc terminé est :
+Le dernier point d’arrêt confirmé est :
 
-- initialisation backend Spring Boot
-- configuration `application.yml`
-- création de `/api/health`
-- exécution locale OK
-- premiers tests backend OK
+- branche `back/entities-core` poussée sur GitHub
+- entités JPA coeur créées
+- repositories coeur créés
+- `CoreRepositoryTest` créé
+- tests Maven passants avec 5 tests
+- `.gitignore` ajouté pour ignorer `.idea/`, `*.iml` et `backend/target/`
+- `backend/target/` retiré du suivi Git si nécessaire
 
 Le prochain travail concret est :
 
-- vérifier / finaliser la PR du bloc d’initialisation backend
-- passer sur l’issue entités JPA + repositories
-- créer la branche `back/entities-repositories`
-- coder les premières entités
-- écrire les premiers tests repository
+- ouvrir ou vérifier la PR `[BACK] Entités JPA coeur et repositories`
+- vérifier les fichiers modifiés dans la PR
+- merger la PR dans `main` si tout est propre
+- revenir localement sur `main`
+- faire `git pull`
+- démarrer le prochain bloc : entités JPA complémentaires

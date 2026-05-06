@@ -1,6 +1,7 @@
 package com.padelMarius.backend.repository;
 
 import com.padelMarius.backend.entity.PadelMatch;
+import com.padelMarius.backend.entity.Terrain;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
@@ -8,11 +9,13 @@ import java.util.List;
 
 public interface PadelMatchRepository extends JpaRepository<PadelMatch, Long> {
 
+    List<PadelMatch> findByTerrain(Terrain terrain);
+
     List<PadelMatch> findByTerrainId(Long terrainId);
 
-    List<PadelMatch> findByTerrainIdAndDateHeureDebutLessThanAndDateHeureFinGreaterThan(
-            Long terrainId,
-            LocalDateTime finRecherchee,
-            LocalDateTime debutRecherchee
+    List<PadelMatch> findByTerrainInAndDateHeureDebutBetween(
+            List<Terrain> terrains,
+            LocalDateTime debut,
+            LocalDateTime fin
     );
 }

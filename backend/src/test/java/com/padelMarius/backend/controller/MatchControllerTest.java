@@ -20,7 +20,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -120,5 +120,22 @@ class MatchControllerTest {
                 .andExpect(jsonPath("$.message").value(
                         "L'organisateur a une dette ouverte et ne peut pas créer un nouveau match."
                 ));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenRequestIsInvalid() throws Exception {
+        mockMvc.perform(post("/api/matches")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "terrainId": null,
+                                  "matriculeOrganisateur": "",
+                                  "dateHeureDebut": null,
+                                  "modeCreation": null
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(matchCreationService, never()).creerMatch(any(CreerMatchRequest.class));
     }
 }

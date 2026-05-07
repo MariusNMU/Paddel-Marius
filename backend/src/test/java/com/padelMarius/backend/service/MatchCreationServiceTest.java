@@ -10,6 +10,7 @@ import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.repository.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -96,6 +98,29 @@ class MatchCreationServiceTest {
 
         assertEquals(ModeCreation.PUBLIC, response.modeCreation());
         assertEquals(VisibiliteMatch.PUBLIC, response.visibiliteCourante());
+    }
+
+    @Test
+    void shouldKeepDatePassagePublicNullWhenMatchIsCreatedDirectlyPublic() {
+        Scenario scenario = configurerCasValide();
+
+        CreerMatchRequest request = new CreerMatchRequest(
+                scenario.terrain().getId(),
+                scenario.organisateur().getMatricule(),
+                scenario.dateHeureDebut(),
+                ModeCreation.PUBLIC
+        );
+
+        matchCreationService.creerMatch(request);
+
+        ArgumentCaptor<PadelMatch> matchCaptor = ArgumentCaptor.forClass(PadelMatch.class);
+        verify(padelMatchRepository).save(matchCaptor.capture());
+
+        PadelMatch matchSauvegarde = matchCaptor.getValue();
+
+        assertEquals(ModeCreation.PUBLIC, matchSauvegarde.getModeCreation());
+        assertEquals(VisibiliteMatch.PUBLIC, matchSauvegarde.getVisibiliteCourante());
+        assertNull(matchSauvegarde.getDatePassagePublic());
     }
 
     @Test
@@ -223,6 +248,167 @@ class MatchCreationServiceTest {
         verify(participationRepository, never()).save(any());
     }
 
+    @Test
+    void shouldThrowWhenTerrainIsInactive() {
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        terrain.setActif(false);
+
+        CreerMatchRequest request = new CreerMatchRequest(
+                terrain.getId(),
+                "G0001",
+                LocalDateTime.of(2026, 5, 20, 9, 0),
+                ModeCreation.PRIVE
+        );
+
+        when(terrainRepository.findById(10L)).thenReturn(Optional.of(terrain));
+
+        assertThrows(
+                ConfigurationMetierException.class,
+                () -> matchCreationService.creerMatch(request)
+        );
+
+        verify(padelMatchRepository, never()).save(any());
+        verify(participationRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowWhenSiteIsInactive() {
+        Site site = creerSite(1L);
+        site.setActif(false);
+
+        Terrain terrain = creerTerrain(10L, site);
+
+        CreerMatchRequest request = new CreerMatchRequest(
+                terrain.getId(),
+                "G0001",
+                LocalDateTime.of(2026, 5, 20, 9, 0),
+                ModeCreation.PRIVE
+        );
+
+        when(terrainRepository.findById(10L)).thenReturn(Optional.of(terrain));
+
+        assertThrows(
+                ConfigurationMetierException.class,
+                () -> matchCreationService.creerMatch(request)
+        );
+
+        verify(padelMatchRepository, never()).save(any());
+        verify(participationRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowWhenOrganisateurIsInactive() {
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+
+        Membre organisateur = creerMembreGlobal(20L, "G0001");
+        organisateur.setActif(false);
+
+        CreerMatchRequest request = new CreerMatchRequest(
+                terrain.getId(),
+                organisateur.getMatricule(),
+                LocalDateTime.of(2026, 5, 20, 9, 0),
+                ModeCreation.PRIVE
+        );
+
+        when(terrainRepository.findById(10L)).thenReturn(Optional.of(terrain));
+        when(membreRepository.findByMatricule("G0001")).thenReturn(Optional.of(organisateur));
+
+        assertThrows(
+                ConfigurationMetierException.class,
+                () -> matchCreationService.creerMatch(request)
+        );
+
+        verify(padelMatchRepository, never()).save(any());
+        verify(participationRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowWhenSiteMemberBooksOutsideAttachedSite() {
+        Site siteTerrain = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, siteTerrain);
+
+        Site autreSite = creerSite(2L);
+        Membre organisateur = creerMembreSite(20L, "S0001", autreSite);
+
+        CreerMatchRequest request = new CreerMatchRequest(
+                terrain.getId(),
+                organisateur.getMatricule(),
+                LocalDateTime.of(2026, 5, 20, 9, 0),
+                ModeCreation.PRIVE
+        );
+
+        when(terrainRepository.findById(10L)).thenReturn(Optional.of(terrain));
+        when(membreRepository.findByMatricule("S0001")).thenReturn(Optional.of(organisateur));
+
+        assertThrows(
+                ConfigurationMetierException.class,
+                () -> matchCreationService.creerMatch(request)
+        );
+
+        verify(padelMatchRepository, never()).save(any());
+        verify(participationRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowWhenOrganisateurAlreadyParticipatesInOverlappingMatch() {
+        Scenario scenario = configurerCasValideSansDetteNiPenalite();
+
+        CreerMatchRequest request = new CreerMatchRequest(
+                scenario.terrain().getId(),
+                scenario.organisateur().getMatricule(),
+                scenario.dateHeureDebut(),
+                ModeCreation.PRIVE
+        );
+
+        when(detteRepository.existsByMembreResponsableIdAndStatutDette(20L, StatutDette.OUVERTE))
+                .thenReturn(false);
+        when(penaliteRepository.existsByMembreIdAndStatutPenalite(20L, StatutPenalite.ACTIVE))
+                .thenReturn(false);
+        when(disponibiliteService.consulterDisponibilites(1L, scenario.dateHeureDebut().toLocalDate()))
+                .thenReturn(new DisponibilitesResponse(
+                        1L,
+                        scenario.dateHeureDebut().toLocalDate(),
+                        false,
+                        null,
+                        List.of(
+                                new CreneauDisponibiliteResponse(
+                                        scenario.terrain().getId(),
+                                        scenario.terrain().getNumero(),
+                                        scenario.dateHeureDebut(),
+                                        scenario.dateHeureFin()
+                                )
+                        )
+                ));
+
+        PadelMatch matchExistant = PadelMatch.builder()
+                .terrain(scenario.terrain())
+                .dateHeureDebut(LocalDateTime.of(2026, 5, 20, 10, 30))
+                .dateHeureFin(LocalDateTime.of(2026, 5, 20, 12, 0))
+                .build();
+
+        Participation participationExistante = Participation.builder()
+                .match(matchExistant)
+                .membre(scenario.organisateur())
+                .roleParticipation(RoleParticipation.JOUEUR)
+                .modeEntree(ModeEntreeParticipation.INSCRIPTION_PUBLIQUE)
+                .statutParticipation(StatutParticipation.CONFIRMEE)
+                .dateAffectation(LocalDateTime.of(2026, 5, 1, 10, 0))
+                .build();
+
+        when(participationRepository.findByMembreId(20L))
+                .thenReturn(List.of(participationExistante));
+
+        assertThrows(
+                ConfigurationMetierException.class,
+                () -> matchCreationService.creerMatch(request)
+        );
+
+        verify(padelMatchRepository, never()).save(any());
+        verify(participationRepository, never()).save(any());
+    }
+
     private Scenario configurerCasValide() {
         Scenario scenario = configurerCasValideSansDetteNiPenalite();
 
@@ -305,6 +491,20 @@ class MatchCreationServiceTest {
                 .nom("Dupont")
                 .prenom("Jean")
                 .categorieMembre(CategorieMembre.GLOBAL)
+                .actif(true)
+                .build();
+
+        ReflectionTestUtils.setField(membre, "id", id);
+        return membre;
+    }
+
+    private Membre creerMembreSite(Long id, String matricule, Site siteRattachement) {
+        Membre membre = Membre.builder()
+                .matricule(matricule)
+                .nom("Martin")
+                .prenom("Sophie")
+                .categorieMembre(CategorieMembre.SITE)
+                .siteRattachement(siteRattachement)
                 .actif(true)
                 .build();
 

@@ -26,4 +26,10 @@ public interface PaiementRepository extends JpaRepository<Paiement, Long> {
     boolean existsByParticipationId(Long participationId);
 
     boolean existsByDetteId(Long detteId);
+
+    List<Paiement> findByParticipation_Match_IdAndNaturePaiementAndStatutPaiement(
+            Long matchId,
+            NaturePaiement naturePaiement,
+            StatutPaiement statutPaiement
+    );
 }

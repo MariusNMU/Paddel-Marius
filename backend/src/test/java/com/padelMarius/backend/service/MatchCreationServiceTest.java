@@ -24,6 +24,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -50,6 +51,9 @@ class MatchCreationServiceTest {
 
     @Mock
     private DisponibiliteService disponibiliteService;
+
+    @Mock
+    private ReglesReservationMembreService reglesReservationMembreService;
 
     @InjectMocks
     private MatchCreationService matchCreationService;
@@ -81,6 +85,31 @@ class MatchCreationServiceTest {
 
         verify(padelMatchRepository).save(any(PadelMatch.class));
         verify(participationRepository).save(any(Participation.class));
+        verify(reglesReservationMembreService).verifierReglesCreationMatch(
+                scenario.organisateur(),
+                scenario.terrain(),
+                scenario.dateHeureDebut()
+        );
+    }
+
+    @Test
+    void creerMatchDevraitVerifierLesReglesDeReservationDuMembre() {
+        Scenario scenario = configurerCasValide();
+
+        CreerMatchRequest request = new CreerMatchRequest(
+                scenario.terrain().getId(),
+                scenario.organisateur().getMatricule(),
+                scenario.dateHeureDebut(),
+                ModeCreation.PRIVE
+        );
+
+        matchCreationService.creerMatch(request);
+
+        verify(reglesReservationMembreService).verifierReglesCreationMatch(
+                scenario.organisateur(),
+                scenario.terrain(),
+                request.dateHeureDebut()
+        );
     }
 
     @Test
@@ -341,6 +370,13 @@ class MatchCreationServiceTest {
 
         when(terrainRepository.findById(10L)).thenReturn(Optional.of(terrain));
         when(membreRepository.findByMatricule("S0001")).thenReturn(Optional.of(organisateur));
+        doThrow(new ConfigurationMetierException(
+                "Un membre SITE ne peut réserver que sur son site de rattachement."
+        )).when(reglesReservationMembreService).verifierReglesCreationMatch(
+                organisateur,
+                terrain,
+                request.dateHeureDebut()
+        );
 
         assertThrows(
                 ConfigurationMetierException.class,
@@ -348,6 +384,35 @@ class MatchCreationServiceTest {
         );
 
         verify(padelMatchRepository, never()).save(any());
+        verify(participationRepository, never()).save(any());
+    }
+
+    @Test
+    void creerMatchDevraitRefuserSiReglesReservationMembreNonRespectees() {
+        Scenario scenario = configurerCasValideSansDetteNiPenalite();
+
+        CreerMatchRequest request = new CreerMatchRequest(
+                scenario.terrain().getId(),
+                scenario.organisateur().getMatricule(),
+                LocalDateTime.of(2026, 6, 30, 9, 0),
+                ModeCreation.PRIVE
+        );
+
+        doThrow(new ConfigurationMetierException("Un membre ne peut pas reserver aussi tot."))
+                .when(reglesReservationMembreService)
+                .verifierReglesCreationMatch(
+                        scenario.organisateur(),
+                        scenario.terrain(),
+                        request.dateHeureDebut()
+                );
+
+        ConfigurationMetierException exception = assertThrows(
+                ConfigurationMetierException.class,
+                () -> matchCreationService.creerMatch(request)
+        );
+
+        assertTrue(exception.getMessage().contains("reserver"));
+        verify(padelMatchRepository, never()).save(any(PadelMatch.class));
         verify(participationRepository, never()).save(any());
     }
 

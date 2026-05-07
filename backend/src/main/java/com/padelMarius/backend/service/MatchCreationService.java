@@ -33,6 +33,7 @@ public class MatchCreationService {
     private final PadelMatchRepository padelMatchRepository;
     private final ParticipationRepository participationRepository;
     private final DisponibiliteService disponibiliteService;
+    private final ReglesReservationMembreService reglesReservationMembreService;
 
     @Transactional
     public MatchResponse creerMatch(CreerMatchRequest request) {
@@ -50,11 +51,19 @@ public class MatchCreationService {
                         "Membre introuvable avec le matricule " + matricule
                 ));
 
-        verifierOrganisateurReservable(organisateur, terrain);
+        verifierOrganisateurReservable(organisateur);
+
+        LocalDateTime dateHeureDebut = request.dateHeureDebut();
+
+        reglesReservationMembreService.verifierReglesCreationMatch(
+                organisateur,
+                terrain,
+                dateHeureDebut
+        );
+
         verifierAbsenceDetteOuverte(organisateur);
         verifierAbsencePenaliteActive(organisateur);
 
-        LocalDateTime dateHeureDebut = request.dateHeureDebut();
         LocalDateTime dateHeureFin = dateHeureDebut.plus(DUREE_MATCH);
 
         verifierDisponibiliteTerrain(terrain, dateHeureDebut, dateHeureFin);
@@ -115,28 +124,9 @@ public class MatchCreationService {
         }
     }
 
-    private void verifierOrganisateurReservable(Membre organisateur, Terrain terrain) {
+    private void verifierOrganisateurReservable(Membre organisateur) {
         if (!organisateur.isActif()) {
             throw new ConfigurationMetierException("L'organisateur est inactif.");
-        }
-
-        if (organisateur.getCategorieMembre() == null) {
-            throw new ConfigurationMetierException("La catégorie de l'organisateur est obligatoire.");
-        }
-
-        if (organisateur.getCategorieMembre() == CategorieMembre.SITE) {
-            if (organisateur.getSiteRattachement() == null) {
-                throw new ConfigurationMetierException("Un membre SITE doit être rattaché à un site.");
-            }
-
-            Long siteRattachementId = organisateur.getSiteRattachement().getId();
-            Long siteTerrainId = terrain.getSite().getId();
-
-            if (!Objects.equals(siteRattachementId, siteTerrainId)) {
-                throw new ConfigurationMetierException(
-                        "Un membre SITE ne peut réserver que sur son site de rattachement."
-                );
-            }
         }
     }
 

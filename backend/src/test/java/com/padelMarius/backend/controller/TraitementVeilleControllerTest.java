@@ -74,6 +74,15 @@ class TraitementVeilleControllerTest {
         mockMvc.perform(post("/api/admin/matches/traitement-veille"))
                 .andExpect(status().isBadRequest());
 
-        verify(traitementVeilleService, never()).traiterVeille(any());
+        verify(traitementVeilleService, never()).traiterVeille(any(LocalDate.class));
+    }
+
+    @Test
+    void shouldReturn400_whenDateParameterHasInvalidFormat() throws Exception {
+        mockMvc.perform(post("/api/admin/matches/traitement-veille")
+                        .param("date", "date-invalide"))
+                .andExpect(status().isBadRequest());
+
+        verify(traitementVeilleService, never()).traiterVeille(any(LocalDate.class));
     }
 }

@@ -69,6 +69,7 @@ Ce document transforme le modèle conceptuel de données du MVP en modèle relat
 - `nom` : VARCHAR(100), NOT NULL
 - `prenom` : VARCHAR(100), NOT NULL
 - `email_ou_login` : VARCHAR(150), NOT NULL, UNIQUE
+- `mot_de_passe` : VARCHAR(100), NULL dans le MVP actuel ; requis pour la connexion admin
 - `role_administrateur` : VARCHAR(20), NOT NULL
 - `site_id` : BIGINT, NULL, FK vers `site(id)`
 - `actif` : BOOLEAN, NOT NULL

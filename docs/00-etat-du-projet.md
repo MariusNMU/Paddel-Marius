@@ -103,8 +103,8 @@ Règles métier principales :
   - match privé incomplet devient public
   - participation non payée libérée
   - pénalité organisateur possible
-- `[A FAIRE]` Statistiques admin.
-- `[A FAIRE]` Authentification simple admin.
+- `[FAIT]` Statistiques admin.
+- `[FAIT]` Authentification simple admin.
 - `[A FAIRE]` Frontend joueur.
 - `[A FAIRE]` Frontend admin.
 
@@ -668,10 +668,51 @@ Objectifs :
 
 ---
 
+---
+
+### Authentification simple joueurs/admins
+
+Issue :
+
+```txt
+[BACK] Ajouter authentification simple joueurs/admins
+back/auth-simple
+Statut :
+
+[FAIT] Authentification joueur par matricule.
+[FAIT] Aucun login/mot de passe requis pour les joueurs.
+[FAIT] Refus d'un joueur inactif.
+[FAIT] Authentification admin par login et mot de passe.
+[FAIT] Refus d'un admin inactif.
+[FAIT] Retour du rôle administrateur GLOBAL ou SITE.
+[FAIT] Retour du site administrateur si admin de site.
+[FAIT] Gestion HTTP 401 pour identifiants admin invalides.
+[FAIT] Tests controller.
+[FAIT] Tests service.
+[FAIT] Tests repository.
+
+Endpoints :
+
+POST /api/auth/joueur
+POST /api/auth/admin
+
+Exemple joueur :
+
+{
+  "matricule": "G0001"
+}
+
+Exemple admin :
+
+{
+  "login": "admin-global",
+  "motDePasse": "secret"
+}
+
 ### Étapes backend restantes
 
 - `[FAIT]` Ajouter les statistiques backend MVP.
-- `[A FAIRE]` Ajouter authentification simple joueurs/admins.
+- `[FAIT]` Ajouter authentification simple joueurs/admins.
 - `[A FAIRE]` Ajouter OpenAPI / Swagger.
 - `[A FAIRE]` Ajouter script de schéma ou artefact DB.
 - `[A FAIRE]` Ajouter seed de données de démonstration.
@@ -744,7 +785,7 @@ Contenu attendu :
 - `[FAIT]` 12 — Implémenter traitement de veille des matches.
 - `[FAIT]` 13 — Renforcer tests traitement de veille.
 - `[FAIT]` 14 — Ajouter statistiques backend MVP.
-- `[A FAIRE]` 15 — Ajouter authentification simple joueurs/admins.
+- `[FAIT]` 15 — Ajouter authentification simple joueurs/admins.
 - `[A FAIRE]` 16 — Ajouter OpenAPI Swagger.
 - `[A FAIRE]` 17 — Ajouter script DB / schéma / seed.
 - `[A FAIRE]` 18 — Documenter users DB et droits.
@@ -807,7 +848,7 @@ cd ..
 
 ## 13. Prochaine action concrète
 
-Si la PR actuelle de renforcement des tests n'est pas encore terminée :
+Si la PR actuelle d'authentification simple n'est pas encore terminée :
 
 - `[EN COURS]` Lancer les tests.
 - `[EN COURS]` Commit.
@@ -821,28 +862,10 @@ Si la PR actuelle est mergée :
 - `[A FAIRE]` Commencer l'issue suivante :
 
 ```txt
-[BACK] Ajouter les statistiques backend MVP
+[BACK] Ajouter OpenAPI Swagger
+
+
 ```
-
-Branche :
-
-```txt
-back/stats-admin
-```
-
-Commit prévu :
-
-```txt
-feat(back): add admin statistics endpoints
-```
-
-PR prévue :
-
-```txt
-[BACK] Ajouter les statistiques backend MVP
-```
-
----
 
 ## 14. Scénario de démo cible
 

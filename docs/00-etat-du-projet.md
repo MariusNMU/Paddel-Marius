@@ -627,33 +627,22 @@ POST /api/admin/matches/traitement-veille?date=2026-05-19
 ## 9. Roadmap restante — ordre à suivre
 
 ### Prochaine étape immédiate
+Si la PR actuelle DB schema/seed n'est pas encore terminée :
 
-Issue :
+- `[EN COURS]` Lancer les tests.
+- `[EN COURS]` Tester le démarrage backend.
+- `[EN COURS]` Commit.
+- `[EN COURS]` Push.
+- `[EN COURS]` Créer la PR.
+- `[EN COURS]` Merger.
+- `[EN COURS]` Nettoyer localement.
 
-```txt
-[BACK] Ajouter les statistiques backend MVP
-```
+Si la PR actuelle est mergée :
 
-Branche :
-
-```txt
-back/stats-admin
-```
-
-Commit prévu :
-
-```txt
-feat(back): add admin statistics endpoints
-```
-
-PR prévue :
+- `[A FAIRE]` Commencer l'issue suivante :
 
 ```txt
-[BACK] Ajouter les statistiques backend MVP
-```
-
-Statut :
-
+[DB] Documenter les users DB et leurs droits
 - `[FAIT]` Statistiques backend MVP.
 
 Objectifs :
@@ -744,8 +733,8 @@ GET /swagger-ui/index.html
 - `[FAIT]` Ajouter les statistiques backend MVP.
 - `[FAIT]` Ajouter authentification simple joueurs/admins.
 - `[FAIT]` Ajouter OpenAPI / Swagger.
-- `[A FAIRE]` Ajouter script de schéma ou artefact DB.
-- `[A FAIRE]` Ajouter seed de données de démonstration.
+- `[FAIT]` Ajouter script de schéma ou artefact DB.
+- `[FAIT]` Ajouter seed de données de démonstration.
 - `[A FAIRE]` Documenter les users DB et leurs droits.
 - `[A FAIRE]` Vérifier ou nettoyer les incohérences de configuration.
 - `[A FAIRE]` Préparer scénario de démo backend.
@@ -938,4 +927,64 @@ Résultat attendu :
 
 ```txt
 BUILD SUCCESS
+```
+
+```txt
+---
+
+### Script DB et seed automatisé
+
+Issue :
+
+```txt
+[DB] Ajouter script de schéma et seed automatisé
+
+Branche :
+
+db/schema-seed
+
+Statut :
+
+[FAIT] Artefact SQL de schéma ajouté.
+[FAIT] Script de données de démonstration ajouté.
+[FAIT] Seed automatique ajouté au démarrage backend.
+[FAIT] Seed désactivé dans les tests standards.
+[FAIT] Test dédié ajouté pour valider le script data.sql.
+[FAIT] Documentation DB ajoutée dans docs/db/README.md.
+
+Fichiers ajoutés :
+
+docs/db/schema.sql
+docs/db/data-demo.sql
+docs/db/README.md
+backend/src/main/resources/data.sql
+backend/src/test/resources/application.yml
+backend/src/test/java/com/padelMarius/backend/repository/DemoSeedDataTest.java
+
+Fichier modifié :
+
+backend/src/main/resources/application.yml
+
+Configuration importante :
+
+spring:
+  jpa:
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: always
+
+Commande de validation :
+
+cd backend
+.\mvnw.cmd clean test
+
+Données utiles pour la démo :
+
+joueur global : G1001
+joueur avec dette ouverte : G1002
+joueur inactif : G9999
+admin global : admin-global / secret
+admin site Bruxelles : admin-bruxelles / secret-site
 ```

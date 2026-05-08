@@ -102,8 +102,10 @@ class TraitementVeilleServiceTest {
         );
 
         stubRechercheMatchesDuLendemain(match);
+
         when(participationRepository.findByMatchId(100L))
                 .thenReturn(List.of(participationOrganisateur, participationJoueur));
+
         when(penaliteRepository.findByMatchSourceId(100L))
                 .thenReturn(List.of());
 
@@ -145,6 +147,7 @@ class TraitementVeilleServiceTest {
         );
 
         stubRechercheMatchesDuLendemain(match);
+
         when(participationRepository.findByMatchId(100L))
                 .thenReturn(List.of(participationOrganisateur, participationJoueurNonPaye));
 
@@ -178,8 +181,10 @@ class TraitementVeilleServiceTest {
         );
 
         stubRechercheMatchesDuLendemain(match);
+
         when(participationRepository.findByMatchId(100L))
                 .thenReturn(List.of(participationOrganisateur));
+
         when(penaliteRepository.findByMatchSourceId(100L))
                 .thenReturn(List.of());
 
@@ -217,6 +222,7 @@ class TraitementVeilleServiceTest {
         );
 
         stubRechercheMatchesDuLendemain(match);
+
         when(participationRepository.findByMatchId(100L))
                 .thenReturn(List.of(participationOrganisateur));
 
@@ -229,6 +235,114 @@ class TraitementVeilleServiceTest {
 
         verify(penaliteRepository, never()).save(any(Penalite.class));
         verify(padelMatchRepository, never()).save(any(PadelMatch.class));
+    }
+
+    @Test
+    void traiterVeille_shouldNotCreateDuplicatePenaltyWhenPenaltyAlreadyExists() {
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        PadelMatch match = creerMatch(100L, terrain, VisibiliteMatch.PRIVE);
+
+        Membre organisateur = creerMembre(20L, "G0001");
+
+        Participation participationOrganisateur = creerParticipation(
+                300L,
+                match,
+                organisateur,
+                RoleParticipation.ORGANISATEUR,
+                StatutParticipation.CONFIRMEE
+        );
+
+        Penalite penaliteExistante = Penalite.builder()
+                .membre(organisateur)
+                .matchSource(match)
+                .typePenalite("RESERVATION_PRIVEE_INCOMPLETE")
+                .motif("Pénalité déjà créée.")
+                .dateDebut(maintenantFixe.minusDays(1))
+                .dateFin(maintenantFixe.plusDays(6))
+                .statutPenalite(StatutPenalite.ACTIVE)
+                .build();
+
+        stubRechercheMatchesDuLendemain(match);
+
+        when(participationRepository.findByMatchId(100L))
+                .thenReturn(List.of(participationOrganisateur));
+
+        when(penaliteRepository.findByMatchSourceId(100L))
+                .thenReturn(List.of(penaliteExistante));
+
+        TraitementVeilleResponse response = traitementVeilleService.traiterVeille(dateTraitement);
+
+        assertEquals(VisibiliteMatch.PUBLIC, match.getVisibiliteCourante());
+        assertEquals(1, response.matchesAnalyses());
+        assertEquals(1, response.matchesPassesPublics());
+        assertEquals(0, response.penalitesCreees());
+
+        verify(padelMatchRepository).save(match);
+        verify(penaliteRepository, never()).save(any(Penalite.class));
+    }
+
+    @Test
+    void traiterVeille_shouldIgnoreMatchesThatAreNotAVenir() {
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+
+        PadelMatch matchDemarre = creerMatch(100L, terrain, VisibiliteMatch.PRIVE);
+        matchDemarre.setEtatCycle(EtatCycleMatch.DEMARRE);
+
+        PadelMatch matchTermine = creerMatch(101L, terrain, VisibiliteMatch.PRIVE);
+        matchTermine.setEtatCycle(EtatCycleMatch.TERMINE);
+
+        stubRechercheMatchesDuLendemain(matchDemarre, matchTermine);
+
+        TraitementVeilleResponse response = traitementVeilleService.traiterVeille(dateTraitement);
+
+        assertEquals(2, response.matchesAnalyses());
+        assertEquals(0, response.matchesPassesPublics());
+        assertEquals(0, response.participationsLiberees());
+        assertEquals(0, response.penalitesCreees());
+
+        verifyNoInteractions(participationRepository);
+        verifyNoInteractions(penaliteRepository);
+        verify(padelMatchRepository, never()).save(any(PadelMatch.class));
+    }
+
+    @Test
+    void traiterVeille_shouldKeepExistingDatePassagePublicWhenAlreadySet() {
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        PadelMatch match = creerMatch(100L, terrain, VisibiliteMatch.PRIVE);
+
+        LocalDateTime ancienneDatePassagePublic = LocalDateTime.of(2026, 5, 18, 12, 0);
+        match.setDatePassagePublic(ancienneDatePassagePublic);
+
+        Membre organisateur = creerMembre(20L, "G0001");
+
+        Participation participationOrganisateur = creerParticipation(
+                300L,
+                match,
+                organisateur,
+                RoleParticipation.ORGANISATEUR,
+                StatutParticipation.CONFIRMEE
+        );
+
+        stubRechercheMatchesDuLendemain(match);
+
+        when(participationRepository.findByMatchId(100L))
+                .thenReturn(List.of(participationOrganisateur));
+
+        when(penaliteRepository.findByMatchSourceId(100L))
+                .thenReturn(List.of());
+
+        TraitementVeilleResponse response = traitementVeilleService.traiterVeille(dateTraitement);
+
+        assertEquals(VisibiliteMatch.PUBLIC, match.getVisibiliteCourante());
+        assertEquals(ancienneDatePassagePublic, match.getDatePassagePublic());
+        assertEquals(1, response.matchesAnalyses());
+        assertEquals(1, response.matchesPassesPublics());
+        assertEquals(1, response.penalitesCreees());
+
+        verify(padelMatchRepository).save(match);
     }
 
     @Test

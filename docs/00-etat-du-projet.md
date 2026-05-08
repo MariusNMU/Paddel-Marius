@@ -709,11 +709,41 @@ Exemple admin :
   "motDePasse": "secret"
 }
 
+---
+
+### OpenAPI Swagger
+
+Issue :
+
+```txt
+[BACK] Ajouter OpenAPI Swagger
+
+Branche :
+
+back/swagger
+
+Statut :
+
+[FAIT] Dépendance springdoc-openapi-starter-webmvc-ui ajoutée.
+[FAIT] Configuration OpenAPI ajoutée.
+[FAIT] Métadonnées de l'API ajoutées.
+[FAIT] Endpoint OpenAPI JSON disponible.
+[FAIT] Swagger UI disponible.
+[FAIT] Test backend d'accès à /v3/api-docs.
+[FAIT] Test backend d'accès à Swagger UI.
+
+URLs disponibles après démarrage backend :
+
+GET /v3/api-docs
+GET /swagger-ui.html
+GET /swagger-ui/index.html
+``` 
+
 ### Étapes backend restantes
 
 - `[FAIT]` Ajouter les statistiques backend MVP.
 - `[FAIT]` Ajouter authentification simple joueurs/admins.
-- `[A FAIRE]` Ajouter OpenAPI / Swagger.
+- `[FAIT]` Ajouter OpenAPI / Swagger.
 - `[A FAIRE]` Ajouter script de schéma ou artefact DB.
 - `[A FAIRE]` Ajouter seed de données de démonstration.
 - `[A FAIRE]` Documenter les users DB et leurs droits.
@@ -786,7 +816,7 @@ Contenu attendu :
 - `[FAIT]` 13 — Renforcer tests traitement de veille.
 - `[FAIT]` 14 — Ajouter statistiques backend MVP.
 - `[FAIT]` 15 — Ajouter authentification simple joueurs/admins.
-- `[A FAIRE]` 16 — Ajouter OpenAPI Swagger.
+- `[FAIT]` 16 — Ajouter OpenAPI Swagger.
 - `[A FAIRE]` 17 — Ajouter script DB / schéma / seed.
 - `[A FAIRE]` 18 — Documenter users DB et droits.
 - `[A FAIRE]` 19 — Initialiser frontend Angular.
@@ -862,7 +892,7 @@ Si la PR actuelle est mergée :
 - `[A FAIRE]` Commencer l'issue suivante :
 
 ```txt
-[BACK] Ajouter OpenAPI Swagger
+[BACK] Ajouter OpenAPI Swagger [FAIT]
 
 
 ```

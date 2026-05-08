@@ -5,6 +5,7 @@ import com.padelMarius.backend.entity.Paiement;
 import com.padelMarius.backend.entity.StatutPaiement;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,6 +31,12 @@ public interface PaiementRepository extends JpaRepository<Paiement, Long> {
     List<Paiement> findByParticipation_Match_IdAndNaturePaiementAndStatutPaiement(
             Long matchId,
             NaturePaiement naturePaiement,
+            StatutPaiement statutPaiement
+    );
+
+    List<Paiement> findByDateHeurePaiementGreaterThanEqualAndDateHeurePaiementBeforeAndStatutPaiement(
+            LocalDateTime debut,
+            LocalDateTime fin,
             StatutPaiement statutPaiement
     );
 }

@@ -18,4 +18,9 @@ public interface PadelMatchRepository extends JpaRepository<PadelMatch, Long> {
             LocalDateTime debut,
             LocalDateTime fin
     );
+
+    List<PadelMatch> findByDateHeureDebutGreaterThanEqualAndDateHeureDebutBefore(
+            LocalDateTime debut,
+            LocalDateTime fin
+    );
 }

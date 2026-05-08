@@ -22,4 +22,6 @@ public interface DetteRepository extends JpaRepository<Dette, Long> {
             Long membreResponsableId,
             StatutDette statutDette
     );
+
+    List<Dette> findByStatutDette(StatutDette statutDette);
 }

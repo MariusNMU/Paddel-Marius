@@ -1,0 +1,220 @@
+package com.padelMarius.backend.service;
+
+import com.padelMarius.backend.dto.statistique.StatistiquesAdminResponse;
+import com.padelMarius.backend.entity.Dette;
+import com.padelMarius.backend.entity.EtatCycleMatch;
+import com.padelMarius.backend.entity.PadelMatch;
+import com.padelMarius.backend.entity.Paiement;
+import com.padelMarius.backend.entity.Participation;
+import com.padelMarius.backend.entity.Site;
+import com.padelMarius.backend.entity.StatutDette;
+import com.padelMarius.backend.entity.StatutPaiement;
+import com.padelMarius.backend.entity.StatutParticipation;
+import com.padelMarius.backend.exception.ConfigurationMetierException;
+import com.padelMarius.backend.exception.RessourceIntrouvableException;
+import com.padelMarius.backend.repository.DetteRepository;
+import com.padelMarius.backend.repository.PadelMatchRepository;
+import com.padelMarius.backend.repository.PaiementRepository;
+import com.padelMarius.backend.repository.ParticipationRepository;
+import com.padelMarius.backend.repository.SiteRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class StatistiquesAdminService {
+
+    private static final int JOUEURS_MAX_PAR_MATCH = 4;
+
+    private final SiteRepository siteRepository;
+    private final PadelMatchRepository padelMatchRepository;
+    private final PaiementRepository paiementRepository;
+    private final DetteRepository detteRepository;
+    private final ParticipationRepository participationRepository;
+
+    @Transactional(readOnly = true)
+    public StatistiquesAdminResponse calculerStatistiques(
+            LocalDate dateDebut,
+            LocalDate dateFin,
+            Long siteId
+    ) {
+        verifierPeriode(dateDebut, dateFin);
+
+        Site siteFiltre = recupererSiteSiDemande(siteId);
+
+        LocalDateTime debutInclus = dateDebut.atStartOfDay();
+        LocalDateTime finExclusive = dateFin.plusDays(1).atStartOfDay();
+
+        List<PadelMatch> matches = padelMatchRepository
+                .findByDateHeureDebutGreaterThanEqualAndDateHeureDebutBefore(
+                        debutInclus,
+                        finExclusive
+                )
+                .stream()
+                .filter(match -> matchConcerneSite(match, siteId))
+                .toList();
+
+        List<Paiement> paiementsPayes = paiementRepository
+                .findByDateHeurePaiementGreaterThanEqualAndDateHeurePaiementBeforeAndStatutPaiement(
+                        debutInclus,
+                        finExclusive,
+                        StatutPaiement.PAYE
+                )
+                .stream()
+                .filter(paiement -> paiementConcerneSite(paiement, siteId))
+                .toList();
+
+        List<Dette> dettesOuvertes = detteRepository
+                .findByStatutDette(StatutDette.OUVERTE)
+                .stream()
+                .filter(dette -> detteConcerneSite(dette, siteId))
+                .toList();
+
+        long nombreMatches = matches.size();
+
+        long nombreMatchesAVenir = matches.stream()
+                .filter(match -> match.getEtatCycle() == EtatCycleMatch.A_VENIR)
+                .count();
+
+        long nombreMatchesTermines = matches.stream()
+                .filter(match -> match.getEtatCycle() == EtatCycleMatch.TERMINE)
+                .count();
+
+        long nombrePaiements = paiementsPayes.size();
+
+        BigDecimal chiffreAffaires = paiementsPayes.stream()
+                .map(Paiement::getMontant)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        long nombreDettesOuvertes = dettesOuvertes.size();
+
+        BigDecimal montantDettesOuvertes = dettesOuvertes.stream()
+                .map(Dette::getMontantRestant)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        long nombreParticipationsActives = compterParticipationsActives(matches);
+
+        long capaciteTheoriqueJoueurs = nombreMatches * JOUEURS_MAX_PAR_MATCH;
+
+        BigDecimal tauxRemplissage = calculerTauxRemplissage(
+                nombreParticipationsActives,
+                capaciteTheoriqueJoueurs
+        );
+
+        return new StatistiquesAdminResponse(
+                dateDebut,
+                dateFin,
+                siteId,
+                siteFiltre == null ? null : siteFiltre.getNom(),
+                nombreMatches,
+                nombreMatchesAVenir,
+                nombreMatchesTermines,
+                nombrePaiements,
+                chiffreAffaires,
+                nombreDettesOuvertes,
+                montantDettesOuvertes,
+                nombreParticipationsActives,
+                capaciteTheoriqueJoueurs,
+                tauxRemplissage
+        );
+    }
+
+    private void verifierPeriode(LocalDate dateDebut, LocalDate dateFin) {
+        if (dateDebut == null || dateFin == null) {
+            throw new ConfigurationMetierException(
+                    "La date de début et la date de fin sont obligatoires."
+            );
+        }
+
+        if (dateFin.isBefore(dateDebut)) {
+            throw new ConfigurationMetierException(
+                    "La date de fin doit être supérieure ou égale à la date de début."
+            );
+        }
+    }
+
+    private Site recupererSiteSiDemande(Long siteId) {
+        if (siteId == null) {
+            return null;
+        }
+
+        return siteRepository.findById(siteId)
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        "Site introuvable avec l'id " + siteId
+                ));
+    }
+
+    private long compterParticipationsActives(List<PadelMatch> matches) {
+        long compteur = 0;
+
+        for (PadelMatch match : matches) {
+            List<Participation> participations = participationRepository.findByMatchId(match.getId());
+
+            compteur += participations.stream()
+                    .filter(participation ->
+                            participation.getStatutParticipation() != StatutParticipation.LIBEREE
+                    )
+                    .count();
+        }
+
+        return compteur;
+    }
+
+    private BigDecimal calculerTauxRemplissage(
+            long nombreParticipationsActives,
+            long capaciteTheoriqueJoueurs
+    ) {
+        if (capaciteTheoriqueJoueurs == 0) {
+            return new BigDecimal("0.00");
+        }
+
+        return BigDecimal.valueOf(nombreParticipationsActives)
+                .multiply(new BigDecimal("100"))
+                .divide(
+                        BigDecimal.valueOf(capaciteTheoriqueJoueurs),
+                        2,
+                        RoundingMode.HALF_UP
+                );
+    }
+
+    private boolean paiementConcerneSite(Paiement paiement, Long siteId) {
+        if (siteId == null) {
+            return true;
+        }
+
+        if (paiement.getParticipation() != null) {
+            return matchConcerneSite(paiement.getParticipation().getMatch(), siteId);
+        }
+
+        if (paiement.getDette() != null) {
+            return detteConcerneSite(paiement.getDette(), siteId);
+        }
+
+        return false;
+    }
+
+    private boolean detteConcerneSite(Dette dette, Long siteId) {
+        if (siteId == null) {
+            return true;
+        }
+
+        return matchConcerneSite(dette.getMatch(), siteId);
+    }
+
+    private boolean matchConcerneSite(PadelMatch match, Long siteId) {
+        if (siteId == null) {
+            return true;
+        }
+
+        return match.getTerrain() != null
+                && match.getTerrain().getSite() != null
+                && siteId.equals(match.getTerrain().getSite().getId());
+    }
+}

@@ -654,23 +654,23 @@ PR prévue :
 
 Statut :
 
-- `[A FAIRE]` Statistiques backend MVP.
+- `[FAIT]` Statistiques backend MVP.
 
 Objectifs :
 
-- `[A FAIRE]` Nombre de matches.
-- `[A FAIRE]` Chiffre d'affaires.
-- `[A FAIRE]` Dettes ouvertes.
-- `[A FAIRE]` Nombre de paiements.
-- `[A FAIRE]` Taux de remplissage simple.
-- `[A FAIRE]` Vue globale admin.
-- `[A FAIRE]` Vue filtrable par site si possible.
+- `[FAIT]` Nombre de matches.
+- `[FAIT]` Chiffre d'affaires.
+- `[FAIT]` Dettes ouvertes.
+- `[FAIT]` Nombre de paiements.
+- `[FAIT]` Taux de remplissage simple.
+- `[FAIT]` Vue globale admin.
+- `[FAIT]` Vue filtrable par site si possible.
 
 ---
 
 ### Étapes backend restantes
 
-- `[A FAIRE]` Ajouter les statistiques backend MVP.
+- `[FAIT]` Ajouter les statistiques backend MVP.
 - `[A FAIRE]` Ajouter authentification simple joueurs/admins.
 - `[A FAIRE]` Ajouter OpenAPI / Swagger.
 - `[A FAIRE]` Ajouter script de schéma ou artefact DB.
@@ -743,7 +743,7 @@ Contenu attendu :
 - `[FAIT]` 11 — Implémenter dette organisateur.
 - `[FAIT]` 12 — Implémenter traitement de veille des matches.
 - `[FAIT]` 13 — Renforcer tests traitement de veille.
-- `[A FAIRE]` 14 — Ajouter statistiques backend MVP.
+- `[FAIT]` 14 — Ajouter statistiques backend MVP.
 - `[A FAIRE]` 15 — Ajouter authentification simple joueurs/admins.
 - `[A FAIRE]` 16 — Ajouter OpenAPI Swagger.
 - `[A FAIRE]` 17 — Ajouter script DB / schéma / seed.

@@ -67,6 +67,7 @@ L’objectif est de préparer la future base de données et le backend, sans enc
 - nom
 - prenom
 - emailOuLogin
+- motDePasse
 - roleAdministrateur (GLOBAL, SITE)
 - site (optionnel)
 - actif

@@ -27,7 +27,7 @@ Stack projet :
 - `[FAIT]` Backend : Java avec Spring Boot.
 - `[FAIT]` Build backend : Maven Wrapper.
 - `[FAIT]` Base de données : SQL relationnelle, H2 pour le MVP.
-- `[A FAIRE]` Frontend : Angular.
+- `[FAIT]` Frontend : Angular.
 - `[FAIT]` Communication prévue : frontend vers backend uniquement via API HTTP REST.
 - `[A RESPECTER]` Le frontend ne doit jamais contenir de SQL.
 - `[A RESPECTER]` Le frontend ne doit jamais accéder directement à la base de données.
@@ -1136,7 +1136,7 @@ Si la PR actuelle est mergée :
 - `[A FAIRE]` Commencer l'issue suivante :
 
 ```txt
-[FRONT] Initialiser Angular et la structure frontend
+[FAIT] Frontend Angular initialisé.
 ```
 
 Branche :
@@ -1175,7 +1175,7 @@ PR prévue :
 
 ### Étapes frontend restantes
 
-- `[A FAIRE]` Initialiser Angular.
+- `[FAIT]` Initialiser Angular.
 - `[A FAIRE]` Créer structure frontend simple.
 - `[A FAIRE]` Configurer routing.
 - `[A FAIRE]` Configurer `HttpClient`.
@@ -1246,7 +1246,7 @@ Contenu attendu dans la documentation finale :
 - `[FAIT]` 16 — Ajouter OpenAPI Swagger.
 - `[FAIT]` 17 — Ajouter script DB / schéma / seed.
 - `[FAIT]` 18 — Documenter users DB et droits.
-- `[A FAIRE]` 19 — Initialiser frontend Angular.
+- `[FAIT]` 19 — Initialiser frontend Angular.
 - `[A FAIRE]` 20 — Implémenter espace joueur MVP.
 - `[A FAIRE]` 21 — Implémenter vue admin MVP.
 - `[A FAIRE]` 22 — Stabiliser le MVP final.
@@ -1315,80 +1315,19 @@ git fetch --prune
 ---
 
 ## 14. Prochaine action concrète
-
-### Si la PR actuelle DB users/droits n'est pas encore terminée
-
-Issue :
-
-```txt
-[DB] Documenter les users DB et leurs droits
-```
-
+---
+[FRONT] Implémenter l'espace joueur MVP
 Branche :
 
-```txt
-db/users-droits
-```
+front/espace-joueur
 
 Commit prévu :
 
-```txt
-docs(db): document database users and permissions
-```
+feat(front): add player MVP pages
 
 PR prévue :
 
-```txt
-[DB] Documenter les users DB et leurs droits
-```
-
-À faire :
-
-- `[EN COURS]` Vérifier le contenu de `docs/db/db-users.md`.
-- `[EN COURS]` Vérifier le contenu de `docs/db/db-users-h2.sql`.
-- `[EN COURS]` Mettre à jour `docs/db/README.md`.
-- `[EN COURS]` Remplacer entièrement ce fichier `docs/00-etat-du-projet.md`.
-- `[EN COURS]` Lancer les tests backend.
-- `[EN COURS]` Commit.
-- `[EN COURS]` Push.
-- `[EN COURS]` Créer la PR.
-- `[EN COURS]` Merger.
-- `[EN COURS]` Nettoyer localement.
-
-Commande de validation :
-
-```powershell
-cd backend
-.\mvnw.cmd clean test
-cd ..
-```
-
-### Si la PR actuelle est mergée
-
-Commencer l'issue suivante :
-
-```txt
-[FRONT] Initialiser Angular et la structure frontend
-```
-
-Branche :
-
-```txt
-front/init-angular
-```
-
-Commit prévu :
-
-```txt
-feat(front): initialize angular frontend structure
-```
-
-PR prévue :
-
-```txt
-[FRONT] Initialiser Angular et la structure frontend
-```
-
+[FRONT] Implémenter l'espace joueur MVP
 ---
 
 ## 15. Scénario de démo cible

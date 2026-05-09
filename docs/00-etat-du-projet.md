@@ -1120,6 +1120,7 @@ Users DB documentés :
 ## 10. Roadmap restante — ordre à suivre
 
 ### Prochaine étape immédiate
+[FRONT] Implémenter la vue admin MVP
 
 Si la PR actuelle DB users/droits n'est pas encore terminée :
 
@@ -1247,7 +1248,7 @@ Contenu attendu dans la documentation finale :
 - `[FAIT]` 17 — Ajouter script DB / schéma / seed.
 - `[FAIT]` 18 — Documenter users DB et droits.
 - `[FAIT]` 19 — Initialiser frontend Angular.
-- `[A FAIRE]` 20 — Implémenter espace joueur MVP.
+- `[FAIT]` 20 — Implémenter espace joueur MVP.
 - `[A FAIRE]` 21 — Implémenter vue admin MVP.
 - `[A FAIRE]` 22 — Stabiliser le MVP final.
 - `[A FAIRE]` 23 — Préparer documentation de remise.
@@ -1329,6 +1330,43 @@ PR prévue :
 
 [FRONT] Implémenter l'espace joueur MVP
 ---
+
+### Frontend Angular — espace joueur MVP
+
+Issue :
+
+```txt
+[FRONT] Implémenter l'espace joueur MVP
+front/espace-joueur
+Statut :
+
+[FAIT] Connexion joueur par matricule.
+[FAIT] Conservation du joueur connecté dans le contexte frontend.
+[FAIT] Consultation des disponibilités par site et date.
+[FAIT] Création d'un match public ou privé.
+[FAIT] Consultation des dettes ouvertes.
+[FAIT] Paiement d'une dette ouverte.
+[FAIT] Gestion simple des erreurs API.
+[FAIT] Build frontend validé.
+
+Pages modifiées :
+
+frontend/src/app/pages/joueur-auth/joueur-auth.component.ts
+frontend/src/app/pages/disponibilites/disponibilites.component.ts
+frontend/src/app/pages/creer-match/creer-match.component.ts
+frontend/src/app/pages/mes-dettes/mes-dettes.component.ts
+
+Fichier ajouté :
+
+frontend/src/app/shared/api-error.util.ts
+
+Rappel architecture :
+
+Le frontend ne contient aucun SQL.
+Le frontend n'accède jamais directement à la DB.
+Le frontend consomme uniquement l'API REST du backend.
+
+```
 
 ## 15. Scénario de démo cible
 

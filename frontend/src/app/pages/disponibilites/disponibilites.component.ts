@@ -11,21 +11,23 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
   imports: [CommonModule, FormsModule],
   template: `
     <section class="page">
-      <h2>Disponibilités</h2>
+      <h2>Réserver un terrain</h2>
 
       <p>
-        Consultation des créneaux disponibles par site et par date.
+        Choisis un site et une date pour consulter les terrains et créneaux disponibles.
       </p>
 
       <form (ngSubmit)="consulterDisponibilites()">
-        <label for="siteId">ID du site</label>
-        <input
+        <label for="siteId">Site</label>
+        <select
           id="siteId"
           name="siteId"
-          type="number"
           [(ngModel)]="siteId"
           required
-        />
+        >
+          <option [ngValue]="1001">Padel Bruxelles (1001)</option>
+          <option [ngValue]="1002">Padel Namur (1002)</option>
+        </select>
 
         <label for="date">Date</label>
         <input
@@ -47,7 +49,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
 
       <div *ngIf="disponibilites" class="resultat">
         <h3>
-          Résultat pour {{ disponibilites.nomSite }} — {{ disponibilites.date }}
+          Résultat pour {{ disponibilites.nomSite }} ({{ disponibilites.siteId }}) — {{ disponibilites.date }}
         </h3>
 
         <p *ngIf="disponibilites.ferme">

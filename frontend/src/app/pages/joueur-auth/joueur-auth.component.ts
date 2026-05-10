@@ -1,7 +1,7 @@
 ﻿import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { AuthJoueurResponse } from '../../models/auth.model';
 import { AuthApiService } from '../../services/auth-api.service';
 import { AuthContextService } from '../../services/auth-context.service';
@@ -10,13 +10,17 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
 @Component({
   selector: 'app-joueur-auth',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <section class="page">
       <h2>Connexion joueur</h2>
 
       <p>
         Connexion par matricule uniquement. Aucun login ni mot de passe n'est demandé au joueur.
+      </p>
+
+      <p>
+        <a routerLink="/accueil">Retour à la Homepage</a>
       </p>
 
       <form (ngSubmit)="connecterJoueur()">
@@ -45,13 +49,13 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
         <p><strong>Matricule :</strong> {{ joueurConnecte.matricule }}</p>
         <p><strong>Nom :</strong> {{ joueurConnecte.prenom }} {{ joueurConnecte.nom }}</p>
         <p><strong>Catégorie :</strong> {{ joueurConnecte.categorieMembre }}</p>
+
         <p *ngIf="joueurConnecte.nomSiteRattachement">
-          <strong>Site de rattachement :</strong> {{ joueurConnecte.nomSiteRattachement }}
+          <strong>Site de rattachement :</strong>
+          {{ joueurConnecte.nomSiteRattachement }} ({{ joueurConnecte.siteRattachementId }})
         </p>
 
         <div class="actions">
-          <button type="button" (click)="allerAuxDisponibilites()">Voir les disponibilités</button>
-          <button type="button" (click)="allerAuxDettes()">Voir mes dettes</button>
           <button type="button" (click)="deconnecter()">Déconnecter</button>
         </div>
       </div>
@@ -67,10 +71,10 @@ export class JoueurAuthComponent {
   constructor(
     private readonly authApiService: AuthApiService,
     private readonly authContext: AuthContextService,
-    private readonly router: Router,
     private readonly changeDetectorRef: ChangeDetectorRef
   ) {
-    this.joueurConnecte = this.authContext.joueur();
+    this.authContext.deconnecterJoueur();
+    this.joueurConnecte = null;
   }
 
   connecterJoueur(): void {
@@ -108,11 +112,5 @@ export class JoueurAuthComponent {
     this.changeDetectorRef.detectChanges();
   }
 
-  allerAuxDisponibilites(): void {
-    this.router.navigate(['/joueur/disponibilites']);
-  }
-
-  allerAuxDettes(): void {
-    this.router.navigate(['/joueur/mes-dettes']);
-  }
 }
+

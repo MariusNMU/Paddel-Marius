@@ -1,20 +1,72 @@
-﻿<header class="topbar">
-  <div>
-    <h1>Padel Marius</h1>
-    <p>Réservation de terrains de padel</p>
-  </div>
+﻿<div class="app-layout">
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>Padel Marius</h1>
+      <p>Réservation de terrains</p>
+    </div>
 
-  <nav class="nav">
-    <a href="/accueil">Accueil</a>
-    <a href="/joueur">Joueur</a>
-    <a href="/joueur/disponibilites">Disponibilités</a>
-    <a href="/joueur/creer-match">Créer match</a>
-    <a href="/joueur/mes-dettes">Mes dettes</a>
-    <a href="/admin/login">Admin</a>
-    <a href="/admin/statistiques">Stats</a>
-  </nav>
-</header>
+    <nav class="menu">
+      <p class="menu-title">Navigation</p>
 
-<main class="container">
-  <router-outlet></router-outlet>
-</main>
+      <a
+        routerLink="/accueil"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+      >
+        Homepage
+      </a>
+
+      <p class="menu-title">Joueur</p>
+
+      <a routerLink="/joueur" routerLinkActive="active">
+        Connexion joueur
+      </a>
+
+      @if (authContextService.joueurConnecte()) {
+        <a routerLink="/joueur/disponibilites" routerLinkActive="active">
+          Réserver un terrain
+        </a>
+
+        <a routerLink="/joueur/creer-match" routerLinkActive="active">
+          Créer un match
+        </a>
+
+        <a routerLink="/joueur/matches-publics" routerLinkActive="active">
+          Matches publics
+        </a>
+
+        <a routerLink="/joueur/mes-reservations" routerLinkActive="active">
+          Mes réservations
+        </a>
+
+        <a routerLink="/joueur/mes-dettes" routerLinkActive="active">
+          Mes dettes
+        </a>
+      }
+
+      <p class="menu-title">Admin</p>
+
+      <a routerLink="/admin/login" routerLinkActive="active">
+        Connexion admin
+      </a>
+
+      @if (authContextService.adminConnecte()) {
+        <a routerLink="/admin/dashboard" routerLinkActive="active">
+          Dashboard admin
+        </a>
+
+        <a routerLink="/admin/statistiques" routerLinkActive="active">
+          Statistiques
+        </a>
+
+        <a routerLink="/admin/traitement-veille" routerLinkActive="active">
+          Traitement de veille
+        </a>
+      }
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <router-outlet></router-outlet>
+  </main>
+</div>

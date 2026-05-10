@@ -20,14 +20,18 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
       </p>
 
       <form (ngSubmit)="creerMatch()">
-        <label for="terrainId">ID terrain</label>
-        <input
+        <label for="terrainId">Terrain</label>
+        <select
           id="terrainId"
           name="terrainId"
-          type="number"
           [(ngModel)]="terrainId"
           required
-        />
+        >
+          <option [ngValue]="1101">Padel Bruxelles (1001) — Terrain T1 (1101)</option>
+          <option [ngValue]="1102">Padel Bruxelles (1001) — Terrain T2 (1102)</option>
+          <option [ngValue]="1201">Padel Namur (1002) — Terrain T1 (1201)</option>
+          <option [ngValue]="1202">Padel Namur (1002) — Terrain T2 (1202)</option>
+        </select>
 
         <label for="matriculeOrganisateur">Matricule organisateur</label>
         <input
@@ -70,8 +74,8 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
         <h3>Match créé</h3>
 
         <p><strong>ID match :</strong> {{ matchCree.matchId }}</p>
-        <p><strong>Site :</strong> {{ matchCree.nomSite }} — ID {{ matchCree.siteId }}</p>
-        <p><strong>Terrain :</strong> {{ matchCree.numeroTerrain }} — ID {{ matchCree.terrainId }}</p>
+        <p><strong>Site :</strong> {{ matchCree.nomSite }} ({{ matchCree.siteId }})</p>
+        <p><strong>Terrain :</strong> {{ matchCree.numeroTerrain }} ({{ matchCree.terrainId }})</p>
         <p><strong>Début :</strong> {{ matchCree.dateHeureDebut }}</p>
         <p><strong>Fin :</strong> {{ matchCree.dateHeureFin }}</p>
         <p><strong>Mode :</strong> {{ matchCree.modeCreation }}</p>

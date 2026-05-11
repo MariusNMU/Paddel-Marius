@@ -192,3 +192,20 @@ th {
     padding: 16px;
   }
 }
+.menu-button {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 10px;
+  background: #fee2e2;
+  color: #991b1b;
+  text-align: left;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.menu-button:hover {
+  background: #fecaca;
+}

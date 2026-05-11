@@ -11,4 +11,8 @@ import { AuthContextService } from './services/auth-context.service';
 export class App {
   constructor(readonly authContextService: AuthContextService) {
   }
+
+  deconnecterJoueur(): void {
+    this.authContextService.deconnecterJoueur();
+  }
 }

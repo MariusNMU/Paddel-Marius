@@ -15,23 +15,32 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
       <h2>Mes dettes</h2>
 
       <p>
-        Consultation et paiement des dettes ouvertes.
+        Cette page permet de consulter les dettes ouvertes d'un joueur et de les payer.
+        Une dette ouverte bloque la création d'une nouvelle réservation.
       </p>
 
-      <form (ngSubmit)="chargerDettes()">
-        <label for="matricule">Matricule</label>
-        <input
-          id="matricule"
-          name="matricule"
-          type="text"
-          [(ngModel)]="matricule"
-          required
-        />
+      <div class="bloc-info">
+        <h3>Joueur concerné</h3>
 
-        <button type="submit" [disabled]="chargement">
-          {{ chargement ? 'Chargement...' : 'Consulter mes dettes' }}
-        </button>
-      </form>
+        <form (ngSubmit)="chargerDettes()">
+          <label for="matricule">Matricule</label>
+          <input
+            id="matricule"
+            name="matricule"
+            type="text"
+            [(ngModel)]="matricule"
+            required
+          />
+
+          <button type="submit" [disabled]="chargement">
+            {{ chargement ? 'Chargement...' : 'Consulter les dettes ouvertes' }}
+          </button>
+        </form>
+
+        <p class="aide">
+          Si un joueur est connecté, son matricule est utilisé automatiquement.
+        </p>
+      </div>
 
       <p *ngIf="messageErreur" class="erreur">
         {{ messageErreur }}
@@ -41,54 +50,139 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
         {{ messageSucces }}
       </p>
 
-      <div *ngIf="dettes.length === 0 && rechercheEffectuee && !messageErreur" class="resultat">
-        <p>Aucune dette ouverte pour ce matricule.</p>
+      <div *ngIf="rechercheEffectuee && !messageErreur" class="bloc-info">
+        <h3>Résumé</h3>
+
+        <div class="resume-grid">
+          <p>
+            <strong>Matricule</strong><br>
+            {{ matricule }}
+          </p>
+
+          <p>
+            <strong>Dettes ouvertes</strong><br>
+            {{ dettes.length }}
+          </p>
+
+          <p>
+            <strong>Total restant</strong><br>
+            {{ totalMontantRestant() }} €
+          </p>
+        </div>
       </div>
 
-      <div *ngIf="dettes.length > 0" class="resultat">
-        <h3>Dettes ouvertes</h3>
+      <div *ngIf="dettes.length === 0 && rechercheEffectuee && !messageErreur" class="resultat">
+        <h3>Aucune dette ouverte</h3>
+        <p>
+          Ce joueur ne présente actuellement aucune dette ouverte.
+        </p>
+      </div>
 
-        <table>
-          <thead>
-          <tr>
-            <th>ID dette</th>
-            <th>ID match</th>
-            <th>Montant initial</th>
-            <th>Montant restant</th>
-            <th>Statut</th>
-            <th>Paiement</th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr *ngFor="let dette of dettes">
-            <td>{{ dette.detteId }}</td>
-            <td>{{ dette.matchId }}</td>
-            <td>{{ dette.montantInitial }} €</td>
-            <td>{{ dette.montantRestant }} €</td>
-            <td>{{ dette.statutDette }}</td>
-            <td>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                [(ngModel)]="montantsPaiement[dette.detteId]"
-                [name]="'montantDette' + dette.detteId"
-              />
+      <div *ngIf="dettes.length > 0" class="dettes-grid">
+        <article *ngFor="let dette of dettes" class="dette-card">
+          <h3>Dette {{ dette.detteId }}</h3>
 
-              <button
-                type="button"
-                (click)="payerDette(dette)"
-                [disabled]="paiementEnCoursDetteId === dette.detteId"
-              >
-                {{ paiementEnCoursDetteId === dette.detteId ? 'Paiement...' : 'Payer' }}
-              </button>
-            </td>
-          </tr>
-          </tbody>
-        </table>
+          <div class="resume-grid">
+            <p>
+              <strong>Match</strong><br>
+              {{ dette.matchId }}
+            </p>
+
+            <p>
+              <strong>Montant initial</strong><br>
+              {{ dette.montantInitial }} €
+            </p>
+
+            <p>
+              <strong>Montant restant</strong><br>
+              {{ dette.montantRestant }} €
+            </p>
+
+            <p>
+              <strong>Statut</strong><br>
+              {{ dette.statutDette }}
+            </p>
+          </div>
+
+          <div class="paiement-zone">
+            <label [for]="'montantDette' + dette.detteId">
+              Montant à payer
+            </label>
+
+            <input
+              [id]="'montantDette' + dette.detteId"
+              type="number"
+              min="0"
+              step="0.01"
+              [(ngModel)]="montantsPaiement[dette.detteId]"
+              [name]="'montantDette' + dette.detteId"
+            />
+
+            <button
+              type="button"
+              (click)="payerDette(dette)"
+              [disabled]="paiementEnCoursDetteId === dette.detteId"
+            >
+              {{ paiementEnCoursDetteId === dette.detteId ? 'Paiement...' : 'Payer cette dette' }}
+            </button>
+          </div>
+        </article>
       </div>
     </section>
-  `
+  `,
+  styles: [`
+    .aide {
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .succes {
+      margin-top: 16px;
+      color: #047857;
+      font-weight: 700;
+    }
+
+    .resume-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .resume-grid p {
+      margin: 0;
+      padding: 12px;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      background: #ffffff;
+    }
+
+    .dettes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .dette-card {
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      background: #f8fbff;
+      padding: 16px;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    }
+
+    .dette-card h3 {
+      margin-top: 0;
+      color: #003b95;
+    }
+
+    .paiement-zone {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+  `]
 })
 export class MesDettesComponent implements OnInit {
   matricule = 'G1002';
@@ -115,6 +209,13 @@ export class MesDettesComponent implements OnInit {
     if (this.authContext.joueur()) {
       this.chargerDettes();
     }
+  }
+
+  totalMontantRestant(): number {
+    return this.dettes.reduce(
+      (total, dette) => total + dette.montantRestant,
+      0
+    );
   }
 
   chargerDettes(conserverMessageSucces = false): void {
@@ -177,10 +278,17 @@ export class MesDettesComponent implements OnInit {
 
     this.detteApiService.payerDette(dette.detteId, { montant }).subscribe({
       next: (response) => {
-        this.messageSucces = `Dette ${response.dette.detteId} payée pour ${response.montantPaye} €.`;
+        this.messageSucces = `Paiement réussi : dette ${response.dette.detteId} payée pour ${response.montantPaye} €.`;
         this.paiementEnCoursDetteId = null;
+
+        this.dettes = this.dettes.filter(
+          detteOuverte => detteOuverte.detteId !== response.dette.detteId
+        );
+
+        delete this.montantsPaiement[response.dette.detteId];
+
+        this.rechercheEffectuee = true;
         this.changeDetectorRef.detectChanges();
-        this.chargerDettes(true);
       },
       error: (error) => {
         this.messageErreur = extraireMessageErreur(error);

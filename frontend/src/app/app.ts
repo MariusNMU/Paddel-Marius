@@ -15,4 +15,8 @@ export class App {
   deconnecterJoueur(): void {
     this.authContextService.deconnecterJoueur();
   }
+
+  deconnecterAdmin(): void {
+    this.authContextService.deconnecterAdmin();
+  }
 }

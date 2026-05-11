@@ -14,8 +14,63 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
       <h2>Connexion admin</h2>
 
       <p>
-        Connecte-toi avec un administrateur de démonstration.
+        Connecte-toi avec un administrateur de démonstration pour accéder au dashboard,
+        aux statistiques et au traitement de veille.
       </p>
+
+      @if (authContextService.admin(); as admin) {
+        <div class="bloc-info">
+          <h3>Admin déjà connecté</h3>
+
+          <p>
+            <strong>{{ admin.prenom }} {{ admin.nom }}</strong>
+            — rôle {{ admin.roleAdministrateur }}
+          </p>
+
+          @if (admin.siteId) {
+            <p>Site : {{ admin.nomSite }} ({{ admin.siteId }})</p>
+          } @else {
+            <p>Accès global à tous les sites.</p>
+          }
+
+          <div class="actions">
+            <a routerLink="/admin/dashboard">Aller au dashboard</a>
+            <button type="button" (click)="deconnecterAdmin()">Déconnecter l'admin</button>
+          </div>
+        </div>
+      }
+
+      <div class="bloc-info">
+        <h3>Comptes de démonstration</h3>
+
+        <div class="admin-demo-grid">
+          <article class="admin-demo-card">
+            <h4>Admin global</h4>
+            <p>
+              Accès de démonstration à tous les sites.
+            </p>
+            <p><strong>Login :</strong> admin-global</p>
+            <p><strong>Mot de passe :</strong> secret</p>
+
+            <button type="button" (click)="utiliserAdminGlobal()">
+              Utiliser ce compte
+            </button>
+          </article>
+
+          <article class="admin-demo-card">
+            <h4>Admin site Bruxelles</h4>
+            <p>
+              Accès de démonstration limité au site Padel Bruxelles (1001).
+            </p>
+            <p><strong>Login :</strong> admin-bruxelles</p>
+            <p><strong>Mot de passe :</strong> secret-site</p>
+
+            <button type="button" (click)="utiliserAdminBruxelles()">
+              Utiliser ce compte
+            </button>
+          </article>
+        </div>
+      </div>
 
       <form (ngSubmit)="connecter()" class="formulaire">
         <label for="login">Login</label>
@@ -47,19 +102,40 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
         <p class="erreur">{{ messageErreur() }}</p>
       }
 
-      <div class="bloc-info">
-        <h3>Comptes de démonstration</h3>
-        <ul>
-          <li><strong>admin-global</strong> / secret</li>
-          <li><strong>admin-bruxelles</strong> / secret-site</li>
-        </ul>
-      </div>
-
       <p>
-        <a routerLink="/accueil">Retour à l'accueil</a>
+        <a routerLink="/accueil">Retour à la Homepage</a>
       </p>
     </section>
-  `
+  `,
+  styles: [`
+    .admin-demo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 14px;
+    }
+
+    .admin-demo-card {
+      padding: 16px;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    }
+
+    .admin-demo-card h4 {
+      margin: 0 0 10px;
+      color: #003b95;
+    }
+
+    .admin-demo-card p {
+      margin: 8px 0;
+    }
+
+    .admin-demo-card button {
+      margin-top: 12px;
+    }
+  `]
 })
 export class AdminLoginComponent {
   login = 'admin-global';
@@ -70,9 +146,26 @@ export class AdminLoginComponent {
 
   constructor(
     private readonly authApiService: AuthApiService,
-    private readonly authContextService: AuthContextService,
+    readonly authContextService: AuthContextService,
     private readonly router: Router
   ) {
+  }
+
+  utiliserAdminGlobal(): void {
+    this.login = 'admin-global';
+    this.motDePasse = 'secret';
+    this.messageErreur.set(null);
+  }
+
+  utiliserAdminBruxelles(): void {
+    this.login = 'admin-bruxelles';
+    this.motDePasse = 'secret-site';
+    this.messageErreur.set(null);
+  }
+
+  deconnecterAdmin(): void {
+    this.authContextService.deconnecterAdmin();
+    this.messageErreur.set(null);
   }
 
   connecter(): void {

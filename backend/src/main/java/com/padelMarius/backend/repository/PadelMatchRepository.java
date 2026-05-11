@@ -1,5 +1,6 @@
 package com.padelMarius.backend.repository;
 
+import com.padelMarius.backend.entity.EtatCycleMatch;
 import com.padelMarius.backend.entity.PadelMatch;
 import com.padelMarius.backend.entity.Terrain;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -22,5 +23,12 @@ public interface PadelMatchRepository extends JpaRepository<PadelMatch, Long> {
     List<PadelMatch> findByDateHeureDebutGreaterThanEqualAndDateHeureDebutBefore(
             LocalDateTime debut,
             LocalDateTime fin
+    );
+
+    List<PadelMatch> findByTerrainInAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBeforeAndEtatCycle(
+            List<Terrain> terrains,
+            LocalDateTime debut,
+            LocalDateTime fin,
+            EtatCycleMatch etatCycle
     );
 }

@@ -1,11 +1,11 @@
 ﻿import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { finalize } from 'rxjs';
 import { DetteResponse } from '../../models/dette.model';
 import { AuthContextService } from '../../services/auth-context.service';
 import { DetteApiService } from '../../services/dette-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
-import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-mes-dettes',
@@ -16,119 +16,121 @@ import { finalize } from 'rxjs';
       <h2>Mes dettes</h2>
 
       <p>
-        Cette page permet de consulter les dettes ouvertes d'un joueur et de les payer.
+        Cette page permet de consulter les dettes ouvertes du joueur connecté.
         Une dette ouverte bloque la création d'une nouvelle réservation.
       </p>
 
-      <div class="bloc-info">
-        <h3>Joueur concerné</h3>
+      <ng-container *ngIf="authContext.joueur() as joueur; else aucunJoueurConnecte">
+        <div class="bloc-info">
+          <h3>Joueur connecté</h3>
 
-        <form (ngSubmit)="chargerDettes()">
-          <label for="matricule">Matricule</label>
-          <input
-            id="matricule"
-            name="matricule"
-            type="text"
-            [(ngModel)]="matricule"
-            required
-          />
+          <p>
+            <strong>{{ joueur.prenom }} {{ joueur.nom }}</strong>
+            — matricule {{ joueur.matricule }}
+          </p>
 
-          <button type="submit" [disabled]="chargement">
-            {{ chargement ? 'Chargement...' : 'Consulter les dettes ouvertes' }}
+          <p>
+            Seules les dettes de ce joueur peuvent être consultées depuis cet écran.
+          </p>
+
+          <button type="button" (click)="chargerDettes()" [disabled]="chargement">
+            {{ chargement ? 'Chargement...' : 'Actualiser mes dettes' }}
           </button>
-        </form>
-
-        <p class="aide">
-          Si un joueur est connecté, son matricule est utilisé automatiquement.
-        </p>
-      </div>
-
-      <p *ngIf="messageErreur" class="erreur">
-        {{ messageErreur }}
-      </p>
-
-      <p *ngIf="messageSucces" class="succes">
-        {{ messageSucces }}
-      </p>
-
-      <div *ngIf="rechercheEffectuee && !messageErreur" class="bloc-info">
-        <h3>Résumé</h3>
-
-        <div class="resume-grid">
-          <p>
-            <strong>Matricule</strong><br>
-            {{ matricule }}
-          </p>
-
-          <p>
-            <strong>Dettes ouvertes</strong><br>
-            {{ dettes.length }}
-          </p>
-
-          <p>
-            <strong>Total restant</strong><br>
-            {{ totalMontantRestant() }} €
-          </p>
         </div>
-      </div>
 
-      <div *ngIf="dettes.length === 0 && rechercheEffectuee && !messageErreur" class="resultat">
-        <h3>Aucune dette ouverte</h3>
-        <p>
-          Ce joueur ne présente actuellement aucune dette ouverte.
+        <p *ngIf="messageErreur" class="erreur">
+          {{ messageErreur }}
         </p>
-      </div>
 
-      <div *ngIf="dettes.length > 0" class="dettes-grid">
-        <article *ngFor="let dette of dettes" class="dette-card">
-          <h3>Dette {{ dette.detteId }}</h3>
+        <p *ngIf="messageSucces" class="succes">
+          {{ messageSucces }}
+        </p>
+
+        <div *ngIf="rechercheEffectuee && !messageErreur" class="bloc-info">
+          <h3>Résumé</h3>
 
           <div class="resume-grid">
             <p>
-              <strong>Match</strong><br>
-              {{ dette.matchId }}
+              <strong>Matricule</strong><br>
+              {{ joueur.matricule }}
             </p>
 
             <p>
-              <strong>Montant initial</strong><br>
-              {{ dette.montantInitial }} €
+              <strong>Dettes ouvertes</strong><br>
+              {{ dettes.length }}
             </p>
 
             <p>
-              <strong>Montant restant</strong><br>
-              {{ dette.montantRestant }} €
-            </p>
-
-            <p>
-              <strong>Statut</strong><br>
-              {{ dette.statutDette }}
+              <strong>Total restant</strong><br>
+              {{ totalMontantRestant() }} €
             </p>
           </div>
+        </div>
 
-          <div class="paiement-zone">
-            <label [for]="'montantDette' + dette.detteId">
-              Montant à payer
-            </label>
+        <div *ngIf="dettes.length === 0 && rechercheEffectuee && !messageErreur" class="resultat">
+          <h3>Aucune dette ouverte</h3>
+          <p>
+            Ce joueur ne présente actuellement aucune dette ouverte.
+          </p>
+        </div>
 
-            <input
-              [id]="'montantDette' + dette.detteId"
-              type="number"
-              min="0"
-              step="0.01"
-              [(ngModel)]="montantsPaiement[dette.detteId]"
-              [name]="'montantDette' + dette.detteId"
-            />
+        <div *ngIf="dettes.length > 0" class="dettes-grid">
+          <article *ngFor="let dette of dettes" class="dette-card">
+            <h3>Dette {{ dette.detteId }}</h3>
 
-            <button
-              type="button"
-              (click)="payerDette(dette)"
-              [disabled]="paiementEnCoursDetteId === dette.detteId"
-            >
-              {{ paiementEnCoursDetteId === dette.detteId ? 'Paiement...' : 'Payer cette dette' }}
-            </button>
-          </div>
-        </article>
-      </div>
+            <div class="resume-grid">
+              <p>
+                <strong>Match</strong><br>
+                {{ dette.matchId }}
+              </p>
+
+              <p>
+                <strong>Montant initial</strong><br>
+                {{ dette.montantInitial }} €
+              </p>
+
+              <p>
+                <strong>Montant restant</strong><br>
+                {{ dette.montantRestant }} €
+              </p>
+
+              <p>
+                <strong>Statut</strong><br>
+                {{ dette.statutDette }}
+              </p>
+            </div>
+
+            <div class="paiement-zone">
+              <label [for]="'montantDette' + dette.detteId">
+                Montant à payer
+              </label>
+
+              <input
+                [id]="'montantDette' + dette.detteId"
+                type="number"
+                min="0"
+                step="0.01"
+                [(ngModel)]="montantsPaiement[dette.detteId]"
+                [name]="'montantDette' + dette.detteId"
+              />
+
+              <button
+                type="button"
+                (click)="payerDette(dette)"
+                [disabled]="paiementEnCoursDetteId === dette.detteId"
+              >
+                {{ paiementEnCoursDetteId === dette.detteId ? 'Paiement...' : 'Payer cette dette' }}
+              </button>
+            </div>
+          </article>
+        </div>
+      </ng-container>
+
+      <ng-template #aucunJoueurConnecte>
+        <p class="erreur">
+          Aucun joueur connecté. Connecte-toi d'abord pour consulter tes dettes.
+        </p>
+      </ng-template>
     </section>
   `,
   styles: [`
@@ -186,8 +188,6 @@ import { finalize } from 'rxjs';
   `]
 })
 export class MesDettesComponent implements OnInit {
-  matricule = 'G1002';
-
   dettes: DetteResponse[] = [];
   montantsPaiement: Record<number, number> = {};
 
@@ -200,10 +200,9 @@ export class MesDettesComponent implements OnInit {
 
   constructor(
     private readonly detteApiService: DetteApiService,
-    private readonly authContext: AuthContextService,
+    readonly authContext: AuthContextService,
     private readonly changeDetectorRef: ChangeDetectorRef
   ) {
-    this.matricule = this.authContext.joueur()?.matricule ?? 'G1002';
   }
 
   ngOnInit(): void {
@@ -229,10 +228,10 @@ export class MesDettesComponent implements OnInit {
     this.dettes = [];
     this.rechercheEffectuee = false;
 
-    const matriculeNettoye = this.matricule.trim();
+    const joueur = this.authContext.joueur();
 
-    if (!matriculeNettoye) {
-      this.messageErreur = 'Le matricule est obligatoire.';
+    if (!joueur) {
+      this.messageErreur = 'Aucun joueur connecté. Connecte-toi d’abord pour consulter tes dettes.';
       this.changeDetectorRef.detectChanges();
       return;
     }
@@ -240,7 +239,7 @@ export class MesDettesComponent implements OnInit {
     this.chargement = true;
     this.changeDetectorRef.detectChanges();
 
-    this.detteApiService.consulterDettesOuvertes(matriculeNettoye).subscribe({
+    this.detteApiService.consulterDettesOuvertes(joueur.matricule).subscribe({
       next: (dettes) => {
         this.dettes = dettes;
         this.rechercheEffectuee = true;

@@ -10,6 +10,8 @@ import { AdminLoginComponent } from './pages/admin-login/admin-login.component';
 import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard.component';
 import { AdminTraitementVeilleComponent } from './pages/admin-traitement-veille/admin-traitement-veille.component';
 import { AdminStatistiquesComponent } from './pages/admin-statistiques/admin-statistiques.component';
+import { InscriptionJoueurComponent } from './pages/inscription-joueur/inscription-joueur.component';
+
 
 export const routes: Routes = [
   { path: '', redirectTo: 'accueil', pathMatch: 'full' },
@@ -20,6 +22,7 @@ export const routes: Routes = [
   { path: 'joueur/matches-publics', component: MatchesPublicsComponent },
   { path: 'joueur/mes-reservations', component: MesReservationsComponent },
   { path: 'joueur/mes-dettes', component: MesDettesComponent },
+  { path: 'inscription-joueur', component: InscriptionJoueurComponent },
   { path: 'admin/login', component: AdminLoginComponent },
   { path: 'admin/dashboard', component: AdminDashboardComponent },
   { path: 'admin/traitement-veille', component: AdminTraitementVeilleComponent },

@@ -2,7 +2,6 @@
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { AuthJoueurResponse } from '../../models/auth.model';
 import { AuthApiService } from '../../services/auth-api.service';
 import { AuthContextService } from '../../services/auth-context.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
@@ -23,96 +22,104 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
         <a routerLink="/accueil">Retour à la Homepage</a>
       </p>
 
-      <div *ngIf="joueurConnecte" class="bloc-info">
-        <h3>Joueur déjà connecté</h3>
-
-        <p>
-          <strong>{{ joueurConnecte.prenom }} {{ joueurConnecte.nom }}</strong>
-          — matricule {{ joueurConnecte.matricule }}
-        </p>
-
-        <p>
-          Catégorie :
-          <strong>{{ joueurConnecte.categorieMembre }}</strong>
-        </p>
-
-        <p *ngIf="joueurConnecte.nomSiteRattachement">
-          Site de rattachement :
-          <strong>{{ joueurConnecte.nomSiteRattachement }} ({{ joueurConnecte.siteRattachementId }})</strong>
-        </p>
-
-        <div class="actions">
-          <a routerLink="/joueur/disponibilites">Réserver un terrain</a>
-          <a routerLink="/joueur/creer-match">Créer un match</a>
-          <a routerLink="/joueur/mes-dettes">Voir mes dettes</a>
-          <button type="button" (click)="deconnecter()">Déconnecter</button>
-        </div>
-      </div>
-
-      <div class="bloc-info">
-        <h3>Joueurs de démonstration</h3>
-
-        <div class="joueurs-demo-grid">
-          <article class="joueur-demo-card">
-            <h4>Joueur global</h4>
-            <p>
-              Peut réserver sur tous les sites selon les règles métier.
-            </p>
-            <p><strong>Matricule :</strong> G1001</p>
-            <p><strong>Statut :</strong> actif</p>
-
-            <button type="button" (click)="utiliserG1001()">
-              Utiliser G1001
-            </button>
-          </article>
-
-          <article class="joueur-demo-card">
-            <h4>Joueur avec dette</h4>
-            <p>
-              Permet de tester l'écran Mes dettes et le paiement d'une dette.
-            </p>
-            <p><strong>Matricule :</strong> G1002</p>
-            <p><strong>Statut :</strong> actif avec dette ouverte</p>
-
-            <button type="button" (click)="utiliserG1002()">
-              Utiliser G1002
-            </button>
-          </article>
-
-          <article class="joueur-demo-card warning-card">
-            <h4>Joueur inactif</h4>
-            <p>
-              Permet de tester le refus backend lors de la connexion joueur.
-            </p>
-            <p><strong>Matricule :</strong> G9999</p>
-            <p><strong>Statut :</strong> inactif</p>
-
-            <button type="button" (click)="utiliserG9999()">
-              Utiliser G9999
-            </button>
-          </article>
-        </div>
-      </div>
-
-      <form (ngSubmit)="connecterJoueur()">
-        <label for="matricule">Matricule</label>
-        <input
-          id="matricule"
-          name="matricule"
-          type="text"
-          [(ngModel)]="matricule"
-          placeholder="Exemple : G1001"
-          required
-        />
-
-        <button type="submit" [disabled]="chargement">
-          {{ chargement ? 'Connexion...' : 'Se connecter' }}
-        </button>
-      </form>
+      <p *ngIf="messageSucces" class="succes">
+        {{ messageSucces }}
+      </p>
 
       <p *ngIf="messageErreur" class="erreur">
         {{ messageErreur }}
       </p>
+
+      <ng-container *ngIf="authContext.joueur() as joueur; else formulaireConnexion">
+        <div class="bloc-info">
+          <h3>Joueur connecté</h3>
+
+          <p>
+            <strong>{{ joueur.prenom }} {{ joueur.nom }}</strong>
+            — matricule {{ joueur.matricule }}
+          </p>
+
+          <p>
+            Catégorie :
+            <strong>{{ joueur.categorieMembre }}</strong>
+          </p>
+
+          <p *ngIf="joueur.nomSiteRattachement">
+            Site de rattachement :
+            <strong>{{ joueur.nomSiteRattachement }} ({{ joueur.siteRattachementId }})</strong>
+          </p>
+
+          <div class="actions">
+            <a routerLink="/joueur/disponibilites">Réserver un terrain</a>
+            <a routerLink="/joueur/creer-match">Créer un match</a>
+            <a routerLink="/joueur/mes-dettes">Voir mes dettes</a>
+            <button type="button" (click)="deconnecter()">Déconnecter</button>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #formulaireConnexion>
+        <div class="bloc-info">
+          <h3>Joueurs de démonstration</h3>
+
+          <div class="joueurs-demo-grid">
+            <article class="joueur-demo-card">
+              <h4>Joueur global</h4>
+              <p>
+                Peut réserver sur tous les sites selon les règles métier.
+              </p>
+              <p><strong>Matricule :</strong> G1001</p>
+              <p><strong>Statut :</strong> actif</p>
+
+              <button type="button" (click)="utiliserG1001()">
+                Utiliser G1001
+              </button>
+            </article>
+
+            <article class="joueur-demo-card">
+              <h4>Joueur avec dette</h4>
+              <p>
+                Permet de tester l'écran Mes dettes et le paiement d'une dette.
+              </p>
+              <p><strong>Matricule :</strong> G1002</p>
+              <p><strong>Statut :</strong> actif avec dette ouverte</p>
+
+              <button type="button" (click)="utiliserG1002()">
+                Utiliser G1002
+              </button>
+            </article>
+
+            <article class="joueur-demo-card warning-card">
+              <h4>Joueur inactif</h4>
+              <p>
+                Permet de tester le refus backend lors de la connexion joueur.
+              </p>
+              <p><strong>Matricule :</strong> G9999</p>
+              <p><strong>Statut :</strong> inactif</p>
+
+              <button type="button" (click)="utiliserG9999()">
+                Utiliser G9999
+              </button>
+            </article>
+          </div>
+        </div>
+
+        <form (ngSubmit)="connecterJoueur()">
+          <label for="matricule">Matricule</label>
+          <input
+            id="matricule"
+            name="matricule"
+            type="text"
+            [(ngModel)]="matricule"
+            placeholder="Exemple : G1001"
+            required
+          />
+
+          <button type="submit" [disabled]="chargement">
+            {{ chargement ? 'Connexion...' : 'Se connecter' }}
+          </button>
+        </form>
+      </ng-template>
     </section>
   `,
   styles: [`
@@ -152,39 +159,48 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
     .warning-card h4 {
       color: #991b1b;
     }
+
+    .succes {
+      margin-top: 16px;
+      color: #047857;
+      font-weight: 700;
+    }
   `]
 })
 export class JoueurAuthComponent {
   matricule = 'G1001';
   chargement = false;
   messageErreur = '';
-  joueurConnecte: AuthJoueurResponse | null = null;
+  messageSucces = '';
 
   constructor(
     private readonly authApiService: AuthApiService,
-    private readonly authContext: AuthContextService,
+    readonly authContext: AuthContextService,
     private readonly changeDetectorRef: ChangeDetectorRef
   ) {
-    this.joueurConnecte = this.authContext.joueur();
   }
 
   utiliserG1001(): void {
     this.matricule = 'G1001';
     this.messageErreur = '';
+    this.messageSucces = '';
   }
 
   utiliserG1002(): void {
     this.matricule = 'G1002';
     this.messageErreur = '';
+    this.messageSucces = '';
   }
 
   utiliserG9999(): void {
     this.matricule = 'G9999';
     this.messageErreur = '';
+    this.messageSucces = '';
   }
 
   connecterJoueur(): void {
     this.messageErreur = '';
+    this.messageSucces = '';
 
     const matriculeNettoye = this.matricule.trim();
 
@@ -200,7 +216,7 @@ export class JoueurAuthComponent {
     this.authApiService.connecterJoueur({ matricule: matriculeNettoye }).subscribe({
       next: (joueur) => {
         this.authContext.definirJoueur(joueur);
-        this.joueurConnecte = joueur;
+        this.messageSucces = `Joueur connecté : ${joueur.prenom} ${joueur.nom} (${joueur.matricule}).`;
         this.chargement = false;
         this.changeDetectorRef.detectChanges();
       },
@@ -213,8 +229,14 @@ export class JoueurAuthComponent {
   }
 
   deconnecter(): void {
+    const joueur = this.authContext.joueur();
+
     this.authContext.deconnecterJoueur();
-    this.joueurConnecte = null;
+    this.messageErreur = '';
+    this.messageSucces = joueur
+      ? `Joueur déconnecté : ${joueur.prenom} ${joueur.nom} (${joueur.matricule}).`
+      : 'Joueur déconnecté.';
+
     this.changeDetectorRef.detectChanges();
   }
 }

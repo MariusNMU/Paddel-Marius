@@ -73,8 +73,7 @@ export class JoueurAuthComponent {
     private readonly authContext: AuthContextService,
     private readonly changeDetectorRef: ChangeDetectorRef
   ) {
-    this.authContext.deconnecterJoueur();
-    this.joueurConnecte = null;
+    this.joueurConnecte = this.authContext.joueur();
   }
 
   connecterJoueur(): void {

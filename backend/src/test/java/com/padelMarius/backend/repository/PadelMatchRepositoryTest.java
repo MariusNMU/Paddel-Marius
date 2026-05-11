@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @DataJpaTest
 class PadelMatchRepositoryTest {
@@ -77,6 +78,65 @@ class PadelMatchRepositoryTest {
                 );
     }
 
+    @Test
+    void findByTerrainInAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBeforeAndEtatCycle_shouldReturnOnlyFutureMatchesForSelectedTerrains() {
+        Site site = siteRepository.save(Site.builder()
+                .code("TEST-FERM")
+                .nom("Site fermeture")
+                .adresse("Adresse fermeture")
+                .actif(true)
+                .build());
+
+        Terrain terrainConcerne = terrainRepository.save(Terrain.builder()
+                .site(site)
+                .numero("T-FERM-1")
+                .actif(true)
+                .build());
+
+        Terrain autreTerrain = terrainRepository.save(Terrain.builder()
+                .site(site)
+                .numero("T-FERM-2")
+                .actif(true)
+                .build());
+
+        LocalDateTime dateFermeture = LocalDateTime.of(2026, 8, 15, 9, 0);
+
+        PadelMatch matchConcerne = padelMatchRepository.save(creerMatch(
+                terrainConcerne,
+                dateFermeture,
+                EtatCycleMatch.A_VENIR
+        ));
+
+        padelMatchRepository.save(creerMatch(
+                autreTerrain,
+                dateFermeture,
+                EtatCycleMatch.A_VENIR
+        ));
+
+        padelMatchRepository.save(creerMatch(
+                terrainConcerne,
+                LocalDateTime.of(2026, 8, 16, 9, 0),
+                EtatCycleMatch.A_VENIR
+        ));
+
+        padelMatchRepository.save(creerMatch(
+                terrainConcerne,
+                dateFermeture.plusHours(2),
+                EtatCycleMatch.TERMINE
+        ));
+
+        List<PadelMatch> resultats = padelMatchRepository
+                .findByTerrainInAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBeforeAndEtatCycle(
+                        List.of(terrainConcerne),
+                        LocalDateTime.of(2026, 8, 15, 0, 0),
+                        LocalDateTime.of(2026, 8, 16, 0, 0),
+                        EtatCycleMatch.A_VENIR
+                );
+
+        assertEquals(1, resultats.size());
+        assertEquals(matchConcerne.getId(), resultats.getFirst().getId());
+    }
+
     private Site creerSite(String code) {
         return siteRepository.save(Site.builder()
                 .code(code)
@@ -105,5 +165,22 @@ class PadelMatchRepositoryTest {
                 .dateCreation(LocalDateTime.of(2026, 5, 1, 10, 0))
                 .etatCycle(EtatCycleMatch.A_VENIR)
                 .build());
+    }
+
+    private PadelMatch creerMatch(
+            Terrain terrain,
+            LocalDateTime dateHeureDebut,
+            EtatCycleMatch etatCycle
+    ) {
+        return PadelMatch.builder()
+                .terrain(terrain)
+                .dateHeureDebut(dateHeureDebut)
+                .dateHeureFin(dateHeureDebut.plusMinutes(90))
+                .modeCreation(ModeCreation.PUBLIC)
+                .visibiliteCourante(VisibiliteMatch.PUBLIC)
+                .prixTotal(new BigDecimal("60.00"))
+                .dateCreation(LocalDateTime.of(2026, 5, 1, 10, 0))
+                .etatCycle(etatCycle)
+                .build();
     }
 }

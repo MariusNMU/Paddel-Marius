@@ -11,7 +11,7 @@ import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard
 import { AdminTraitementVeilleComponent } from './pages/admin-traitement-veille/admin-traitement-veille.component';
 import { AdminStatistiquesComponent } from './pages/admin-statistiques/admin-statistiques.component';
 import { InscriptionJoueurComponent } from './pages/inscription-joueur/inscription-joueur.component';
-
+import { AdminFermeturesComponent } from './pages/admin-fermetures/admin-fermetures.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'accueil', pathMatch: 'full' },
@@ -26,6 +26,7 @@ export const routes: Routes = [
   { path: 'admin/login', component: AdminLoginComponent },
   { path: 'admin/dashboard', component: AdminDashboardComponent },
   { path: 'admin/traitement-veille', component: AdminTraitementVeilleComponent },
+  { path: 'admin/fermetures', component: AdminFermeturesComponent },
   { path: 'admin/statistiques', component: AdminStatistiquesComponent },
   { path: '**', redirectTo: 'accueil' }
 ];

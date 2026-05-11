@@ -5,6 +5,7 @@ import { DetteResponse } from '../../models/dette.model';
 import { AuthContextService } from '../../services/auth-context.service';
 import { DetteApiService } from '../../services/dette-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
+import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-mes-dettes',
@@ -276,25 +277,30 @@ export class MesDettesComponent implements OnInit {
     this.paiementEnCoursDetteId = dette.detteId;
     this.changeDetectorRef.detectChanges();
 
-    this.detteApiService.payerDette(dette.detteId, { montant }).subscribe({
-      next: (response) => {
-        this.messageSucces = `Paiement réussi : dette ${response.dette.detteId} payée pour ${response.montantPaye} €.`;
-        this.paiementEnCoursDetteId = null;
+    this.detteApiService.payerDette(dette.detteId, { montant })
+      .pipe(
+        finalize(() => {
+          this.paiementEnCoursDetteId = null;
+          this.changeDetectorRef.detectChanges();
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          this.messageSucces = `Paiement réussi : dette ${response.detteId} payée pour ${response.montant} €.`;
 
-        this.dettes = this.dettes.filter(
-          detteOuverte => detteOuverte.detteId !== response.dette.detteId
-        );
+          this.dettes = this.dettes.filter(
+            detteOuverte => detteOuverte.detteId !== response.detteId
+          );
 
-        delete this.montantsPaiement[response.dette.detteId];
+          delete this.montantsPaiement[response.detteId];
 
-        this.rechercheEffectuee = true;
-        this.changeDetectorRef.detectChanges();
-      },
-      error: (error) => {
-        this.messageErreur = extraireMessageErreur(error);
-        this.paiementEnCoursDetteId = null;
-        this.changeDetectorRef.detectChanges();
-      }
-    });
+          this.rechercheEffectuee = true;
+          this.changeDetectorRef.detectChanges();
+        },
+        error: (error) => {
+          this.messageErreur = extraireMessageErreur(error);
+          this.changeDetectorRef.detectChanges();
+        }
+      });
   }
 }

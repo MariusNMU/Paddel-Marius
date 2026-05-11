@@ -1,4 +1,6 @@
 ﻿export type StatutDette = 'OUVERTE' | 'REGLEE';
+export type NaturePaiement = 'PARTICIPATION' | 'REGLEMENT_DETTE';
+export type StatutPaiement = 'PAYE' | 'REFUSE';
 
 export interface DetteResponse {
   detteId: number;
@@ -17,7 +19,14 @@ export interface PayerDetteRequest {
 }
 
 export interface PaiementDetteResponse {
-  dette: DetteResponse;
   paiementId: number;
-  montantPaye: number;
+  detteId: number;
+  membreId: number;
+  matriculeMembre: string;
+  naturePaiement: NaturePaiement;
+  montant: number;
+  statutPaiement: StatutPaiement;
+  statutDette: StatutDette;
+  dateHeurePaiement: string;
+  dateReglementDette: string | null;
 }

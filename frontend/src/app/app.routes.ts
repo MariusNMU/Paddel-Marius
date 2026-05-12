@@ -12,6 +12,7 @@ import { AdminTraitementVeilleComponent } from './pages/admin-traitement-veille/
 import { AdminStatistiquesComponent } from './pages/admin-statistiques/admin-statistiques.component';
 import { InscriptionJoueurComponent } from './pages/inscription-joueur/inscription-joueur.component';
 import { AdminFermeturesComponent } from './pages/admin-fermetures/admin-fermetures.component';
+import { MonSoldeComponent } from './pages/mon-solde/mon-solde.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'accueil', pathMatch: 'full' },
@@ -22,6 +23,7 @@ export const routes: Routes = [
   { path: 'joueur/matches-publics', component: MatchesPublicsComponent },
   { path: 'joueur/mes-reservations', component: MesReservationsComponent },
   { path: 'joueur/mes-dettes', component: MesDettesComponent },
+  { path: 'joueur/mon-solde', component: MonSoldeComponent },
   { path: 'inscription-joueur', component: InscriptionJoueurComponent },
   { path: 'admin/login', component: AdminLoginComponent },
   { path: 'admin/dashboard', component: AdminDashboardComponent },

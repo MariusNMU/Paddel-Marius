@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -39,7 +40,9 @@ class AdminFermetureControllerTest {
                 null,
                 null,
                 "Fermeture exceptionnelle",
-                2
+                2,
+                0,
+                BigDecimal.ZERO
         );
 
         when(adminFermetureService.creerFermeture(any(CreerFermetureRequest.class)))

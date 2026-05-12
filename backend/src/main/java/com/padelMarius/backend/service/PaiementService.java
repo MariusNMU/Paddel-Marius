@@ -39,6 +39,9 @@ public class PaiementService {
 
         verifierPaiementPossible(participation, request);
 
+        Membre membre = participation.getMembre();
+        debiterSolde(membre, MONTANT_PARTICIPATION_STANDARD);
+
         LocalDateTime datePaiement = LocalDateTime.now(clock);
 
         participation.setStatutParticipation(StatutParticipation.CONFIRMEE);
@@ -91,7 +94,17 @@ public class PaiementService {
             throw new ConfigurationMetierException("Cette participation possède déjà un paiement.");
         }
     }
+    private void debiterSolde(Membre membre, BigDecimal montant) {
+        if (membre.getSoldeCredit() == null) {
+            throw new ConfigurationMetierException("Le solde du membre n'est pas initialisé.");
+        }
 
+        if (membre.getSoldeCredit().compareTo(montant) < 0) {
+            throw new ConfigurationMetierException("Solde insuffisant pour effectuer ce paiement.");
+        }
+
+        membre.setSoldeCredit(membre.getSoldeCredit().subtract(montant));
+    }
     private PaiementResponse convertirEnResponse(Paiement paiement, Participation participation) {
         Membre membre = participation.getMembre();
 

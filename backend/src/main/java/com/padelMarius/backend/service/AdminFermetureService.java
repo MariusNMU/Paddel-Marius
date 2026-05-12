@@ -17,6 +17,13 @@ import com.padelMarius.backend.repository.TerrainRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.padelMarius.backend.entity.Membre;
+import com.padelMarius.backend.entity.NaturePaiement;
+import com.padelMarius.backend.entity.Paiement;
+import com.padelMarius.backend.entity.StatutPaiement;
+import com.padelMarius.backend.repository.PaiementRepository;
+
+import java.math.BigDecimal;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -30,6 +37,7 @@ public class AdminFermetureService {
     private final SiteRepository siteRepository;
     private final TerrainRepository terrainRepository;
     private final PadelMatchRepository padelMatchRepository;
+    private final PaiementRepository paiementRepository;
 
     @Transactional
     public FermetureAdminResponse creerFermeture(CreerFermetureRequest request) {
@@ -56,7 +64,7 @@ public class AdminFermetureService {
         Fermeture fermetureSauvegardee = fermetureRepository.save(fermeture);
 
         List<Terrain> terrainsConcernes = trouverTerrainsConcernes(request, site);
-        int nombreMatchesAnnules = annulerMatchesAVenir(request, terrainsConcernes);
+        ResultatAnnulation resultatAnnulation = annulerMatchesAVenir(request, terrainsConcernes);
 
         return new FermetureAdminResponse(
                 fermetureSauvegardee.getId(),
@@ -65,7 +73,9 @@ public class AdminFermetureService {
                 site != null ? site.getId() : null,
                 site != null ? site.getNom() : null,
                 fermetureSauvegardee.getMotif(),
-                nombreMatchesAnnules
+                resultatAnnulation.nombreMatchesAnnules(),
+                resultatAnnulation.nombreRemboursementsCredites(),
+                resultatAnnulation.montantTotalRembourse()
         );
     }
 
@@ -113,13 +123,53 @@ public class AdminFermetureService {
 
         return terrainRepository.findBySiteAndActifTrue(site);
     }
+    private ResultatRemboursement rembourserPaiementsDuMatch(PadelMatch match) {
+        List<Paiement> paiements = paiementRepository
+                .findByParticipation_Match_IdAndNaturePaiementAndStatutPaiement(
+                        match.getId(),
+                        NaturePaiement.PARTICIPATION,
+                        StatutPaiement.PAYE
+                );
 
-    private int annulerMatchesAVenir(
+        int nombreRemboursements = 0;
+        BigDecimal montantTotal = BigDecimal.ZERO;
+
+        for (Paiement paiement : paiements) {
+            Membre membre = paiement.getMembre();
+
+            if (membre != null && paiement.getMontant() != null) {
+                BigDecimal soldeActuel = membre.getSoldeCredit() != null
+                        ? membre.getSoldeCredit()
+                        : BigDecimal.ZERO;
+
+                membre.setSoldeCredit(soldeActuel.add(paiement.getMontant()));
+
+                nombreRemboursements++;
+                montantTotal = montantTotal.add(paiement.getMontant());
+            }
+        }
+
+        return new ResultatRemboursement(nombreRemboursements, montantTotal);
+    }
+
+    private record ResultatAnnulation(
+            int nombreMatchesAnnules,
+            int nombreRemboursementsCredites,
+            BigDecimal montantTotalRembourse
+    ) {
+    }
+
+    private record ResultatRemboursement(
+            int nombreRemboursements,
+            BigDecimal montantTotalRembourse
+    ) {
+    }
+    private ResultatAnnulation annulerMatchesAVenir(
             CreerFermetureRequest request,
             List<Terrain> terrainsConcernes
     ) {
         if (terrainsConcernes.isEmpty()) {
-            return 0;
+            return new ResultatAnnulation(0, 0, BigDecimal.ZERO);
         }
 
         LocalDateTime debutJour = request.dateFermeture().atStartOfDay();
@@ -133,10 +183,22 @@ public class AdminFermetureService {
                         EtatCycleMatch.A_VENIR
                 );
 
+        int nombreRemboursements = 0;
+        BigDecimal montantTotalRembourse = BigDecimal.ZERO;
+
         for (PadelMatch match : matches) {
+            ResultatRemboursement resultatRemboursement = rembourserPaiementsDuMatch(match);
+
+            nombreRemboursements += resultatRemboursement.nombreRemboursements();
+            montantTotalRembourse = montantTotalRembourse.add(resultatRemboursement.montantTotalRembourse());
+
             match.setEtatCycle(EtatCycleMatch.ANNULE);
         }
 
-        return matches.size();
+        return new ResultatAnnulation(
+                matches.size(),
+                nombreRemboursements,
+                montantTotalRembourse
+        );
     }
 }

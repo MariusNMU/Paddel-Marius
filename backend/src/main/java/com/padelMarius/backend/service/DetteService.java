@@ -117,6 +117,11 @@ public class DetteService {
         LocalDateTime maintenant = LocalDateTime.now(clock);
         BigDecimal montantPaiement = normaliserMontant(request.montant());
 
+
+        Membre responsable = dette.getMembreResponsable();
+        debiterSolde(responsable, montantPaiement);
+
+
         dette.setMontantRestant(ZERO);
         dette.setDateReglement(maintenant);
         dette.setStatutDette(StatutDette.REGLEE);
@@ -188,6 +193,17 @@ public class DetteService {
                     "Le montant du paiement doit correspondre au montant restant de la dette."
             );
         }
+    }
+    private void debiterSolde(Membre membre, BigDecimal montant) {
+        if (membre.getSoldeCredit() == null) {
+            throw new ConfigurationMetierException("Le solde du membre n'est pas initialisé.");
+        }
+
+        if (membre.getSoldeCredit().compareTo(montant) < 0) {
+            throw new ConfigurationMetierException("Solde insuffisant pour régler cette dette.");
+        }
+
+        membre.setSoldeCredit(membre.getSoldeCredit().subtract(montant));
     }
 
     private DetteResponse convertirEnDetteResponse(Dette dette) {

@@ -94,7 +94,8 @@ public class AuthService {
                 membre.getCategorieMembre(),
                 siteRattachement == null ? null : siteRattachement.getId(),
                 siteRattachement == null ? null : siteRattachement.getNom(),
-                membre.isActif()
+                membre.isActif(),
+                membre.getSoldeCredit()
         );
     }
 

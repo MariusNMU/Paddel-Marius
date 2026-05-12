@@ -18,6 +18,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.math.BigDecimal;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -46,7 +48,8 @@ class AuthControllerTest {
                 CategorieMembre.GLOBAL,
                 null,
                 null,
-                true
+                true,
+                new BigDecimal("100.00")
         );
 
         when(authService.authentifierJoueur(any(ConnexionJoueurRequest.class)))
@@ -65,7 +68,8 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.nom").value("Dupont"))
                 .andExpect(jsonPath("$.prenom").value("Marie"))
                 .andExpect(jsonPath("$.categorieMembre").value("GLOBAL"))
-                .andExpect(jsonPath("$.actif").value(true));
+                .andExpect(jsonPath("$.actif").value(true))
+                .andExpect(jsonPath("$.soldeCredit").value(100.00));
     }
 
     @Test

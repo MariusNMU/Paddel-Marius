@@ -13,11 +13,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Comparator;
 
 @Service
 @RequiredArgsConstructor
 public class MembreInscriptionService {
+
+    private static final BigDecimal SOLDE_INITIAL = new BigDecimal("100.00");
 
     private final MembreRepository membreRepository;
     private final SiteRepository siteRepository;
@@ -35,6 +38,7 @@ public class MembreInscriptionService {
                 .categorieMembre(request.categorieMembre())
                 .siteRattachement(siteRattachement)
                 .actif(true)
+                .soldeCredit(SOLDE_INITIAL)
                 .build();
 
         Membre membreSauvegarde = membreRepository.save(membre);
@@ -107,7 +111,8 @@ public class MembreInscriptionService {
                 membre.getCategorieMembre(),
                 site != null ? site.getId() : null,
                 site != null ? site.getNom() : null,
-                membre.isActif()
+                membre.isActif(),
+                membre.getSoldeCredit()
         );
     }
 }

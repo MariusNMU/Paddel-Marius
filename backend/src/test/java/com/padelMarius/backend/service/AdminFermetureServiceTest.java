@@ -14,6 +14,7 @@ import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.repository.FermetureRepository;
 import com.padelMarius.backend.repository.PadelMatchRepository;
+import com.padelMarius.backend.repository.PaiementRepository;
 import com.padelMarius.backend.repository.SiteRepository;
 import com.padelMarius.backend.repository.TerrainRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,6 +52,9 @@ class AdminFermetureServiceTest {
     @Mock
     private PadelMatchRepository padelMatchRepository;
 
+    @Mock
+    private PaiementRepository paiementRepository;
+
     private AdminFermetureService adminFermetureService;
 
     @BeforeEach
@@ -59,7 +63,8 @@ class AdminFermetureServiceTest {
                 fermetureRepository,
                 siteRepository,
                 terrainRepository,
-                padelMatchRepository
+                padelMatchRepository,
+                paiementRepository
         );
     }
 

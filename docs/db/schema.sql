@@ -55,6 +55,7 @@ CREATE TABLE membre (
                         categorie_membre VARCHAR(20) NOT NULL,
                         site_rattachement_id BIGINT,
                         actif BOOLEAN NOT NULL,
+                        solde_credit DECIMAL(10,2) NOT NULL,
                         CONSTRAINT fk_membre_site_rattachement FOREIGN KEY (site_rattachement_id) REFERENCES site(id)
 );
 

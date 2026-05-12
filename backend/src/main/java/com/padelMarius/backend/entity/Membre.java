@@ -3,6 +3,8 @@ package com.padelMarius.backend.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(
         name = "membre",
@@ -16,6 +18,8 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class Membre {
+
+    public static final BigDecimal SOLDE_INITIAL = new BigDecimal("100.00");
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,5 +44,8 @@ public class Membre {
 
     @Column(nullable = false)
     private boolean actif;
-}
 
+    @Builder.Default
+    @Column(name = "solde_credit", nullable = false, precision = 10, scale = 2)
+    private BigDecimal soldeCredit = SOLDE_INITIAL;
+}

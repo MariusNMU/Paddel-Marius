@@ -118,6 +118,37 @@ class PaiementServiceTest {
     }
 
     @Test
+    void payerParticipation_shouldDebitMemberBalance() {
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        PadelMatch match = creerMatch(100L, terrain);
+        Membre membre = creerMembre(21L, "G0002");
+
+        Participation participation = creerParticipation(
+                300L,
+                match,
+                membre,
+                StatutParticipation.EN_ATTENTE_PAIEMENT
+        );
+
+        when(participationRepository.findById(300L)).thenReturn(Optional.of(participation));
+        when(paiementRepository.existsByParticipationId(300L)).thenReturn(false);
+        when(paiementRepository.save(any(Paiement.class))).thenAnswer(invocation -> {
+            Paiement paiement = invocation.getArgument(0);
+            ReflectionTestUtils.setField(paiement, "id", 400L);
+            return paiement;
+        });
+        when(participationRepository.save(any(Participation.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        paiementService.payerParticipation(
+                300L,
+                new PayerParticipationRequest(new BigDecimal("15.00"))
+        );
+
+        assertEquals(0, new BigDecimal("85.00").compareTo(membre.getSoldeCredit()));
+    }
+
+    @Test
     void payerParticipation_shouldThrowNotFound_whenParticipationDoesNotExist() {
         when(participationRepository.findById(999L)).thenReturn(Optional.empty());
 
@@ -305,6 +336,7 @@ class PaiementServiceTest {
                 .prenom("Prenom")
                 .categorieMembre(CategorieMembre.GLOBAL)
                 .actif(true)
+                .soldeCredit(new BigDecimal("100.00"))
                 .build();
 
         ReflectionTestUtils.setField(membre, "id", id);

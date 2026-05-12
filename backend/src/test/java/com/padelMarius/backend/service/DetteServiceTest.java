@@ -256,6 +256,7 @@ class DetteServiceTest {
 
         assertEquals(StatutDette.REGLEE, dette.getStatutDette());
         assertEquals(0, new BigDecimal("0.00").compareTo(dette.getMontantRestant()));
+        assertEquals(0, new BigDecimal("70.00").compareTo(organisateur.getSoldeCredit()));
     }
 
     @Test
@@ -331,6 +332,7 @@ class DetteServiceTest {
                 .prenom("Prenom")
                 .categorieMembre(CategorieMembre.GLOBAL)
                 .actif(true)
+                .soldeCredit(new BigDecimal("100.00"))
                 .build();
 
         ReflectionTestUtils.setField(membre, "id", id);

@@ -2,6 +2,8 @@ package com.padelMarius.backend.dto.membre;
 
 import com.padelMarius.backend.entity.CategorieMembre;
 
+import java.math.BigDecimal;
+
 public record MembreResponse(
         Long membreId,
         String matricule,
@@ -10,6 +12,7 @@ public record MembreResponse(
         CategorieMembre categorieMembre,
         Long siteRattachementId,
         String nomSiteRattachement,
-        boolean actif
+        boolean actif,
+        BigDecimal soldeCredit
 ) {
 }

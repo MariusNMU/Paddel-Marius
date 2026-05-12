@@ -46,15 +46,16 @@ INSERT INTO membre (
     prenom,
     categorie_membre,
     site_rattachement_id,
-    actif
+    actif,
+    solde_credit
 ) VALUES
-      (2001, 'G1001', 'Dupont', 'Marie', 'GLOBAL', NULL, TRUE),
-      (2002, 'G1002', 'Lambert', 'Paul', 'GLOBAL', NULL, TRUE),
-      (2003, 'S1001', 'Martin', 'Sophie', 'SITE', 1001, TRUE),
-      (2004, 'S1002', 'Bernard', 'Luc', 'SITE', 1002, TRUE),
-      (2005, 'L1001', 'Durand', 'Nina', 'LIBRE', NULL, TRUE),
-      (2006, 'L1002', 'Petit', 'Hugo', 'LIBRE', NULL, TRUE),
-      (2007, 'G9999', 'Inactif', 'Test', 'GLOBAL', NULL, FALSE);
+      (2001, 'G1001', 'Dupont', 'Marie', 'GLOBAL', NULL, TRUE, 100.00),
+      (2002, 'G1002', 'Lambert', 'Paul', 'GLOBAL', NULL, TRUE, 100.00),
+      (2003, 'S1001', 'Martin', 'Sophie', 'SITE', 1001, TRUE, 100.00),
+      (2004, 'S1002', 'Bernard', 'Luc', 'SITE', 1002, TRUE, 100.00),
+      (2005, 'L1001', 'Durand', 'Nina', 'LIBRE', NULL, TRUE, 100.00),
+      (2006, 'L1002', 'Petit', 'Hugo', 'LIBRE', NULL, TRUE, 100.00),
+      (2007, 'G9999', 'Inactif', 'Test', 'GLOBAL', NULL, FALSE, 100.00);
 
 -- Administrateurs
 INSERT INTO administrateur (

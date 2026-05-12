@@ -1,6 +1,7 @@
 ﻿import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { CreerMatchRequest, MatchResponse, ModeCreation } from '../../models/match.model';
 import { AuthContextService } from '../../services/auth-context.service';
 import { MatchApiService } from '../../services/match-api.service';
@@ -207,9 +208,21 @@ export class CreerMatchComponent {
   constructor(
     private readonly matchApiService: MatchApiService,
     private readonly authContext: AuthContextService,
-    private readonly changeDetectorRef: ChangeDetectorRef
+    private readonly changeDetectorRef: ChangeDetectorRef,
+    private readonly route: ActivatedRoute
   ) {
     this.matriculeOrganisateur = this.authContext.joueur()?.matricule ?? 'G1001';
+
+    const terrainIdParam = this.route.snapshot.queryParamMap.get('terrainId');
+    const dateHeureDebutParam = this.route.snapshot.queryParamMap.get('dateHeureDebut');
+
+    if (terrainIdParam) {
+      this.terrainId = Number(terrainIdParam);
+    }
+
+    if (dateHeureDebutParam) {
+      this.dateHeureDebut = dateHeureDebutParam.substring(0, 16);
+    }
   }
 
   terrainSelectionne(): TerrainDemo | undefined {

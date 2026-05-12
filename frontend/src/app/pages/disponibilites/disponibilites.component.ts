@@ -24,10 +24,10 @@ interface JourRapide {
   imports: [CommonModule, FormsModule],
   template: `
     <section class="page">
-      <h2>Réserver un terrain</h2>
+      <h2>Organiser un match</h2>
 
       <p>
-        Choisis un site et une date pour consulter les terrains et créneaux disponibles.
+        Choisis un site et une date pour trouver un créneau disponible, puis utilise ce créneau pour créer un match public ou privé.
       </p>
 
       <div class="bloc-info">
@@ -121,7 +121,7 @@ interface JourRapide {
               1h30
             </p>
 
-            <button type="button" (click)="allerCreerMatch()">
+            <button type="button" (click)="allerCreerMatch(creneau)">
               Utiliser ce créneau pour créer un match
             </button>
           </article>
@@ -245,7 +245,12 @@ export class DisponibilitesComponent {
     return dateHeure.substring(11, 16);
   }
 
-  allerCreerMatch(): void {
-    this.router.navigate(['/joueur/creer-match']);
+  allerCreerMatch(creneau: CreneauDisponibiliteResponse): void {
+    this.router.navigate(['/joueur/creer-match'], {
+      queryParams: {
+        terrainId: creneau.terrainId,
+        dateHeureDebut: creneau.dateHeureDebut
+      }
+    });
   }
 }

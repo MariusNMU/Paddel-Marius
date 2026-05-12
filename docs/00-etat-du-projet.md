@@ -1225,8 +1225,8 @@ Users DB documentés :
 
 ### Priorité immédiate
 
-1. `[EN COURS]` PR #84 — Backend crédits de portefeuille lors des fermetures.
-2. `[EN COURS]` PR #85 — Frontend affichage portefeuille joueur.
+1. `[FAIT]` PR #84 — Backend crédits de portefeuille lors des fermetures.
+2. `[FAIT]` PR #85 — Frontend affichage portefeuille joueur.
 3. `[A FAIRE]` Stabilisation finale.
 4. `[A FAIRE]` Documentation finale de remise.
 5. `[A FAIRE]` Démo finale.

@@ -2,14 +2,24 @@ package com.padelMarius.backend.service;
 
 import com.padelMarius.backend.dto.traitement.TraitementEcheanceResponse;
 import com.padelMarius.backend.entity.EtatCycleMatch;
+import com.padelMarius.backend.entity.Membre;
+import com.padelMarius.backend.entity.ModeCreation;
 import com.padelMarius.backend.entity.NaturePaiement;
 import com.padelMarius.backend.entity.PadelMatch;
 import com.padelMarius.backend.entity.Paiement;
+import com.padelMarius.backend.entity.Participation;
+import com.padelMarius.backend.entity.Penalite;
+import com.padelMarius.backend.entity.RoleParticipation;
 import com.padelMarius.backend.entity.StatutDette;
 import com.padelMarius.backend.entity.StatutPaiement;
+import com.padelMarius.backend.entity.StatutParticipation;
+import com.padelMarius.backend.entity.StatutPenalite;
+import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.repository.DetteRepository;
 import com.padelMarius.backend.repository.PadelMatchRepository;
 import com.padelMarius.backend.repository.PaiementRepository;
+import com.padelMarius.backend.repository.ParticipationRepository;
+import com.padelMarius.backend.repository.PenaliteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,10 +37,17 @@ public class TraitementEcheanceService {
 
     private static final BigDecimal ZERO = new BigDecimal("0.00");
     private static final BigDecimal PRIX_TOTAL_PAR_DEFAUT = new BigDecimal("60.00");
+    private static final int NOMBRE_JOUEURS_REQUIS = 4;
+    private static final long DUREE_PENALITE_JOURS = 7L;
+    private static final String TYPE_PENALITE_MATCH_PRIVE_INCOMPLET = "RESERVATION_PRIVEE_INCOMPLETE";
+    private static final String MOTIF_PENALITE_MATCH_PRIVE_INCOMPLET =
+            "Match privé incomplet au moment du match.";
 
     private final PadelMatchRepository padelMatchRepository;
     private final PaiementRepository paiementRepository;
     private final DetteRepository detteRepository;
+    private final ParticipationRepository participationRepository;
+    private final PenaliteRepository penaliteRepository;
     private final DetteService detteService;
     private final Clock clock;
 
@@ -52,6 +69,8 @@ public class TraitementEcheanceService {
                 detteService.genererDettePourMatch(match.getId());
                 dettesCreees++;
             }
+
+            creerPenaliteSiMatchPriveIncomplet(match, maintenant);
 
             match.setEtatCycle(EtatCycleMatch.DEMARRE);
             padelMatchRepository.save(match);
@@ -96,6 +115,50 @@ public class TraitementEcheanceService {
                 .filter(Objects::nonNull)
                 .map(this::normaliserMontant)
                 .reduce(ZERO, BigDecimal::add);
+    }
+
+    private void creerPenaliteSiMatchPriveIncomplet(PadelMatch match, LocalDateTime maintenant) {
+        if (match.getModeCreation() != ModeCreation.PRIVE) {
+            return;
+        }
+
+        List<Participation> participations = participationRepository.findByMatchId(match.getId());
+
+        long participationsConfirmees = participations.stream()
+                .filter(participation -> participation.getStatutParticipation() == StatutParticipation.CONFIRMEE)
+                .count();
+
+        if (participationsConfirmees >= NOMBRE_JOUEURS_REQUIS) {
+            return;
+        }
+
+        boolean penaliteExisteDeja = !penaliteRepository.findByMatchSourceId(match.getId()).isEmpty();
+
+        if (penaliteExisteDeja) {
+            return;
+        }
+
+        Participation participationOrganisateur = participations.stream()
+                .filter(participation -> participation.getRoleParticipation() == RoleParticipation.ORGANISATEUR)
+                .filter(participation -> participation.getStatutParticipation() != StatutParticipation.LIBEREE)
+                .findFirst()
+                .orElseThrow(() -> new ConfigurationMetierException(
+                        "Le match doit avoir une participation organisateur active."
+                ));
+
+        Membre organisateur = participationOrganisateur.getMembre();
+
+        Penalite penalite = Penalite.builder()
+                .membre(organisateur)
+                .matchSource(match)
+                .typePenalite(TYPE_PENALITE_MATCH_PRIVE_INCOMPLET)
+                .motif(MOTIF_PENALITE_MATCH_PRIVE_INCOMPLET)
+                .dateDebut(maintenant)
+                .dateFin(maintenant.plusDays(DUREE_PENALITE_JOURS))
+                .statutPenalite(StatutPenalite.ACTIVE)
+                .build();
+
+        penaliteRepository.save(penalite);
     }
 
     private BigDecimal montantOuPrixDefaut(BigDecimal montant) {

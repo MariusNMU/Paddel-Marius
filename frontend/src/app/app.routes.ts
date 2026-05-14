@@ -14,6 +14,7 @@ import { AdminStatistiquesComponent } from './pages/admin-statistiques/admin-sta
 import { InscriptionJoueurComponent } from './pages/inscription-joueur/inscription-joueur.component';
 import { AdminFermeturesComponent } from './pages/admin-fermetures/admin-fermetures.component';
 import { MonSoldeComponent } from './pages/mon-solde/mon-solde.component';
+import { InvitationsRecuesComponent } from './pages/invitations-recues/invitations-recues.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'accueil', pathMatch: 'full' },
@@ -32,5 +33,6 @@ export const routes: Routes = [
   { path: 'admin/traitement-veille', component: AdminTraitementVeilleComponent },
   { path: 'admin/fermetures', component: AdminFermeturesComponent },
   { path: 'admin/statistiques', component: AdminStatistiquesComponent },
+  { path: 'joueur/invitations-recues', component: InvitationsRecuesComponent },
   { path: '**', redirectTo: 'accueil' }
 ];

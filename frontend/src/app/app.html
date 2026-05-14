@@ -39,6 +39,17 @@
           Mes réservations
         </a>
 
+        <a
+          routerLink="/joueur/invitations-recues"
+          routerLinkActive="active"
+          [class.invitation-alerte]="nombreInvitationsRecues > 0"
+        >
+          Invitations reçues
+          @if (nombreInvitationsRecues > 0) {
+            <span>({{ nombreInvitationsRecues }})</span>
+          }
+        </a>
+
         <a routerLink="/joueur/mes-dettes" routerLinkActive="active">
           Mes dettes
         </a>

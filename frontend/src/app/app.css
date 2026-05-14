@@ -209,3 +209,16 @@ th {
 .menu-button:hover {
   background: #fecaca;
 }
+.menu a.invitation-alerte {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.menu a.invitation-alerte:hover {
+  background: #fecaca;
+}
+
+.menu a.invitation-alerte.active {
+  background: #fecaca;
+  color: #7f1d1d;
+}

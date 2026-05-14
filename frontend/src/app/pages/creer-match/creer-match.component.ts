@@ -2,8 +2,10 @@
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
+import { InvitationPriveeResponse } from '../../models/invitation.model';
 import { CreerMatchRequest, MatchResponse, ModeCreation } from '../../models/match.model';
 import { AuthContextService } from '../../services/auth-context.service';
+import { InvitationApiService } from '../../services/invitation-api.service';
 import { MatchApiService } from '../../services/match-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
 import { dateHeureDuJourPourInput } from '../../shared/date-ui.util';
@@ -139,6 +141,40 @@ interface TerrainDemo {
           <p><strong>État</strong><br>{{ matchCree.etatCycle }}</p>
         </div>
       </div>
+
+      <div *ngIf="matchCree && matchCree.modeCreation === 'PRIVE'" class="bloc-info">
+        <h3>Inviter les 3 autres joueurs</h3>
+
+        <p>
+          Le match privé doit atteindre 4 joueurs. Ajoute les matricules un par un.
+        </p>
+
+        <label for="matriculeInvite">Matricule du joueur à inviter</label>
+        <input
+          id="matriculeInvite"
+          name="matriculeInvite"
+          type="text"
+          [(ngModel)]="matriculeInvite"
+        />
+
+        <button type="button" (click)="inviterJoueur()" [disabled]="chargement">
+          Inviter
+        </button>
+
+        <p *ngIf="messageInvitation">
+          {{ messageInvitation }}
+        </p>
+
+        <div *ngIf="invites.length > 0">
+          <h4>Joueurs invités</h4>
+
+          <ul>
+            <li *ngFor="let invite of invites">
+              {{ invite.prenomInvite }} {{ invite.nomInvite }} ({{ invite.matriculeInvite }})
+            </li>
+          </ul>
+        </div>
+      </div>
     </section>
   `,
   styles: [`
@@ -205,9 +241,13 @@ export class CreerMatchComponent {
   chargement = false;
   messageErreur = '';
   matchCree: MatchResponse | null = null;
+  matriculeInvite = '';
+  invites: InvitationPriveeResponse[] = [];
+  messageInvitation = '';
 
   constructor(
     private readonly matchApiService: MatchApiService,
+    private readonly invitationApiService: InvitationApiService,
     private readonly authContext: AuthContextService,
     private readonly changeDetectorRef: ChangeDetectorRef,
     private readonly route: ActivatedRoute
@@ -253,12 +293,48 @@ export class CreerMatchComponent {
     this.matchApiService.creerMatch(request).subscribe({
       next: (response) => {
         this.matchCree = response;
+        this.invites = [];
+        this.messageInvitation = '';
+        this.matriculeInvite = '';
         this.chargement = false;
         this.changeDetectorRef.detectChanges();
       },
       error: (error) => {
         this.messageErreur = extraireMessageErreur(error);
         this.chargement = false;
+        this.changeDetectorRef.detectChanges();
+      }
+    });
+  }
+
+  inviterJoueur(): void {
+    this.messageInvitation = '';
+
+    if (!this.matchCree) {
+      this.messageInvitation = 'Crée d’abord le match privé.';
+      this.changeDetectorRef.detectChanges();
+      return;
+    }
+
+    if (!this.matriculeInvite.trim()) {
+      this.messageInvitation = 'Le matricule invité est obligatoire.';
+      this.changeDetectorRef.detectChanges();
+      return;
+    }
+
+    this.invitationApiService.inviterJoueur(this.matchCree.matchId, {
+      matriculeOrganisateur: this.matriculeOrganisateur.trim(),
+      matriculeInvite: this.matriculeInvite.trim()
+    }).subscribe({
+      next: (response) => {
+        this.invites.push(response);
+        this.messageInvitation =
+          `${response.prenomInvite} ${response.nomInvite} (${response.matriculeInvite}) invité.`;
+        this.matriculeInvite = '';
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        this.messageInvitation = extraireMessageErreur(error);
         this.changeDetectorRef.detectChanges();
       }
     });

@@ -5,17 +5,13 @@ import { Router } from '@angular/router';
 import { CreneauDisponibiliteResponse, DisponibilitesResponse } from '../../models/disponibilite.model';
 import { DisponibiliteApiService } from '../../services/disponibilite-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
+import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shared/date-ui.util';
 
 interface SiteDemo {
   id: number;
   nom: string;
   code: string;
   description: string;
-}
-
-interface JourRapide {
-  libelle: string;
-  date: string;
 }
 
 @Component({
@@ -33,13 +29,15 @@ interface JourRapide {
       <div class="bloc-info">
         <h3>Choix rapide de la date</h3>
 
-        <div class="actions">
+        <div class="jours-rapides">
           <button
             *ngFor="let jour of joursRapides"
             type="button"
             (click)="selectionnerJour(jour.date)"
+            [class.selectionne]="date === jour.date"
           >
-            {{ jour.libelle }} — {{ jour.date }}
+            <span>{{ jour.libelle }}</span>
+            <strong>{{ jour.date }}</strong>
           </button>
         </div>
       </div>
@@ -130,6 +128,36 @@ interface JourRapide {
     </section>
   `,
   styles: [`
+    .jours-rapides {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .jours-rapides button {
+      width: 100%;
+      padding: 8px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 13px;
+      line-height: 1.15;
+    }
+
+    .jours-rapides button.selectionne {
+      background: #dbeafe;
+      color: #001f5c;
+      outline: 2px solid #003b95;
+    }
+
+    @media (max-width: 1100px) {
+      .jours-rapides {
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      }
+    }
+
     .creneaux-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -175,18 +203,10 @@ export class DisponibilitesComponent {
     }
   ];
 
-  joursRapides: JourRapide[] = [
-    { libelle: 'Samedi', date: '2026-06-20' },
-    { libelle: 'Dimanche', date: '2026-06-21' },
-    { libelle: 'Lundi', date: '2026-06-22' },
-    { libelle: 'Mardi', date: '2026-06-23' },
-    { libelle: 'Mercredi', date: '2026-06-24' },
-    { libelle: 'Jeudi', date: '2026-06-25' },
-    { libelle: 'Vendredi', date: '2026-06-26' }
-  ];
+  joursRapides: JourRapide[] = genererJoursRapides(7);
 
   siteId = 1001;
-  date = '2026-06-20';
+  date = dateDuJourPourInput();
 
   chargement = false;
   messageErreur = '';

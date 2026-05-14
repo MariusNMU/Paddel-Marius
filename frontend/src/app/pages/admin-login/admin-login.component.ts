@@ -190,6 +190,8 @@ export class AdminLoginComponent {
         ? `Admin déconnecté : ${admin.prenom} ${admin.nom}.`
         : 'Admin déconnecté.'
     );
+
+    void this.router.navigate(['/accueil']);
   }
 
   connecter(): void {

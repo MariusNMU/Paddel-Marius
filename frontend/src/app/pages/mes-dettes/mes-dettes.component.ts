@@ -1,7 +1,7 @@
 ﻿import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { finalize } from 'rxjs';
+import { finalize, timeout } from 'rxjs';
 import { DetteResponse } from '../../models/dette.model';
 import { AuthContextService } from '../../services/auth-context.service';
 import { DetteApiService } from '../../services/dette-api.service';
@@ -33,20 +33,20 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
             Seules les dettes de ce joueur peuvent être consultées depuis cet écran.
           </p>
 
-          <button type="button" (click)="chargerDettes()" [disabled]="chargement">
-            {{ chargement ? 'Chargement...' : 'Actualiser mes dettes' }}
+          <button type="button" (click)="chargerDettes()" [disabled]="chargement()">
+            {{ chargement() ? 'Chargement...' : 'Actualiser mes dettes' }}
           </button>
         </div>
 
-        <p *ngIf="messageErreur" class="erreur">
-          {{ messageErreur }}
+        <p *ngIf="messageErreur()" class="erreur">
+          {{ messageErreur() }}
         </p>
 
-        <p *ngIf="messageSucces" class="succes">
-          {{ messageSucces }}
+        <p *ngIf="messageSucces()" class="succes">
+          {{ messageSucces() }}
         </p>
 
-        <div *ngIf="rechercheEffectuee && !messageErreur" class="bloc-info">
+        <div *ngIf="rechercheEffectuee() && !messageErreur()" class="bloc-info">
           <h3>Résumé</h3>
 
           <div class="resume-grid">
@@ -57,25 +57,25 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
 
             <p>
               <strong>Dettes ouvertes</strong><br>
-              {{ dettes.length }}
+              {{ dettes().length }}
             </p>
 
             <p>
               <strong>Total restant</strong><br>
-              {{ totalMontantRestant() }} €
+              {{ totalMontantRestant() | number:'1.2-2' }} €
             </p>
           </div>
         </div>
 
-        <div *ngIf="dettes.length === 0 && rechercheEffectuee && !messageErreur" class="resultat">
+        <div *ngIf="dettes().length === 0 && rechercheEffectuee() && !messageErreur()" class="resultat">
           <h3>Aucune dette ouverte</h3>
           <p>
             Ce joueur ne présente actuellement aucune dette ouverte.
           </p>
         </div>
 
-        <div *ngIf="dettes.length > 0" class="dettes-grid">
-          <article *ngFor="let dette of dettes" class="dette-card">
+        <div *ngIf="dettes().length > 0" class="dettes-grid">
+          <article *ngFor="let dette of dettes()" class="dette-card">
             <h3>Dette {{ dette.detteId }}</h3>
 
             <div class="resume-grid">
@@ -86,12 +86,12 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
 
               <p>
                 <strong>Montant initial</strong><br>
-                {{ dette.montantInitial }} €
+                {{ dette.montantInitial | number:'1.2-2' }} €
               </p>
 
               <p>
                 <strong>Montant restant</strong><br>
-                {{ dette.montantRestant }} €
+                {{ dette.montantRestant | number:'1.2-2' }} €
               </p>
 
               <p>
@@ -117,9 +117,9 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
               <button
                 type="button"
                 (click)="payerDette(dette)"
-                [disabled]="paiementEnCoursDetteId === dette.detteId"
+                [disabled]="paiementEnCoursDetteId() === dette.detteId"
               >
-                {{ paiementEnCoursDetteId === dette.detteId ? 'Paiement...' : 'Payer cette dette' }}
+                {{ paiementEnCoursDetteId() === dette.detteId ? 'Paiement...' : 'Payer cette dette' }}
               </button>
             </div>
           </article>
@@ -188,20 +188,18 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
   `]
 })
 export class MesDettesComponent implements OnInit {
-  dettes: DetteResponse[] = [];
+  readonly dettes = signal<DetteResponse[]>([]);
+  readonly chargement = signal(false);
+  readonly rechercheEffectuee = signal(false);
+  readonly paiementEnCoursDetteId = signal<number | null>(null);
+  readonly messageErreur = signal('');
+  readonly messageSucces = signal('');
+
   montantsPaiement: Record<number, number> = {};
-
-  chargement = false;
-  rechercheEffectuee = false;
-  paiementEnCoursDetteId: number | null = null;
-
-  messageErreur = '';
-  messageSucces = '';
 
   constructor(
     private readonly detteApiService: DetteApiService,
-    readonly authContext: AuthContextService,
-    private readonly changeDetectorRef: ChangeDetectorRef
+    readonly authContext: AuthContextService
   ) {
   }
 
@@ -212,93 +210,89 @@ export class MesDettesComponent implements OnInit {
   }
 
   totalMontantRestant(): number {
-    return this.dettes.reduce(
+    return this.dettes().reduce(
       (total, dette) => total + dette.montantRestant,
       0
     );
   }
 
   chargerDettes(conserverMessageSucces = false): void {
-    this.messageErreur = '';
+    this.messageErreur.set('');
 
     if (!conserverMessageSucces) {
-      this.messageSucces = '';
+      this.messageSucces.set('');
     }
 
-    this.dettes = [];
-    this.rechercheEffectuee = false;
+    this.dettes.set([]);
+    this.rechercheEffectuee.set(false);
 
     const joueur = this.authContext.joueur();
 
     if (!joueur) {
-      this.messageErreur = 'Aucun joueur connecté. Connecte-toi d’abord pour consulter tes dettes.';
-      this.changeDetectorRef.detectChanges();
+      this.messageErreur.set('Aucun joueur connecté. Connecte-toi d’abord pour consulter tes dettes.');
       return;
     }
 
-    this.chargement = true;
-    this.changeDetectorRef.detectChanges();
+    this.chargement.set(true);
 
-    this.detteApiService.consulterDettesOuvertes(joueur.matricule).subscribe({
-      next: (dettes) => {
-        this.dettes = dettes;
-        this.rechercheEffectuee = true;
-        this.chargement = false;
+    this.detteApiService.consulterDettesOuvertes(joueur.matricule)
+      .pipe(
+        timeout(10000),
+        finalize(() => this.chargement.set(false))
+      )
+      .subscribe({
+        next: (dettes) => {
+          this.dettes.set(dettes);
+          this.rechercheEffectuee.set(true);
 
-        this.montantsPaiement = {};
+          const montants: Record<number, number> = {};
 
-        for (const dette of dettes) {
-          this.montantsPaiement[dette.detteId] = dette.montantRestant;
+          for (const dette of dettes) {
+            montants[dette.detteId] = dette.montantRestant;
+          }
+
+          this.montantsPaiement = montants;
+        },
+        error: (error) => {
+          this.messageErreur.set(extraireMessageErreur(error));
         }
-
-        this.changeDetectorRef.detectChanges();
-      },
-      error: (error) => {
-        this.messageErreur = extraireMessageErreur(error);
-        this.chargement = false;
-        this.changeDetectorRef.detectChanges();
-      }
-    });
+      });
   }
 
   payerDette(dette: DetteResponse): void {
-    this.messageErreur = '';
-    this.messageSucces = '';
+    this.messageErreur.set('');
+    this.messageSucces.set('');
 
     const montant = this.montantsPaiement[dette.detteId];
 
     if (!montant || montant <= 0) {
-      this.messageErreur = 'Le montant du paiement doit être supérieur à 0.';
-      this.changeDetectorRef.detectChanges();
+      this.messageErreur.set('Le montant du paiement doit être supérieur à 0.');
       return;
     }
 
-    this.paiementEnCoursDetteId = dette.detteId;
-    this.changeDetectorRef.detectChanges();
+    this.paiementEnCoursDetteId.set(dette.detteId);
 
     this.detteApiService.payerDette(dette.detteId, { montant })
       .pipe(
-        finalize(() => {
-          this.paiementEnCoursDetteId = null;
-          this.changeDetectorRef.detectChanges();
-        })
+        timeout(10000),
+        finalize(() => this.paiementEnCoursDetteId.set(null))
       )
       .subscribe({
         next: (response) => {
-          this.messageSucces = `Paiement réussi : dette ${response.detteId} payée pour ${response.montant} €.`;
+          this.messageSucces.set(
+            `Paiement réussi : dette ${response.detteId} payée pour ${response.montant} €.`
+          );
 
-          this.dettes = this.dettes.filter(
-            detteOuverte => detteOuverte.detteId !== response.detteId
+          this.dettes.update(dettesOuvertes =>
+            dettesOuvertes.filter(detteOuverte => detteOuverte.detteId !== response.detteId)
           );
 
           delete this.montantsPaiement[response.detteId];
 
-          this.rechercheEffectuee = true;
-          this.changeDetectorRef.detectChanges();
+          this.rechercheEffectuee.set(true);
         },
         error: (error) => {
-          this.messageErreur = extraireMessageErreur(error);
-          this.changeDetectorRef.detectChanges();
+          this.messageErreur.set(extraireMessageErreur(error));
         }
       });
   }

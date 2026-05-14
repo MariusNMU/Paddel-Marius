@@ -1,7 +1,7 @@
 ﻿import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthApiService } from '../../services/auth-api.service';
 import { AuthContextService } from '../../services/auth-context.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
@@ -50,9 +50,6 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
           </p>
 
           <div class="actions">
-            <a routerLink="/joueur/disponibilites">Réserver un terrain</a>
-            <a routerLink="/joueur/creer-match">Créer un match</a>
-            <a routerLink="/joueur/mes-dettes">Voir mes dettes</a>
             <button type="button" (click)="deconnecter()">Déconnecter</button>
           </div>
         </div>
@@ -176,7 +173,8 @@ export class JoueurAuthComponent {
   constructor(
     private readonly authApiService: AuthApiService,
     readonly authContext: AuthContextService,
-    private readonly changeDetectorRef: ChangeDetectorRef
+    private readonly changeDetectorRef: ChangeDetectorRef,
+    private readonly router: Router
   ) {
   }
 
@@ -238,5 +236,6 @@ export class JoueurAuthComponent {
       : 'Joueur déconnecté.';
 
     this.changeDetectorRef.detectChanges();
+    void this.router.navigate(['/accueil']);
   }
 }

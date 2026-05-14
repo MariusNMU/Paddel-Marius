@@ -12,7 +12,6 @@ import com.padelMarius.backend.entity.Penalite;
 import com.padelMarius.backend.entity.RoleParticipation;
 import com.padelMarius.backend.entity.Site;
 import com.padelMarius.backend.entity.StatutParticipation;
-import com.padelMarius.backend.entity.StatutPenalite;
 import com.padelMarius.backend.entity.Terrain;
 import com.padelMarius.backend.entity.VisibiliteMatch;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
@@ -22,7 +21,6 @@ import com.padelMarius.backend.repository.PenaliteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -77,7 +75,7 @@ class TraitementVeilleServiceTest {
     }
 
     @Test
-    void traiterVeille_shouldMakePrivateIncompleteMatchPublic() {
+    void traiterVeille_shouldMakePrivateIncompleteMatchPublicWithoutCreatingPenalty() {
         Site site = creerSite(1L);
         Terrain terrain = creerTerrain(10L, site);
         PadelMatch match = creerMatch(100L, terrain, VisibiliteMatch.PRIVE);
@@ -106,9 +104,6 @@ class TraitementVeilleServiceTest {
         when(participationRepository.findByMatchId(100L))
                 .thenReturn(List.of(participationOrganisateur, participationJoueur));
 
-        when(penaliteRepository.findByMatchSourceId(100L))
-                .thenReturn(List.of());
-
         TraitementVeilleResponse response = traitementVeilleService.traiterVeille(dateTraitement);
 
         assertEquals(VisibiliteMatch.PUBLIC, match.getVisibiliteCourante());
@@ -116,9 +111,10 @@ class TraitementVeilleServiceTest {
         assertEquals(1, response.matchesAnalyses());
         assertEquals(1, response.matchesPassesPublics());
         assertEquals(0, response.participationsLiberees());
-        assertEquals(1, response.penalitesCreees());
+        assertEquals(0, response.penalitesCreees());
 
         verify(padelMatchRepository).save(match);
+        verify(penaliteRepository, never()).save(any(Penalite.class));
     }
 
     @Test
@@ -165,47 +161,6 @@ class TraitementVeilleServiceTest {
     }
 
     @Test
-    void traiterVeille_shouldCreateActivePenaltyForSevenDays() {
-        Site site = creerSite(1L);
-        Terrain terrain = creerTerrain(10L, site);
-        PadelMatch match = creerMatch(100L, terrain, VisibiliteMatch.PRIVE);
-
-        Membre organisateur = creerMembre(20L, "G0001");
-
-        Participation participationOrganisateur = creerParticipation(
-                300L,
-                match,
-                organisateur,
-                RoleParticipation.ORGANISATEUR,
-                StatutParticipation.CONFIRMEE
-        );
-
-        stubRechercheMatchesDuLendemain(match);
-
-        when(participationRepository.findByMatchId(100L))
-                .thenReturn(List.of(participationOrganisateur));
-
-        when(penaliteRepository.findByMatchSourceId(100L))
-                .thenReturn(List.of());
-
-        TraitementVeilleResponse response = traitementVeilleService.traiterVeille(dateTraitement);
-
-        ArgumentCaptor<Penalite> penaliteCaptor = ArgumentCaptor.forClass(Penalite.class);
-        verify(penaliteRepository).save(penaliteCaptor.capture());
-
-        Penalite penalite = penaliteCaptor.getValue();
-
-        assertEquals(1, response.penalitesCreees());
-        assertEquals(organisateur, penalite.getMembre());
-        assertEquals(match, penalite.getMatchSource());
-        assertEquals("RESERVATION_PRIVEE_INCOMPLETE", penalite.getTypePenalite());
-        assertEquals("Match privé incomplet la veille du match.", penalite.getMotif());
-        assertEquals(maintenantFixe, penalite.getDateDebut());
-        assertEquals(maintenantFixe.plusDays(7), penalite.getDateFin());
-        assertEquals(StatutPenalite.ACTIVE, penalite.getStatutPenalite());
-    }
-
-    @Test
     void traiterVeille_shouldNotCreatePenaltyForPublicMatch() {
         Site site = creerSite(1L);
         Terrain terrain = creerTerrain(10L, site);
@@ -235,51 +190,6 @@ class TraitementVeilleServiceTest {
 
         verify(penaliteRepository, never()).save(any(Penalite.class));
         verify(padelMatchRepository, never()).save(any(PadelMatch.class));
-    }
-
-    @Test
-    void traiterVeille_shouldNotCreateDuplicatePenaltyWhenPenaltyAlreadyExists() {
-        Site site = creerSite(1L);
-        Terrain terrain = creerTerrain(10L, site);
-        PadelMatch match = creerMatch(100L, terrain, VisibiliteMatch.PRIVE);
-
-        Membre organisateur = creerMembre(20L, "G0001");
-
-        Participation participationOrganisateur = creerParticipation(
-                300L,
-                match,
-                organisateur,
-                RoleParticipation.ORGANISATEUR,
-                StatutParticipation.CONFIRMEE
-        );
-
-        Penalite penaliteExistante = Penalite.builder()
-                .membre(organisateur)
-                .matchSource(match)
-                .typePenalite("RESERVATION_PRIVEE_INCOMPLETE")
-                .motif("Pénalité déjà créée.")
-                .dateDebut(maintenantFixe.minusDays(1))
-                .dateFin(maintenantFixe.plusDays(6))
-                .statutPenalite(StatutPenalite.ACTIVE)
-                .build();
-
-        stubRechercheMatchesDuLendemain(match);
-
-        when(participationRepository.findByMatchId(100L))
-                .thenReturn(List.of(participationOrganisateur));
-
-        when(penaliteRepository.findByMatchSourceId(100L))
-                .thenReturn(List.of(penaliteExistante));
-
-        TraitementVeilleResponse response = traitementVeilleService.traiterVeille(dateTraitement);
-
-        assertEquals(VisibiliteMatch.PUBLIC, match.getVisibiliteCourante());
-        assertEquals(1, response.matchesAnalyses());
-        assertEquals(1, response.matchesPassesPublics());
-        assertEquals(0, response.penalitesCreees());
-
-        verify(padelMatchRepository).save(match);
-        verify(penaliteRepository, never()).save(any(Penalite.class));
     }
 
     @Test
@@ -331,18 +241,16 @@ class TraitementVeilleServiceTest {
         when(participationRepository.findByMatchId(100L))
                 .thenReturn(List.of(participationOrganisateur));
 
-        when(penaliteRepository.findByMatchSourceId(100L))
-                .thenReturn(List.of());
-
         TraitementVeilleResponse response = traitementVeilleService.traiterVeille(dateTraitement);
 
         assertEquals(VisibiliteMatch.PUBLIC, match.getVisibiliteCourante());
         assertEquals(ancienneDatePassagePublic, match.getDatePassagePublic());
         assertEquals(1, response.matchesAnalyses());
         assertEquals(1, response.matchesPassesPublics());
-        assertEquals(1, response.penalitesCreees());
+        assertEquals(0, response.penalitesCreees());
 
         verify(padelMatchRepository).save(match);
+        verify(penaliteRepository, never()).save(any(Penalite.class));
     }
 
     @Test

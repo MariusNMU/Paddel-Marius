@@ -13,6 +13,7 @@ INSERT INTO site (id, code, nom, adresse, actif) VALUES
 INSERT INTO terrain (id, site_id, numero, actif) VALUES
                                                      (1101, 1001, 'T1', TRUE),
                                                      (1102, 1001, 'T2', TRUE),
+                                                     (1103, 1001, 'T3', TRUE),
                                                      (1201, 1002, 'T1', TRUE),
                                                      (1202, 1002, 'T2', TRUE);
 
@@ -69,7 +70,8 @@ INSERT INTO administrateur (
 ) VALUES
       (2101, 'Admin', 'Global', 'admin-global', 'secret', 'GLOBAL', NULL, TRUE),
       (2102, 'Admin', 'Bruxelles', 'admin-bruxelles', 'secret-site', 'SITE', 1001, TRUE),
-      (2103, 'Admin', 'Inactif', 'admin-inactif', 'secret', 'GLOBAL', NULL, FALSE);
+      (2103, 'Admin', 'Inactif', 'admin-inactif', 'secret', 'GLOBAL', NULL, FALSE),
+      (2104, 'Admin', 'Namur', 'admin-namur', 'secret-site', 'SITE', 1002, TRUE);
 
 -- Matches
 INSERT INTO padel_match (

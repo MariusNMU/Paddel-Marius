@@ -2,23 +2,20 @@ package com.padelMarius.backend.dto.paiement;
 
 import com.padelMarius.backend.entity.NaturePaiement;
 import com.padelMarius.backend.entity.StatutPaiement;
-import com.padelMarius.backend.entity.StatutParticipation;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-public record PaiementResponse(
+public record HistoriquePaiementResponse(
         Long paiementId,
-        Long participationId,
         Long membreId,
         String matriculeMembre,
         NaturePaiement naturePaiement,
         BigDecimal montant,
-        BigDecimal montantDettesReglees,
-        BigDecimal montantTotalDebite,
         StatutPaiement statutPaiement,
-        StatutParticipation statutParticipation,
         LocalDateTime dateHeurePaiement,
-        LocalDateTime dateConfirmationParticipation
+        Long participationId,
+        Long detteId,
+        Long matchId
 ) {
 }

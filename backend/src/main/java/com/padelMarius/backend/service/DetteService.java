@@ -4,7 +4,9 @@ import com.padelMarius.backend.dto.dette.DetteResponse;
 import com.padelMarius.backend.dto.dette.PaiementDetteResponse;
 import com.padelMarius.backend.dto.dette.PayerDetteRequest;
 import com.padelMarius.backend.entity.Dette;
+import com.padelMarius.backend.entity.EtatCycleMatch;
 import com.padelMarius.backend.entity.Membre;
+import com.padelMarius.backend.entity.ModeCreation;
 import com.padelMarius.backend.entity.NaturePaiement;
 import com.padelMarius.backend.entity.PadelMatch;
 import com.padelMarius.backend.entity.Paiement;
@@ -12,6 +14,7 @@ import com.padelMarius.backend.entity.Participation;
 import com.padelMarius.backend.entity.RoleParticipation;
 import com.padelMarius.backend.entity.StatutDette;
 import com.padelMarius.backend.entity.StatutPaiement;
+import com.padelMarius.backend.entity.StatutParticipation;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.repository.DetteRepository;
@@ -29,6 +32,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +40,7 @@ public class DetteService {
 
     private static final BigDecimal ZERO = new BigDecimal("0.00");
     private static final BigDecimal PRIX_TOTAL_PAR_DEFAUT = new BigDecimal("60.00");
+    private static final BigDecimal MONTANT_PARTICIPATION_STANDARD = new BigDecimal("15.00");
 
     private final PadelMatchRepository padelMatchRepository;
     private final ParticipationRepository participationRepository;
@@ -51,11 +56,50 @@ public class DetteService {
                         "Match introuvable avec l'id " + matchId
                 ));
 
-        if (detteRepository.findByMatchId(matchId).isPresent()) {
-            throw new ConfigurationMetierException("Une dette existe déjà pour ce match.");
+        return actualiserDettePourMatch(match)
+                .orElseThrow(() -> new ConfigurationMetierException(
+                        "Le match est entièrement payé. Aucune dette ne doit être créée."
+                ));
+    }
+
+    @Transactional
+    public DetteResponse creerDetteInitialeOrganisateur(PadelMatch match, Membre organisateur) {
+        if (match == null || match.getId() == null) {
+            throw new ConfigurationMetierException("Le match doit être enregistré avant de créer une dette.");
         }
 
-        Participation participationOrganisateur = trouverParticipationOrganisateur(matchId);
+        if (organisateur == null || organisateur.getId() == null) {
+            throw new ConfigurationMetierException("L'organisateur doit être renseigné pour créer une dette.");
+        }
+
+        Optional<Dette> detteExistante = detteRepository.findByMatchId(match.getId());
+
+        if (detteExistante.isPresent()) {
+            return convertirEnDetteResponse(detteExistante.get());
+        }
+
+        LocalDateTime maintenant = LocalDateTime.now(clock);
+
+        Dette dette = Dette.builder()
+                .match(match)
+                .membreResponsable(organisateur)
+                .montantInitial(MONTANT_PARTICIPATION_STANDARD)
+                .montantRestant(MONTANT_PARTICIPATION_STANDARD)
+                .dateCreation(maintenant)
+                .dateReglement(null)
+                .statutDette(StatutDette.OUVERTE)
+                .build();
+
+        return convertirEnDetteResponse(detteRepository.save(dette));
+    }
+
+    @Transactional
+    public Optional<DetteResponse> actualiserDettePourMatch(PadelMatch match) {
+        if (match == null || match.getId() == null) {
+            return Optional.empty();
+        }
+
+        Participation participationOrganisateur = trouverParticipationOrganisateur(match.getId());
         Membre responsable = participationOrganisateur.getMembre();
 
         if (responsable == null) {
@@ -63,28 +107,60 @@ public class DetteService {
         }
 
         BigDecimal prixTotal = montantOuPrixDefaut(match.getPrixTotal());
-        BigDecimal totalPaye = calculerTotalPayePourMatch(matchId);
+        BigDecimal totalPaye = calculerTotalPayePourMatch(match.getId());
         BigDecimal montantRestant = normaliserMontant(prixTotal.subtract(totalPaye));
 
+        Optional<Dette> detteExistante = detteRepository.findByMatchId(match.getId());
+
         if (montantRestant.compareTo(ZERO) <= 0) {
-            throw new ConfigurationMetierException("Le match est entièrement payé. Aucune dette ne doit être créée.");
+            detteExistante.ifPresent(dette -> {
+                dette.setMontantRestant(ZERO);
+                dette.setDateReglement(LocalDateTime.now(clock));
+                dette.setStatutDette(StatutDette.REGLEE);
+                detteRepository.save(dette);
+            });
+
+            return Optional.empty();
         }
 
-        LocalDateTime maintenant = LocalDateTime.now(clock);
-
-        Dette dette = Dette.builder()
+        Dette dette = detteExistante.orElseGet(() -> Dette.builder()
                 .match(match)
                 .membreResponsable(responsable)
-                .montantInitial(montantRestant)
-                .montantRestant(montantRestant)
-                .dateCreation(maintenant)
-                .dateReglement(null)
-                .statutDette(StatutDette.OUVERTE)
-                .build();
+                .dateCreation(LocalDateTime.now(clock))
+                .build()
+        );
 
-        Dette detteSauvegardee = detteRepository.save(dette);
+        dette.setMembreResponsable(responsable);
+        dette.setMontantRestant(montantRestant);
+        dette.setDateReglement(null);
+        dette.setStatutDette(StatutDette.OUVERTE);
 
-        return convertirEnDetteResponse(detteSauvegardee);
+        BigDecimal montantInitialActuel = normaliserMontant(dette.getMontantInitial());
+
+        if (montantInitialActuel.compareTo(montantRestant) < 0) {
+            dette.setMontantInitial(montantRestant);
+        } else if (dette.getMontantInitial() == null) {
+            dette.setMontantInitial(montantRestant);
+        }
+
+        return Optional.of(convertirEnDetteResponse(detteRepository.save(dette)));
+    }
+
+    @Transactional
+    public void actualiserDettesOrganisateur(Membre organisateur) {
+        if (organisateur == null || organisateur.getId() == null) {
+            return;
+        }
+
+        participationRepository.findByMembreId(organisateur.getId())
+                .stream()
+                .filter(participation -> participation.getRoleParticipation() == RoleParticipation.ORGANISATEUR)
+                .filter(participation -> participation.getStatutParticipation() != StatutParticipation.LIBEREE)
+                .map(Participation::getMatch)
+                .filter(Objects::nonNull)
+                .filter(match -> match.getEtatCycle() == EtatCycleMatch.A_VENIR
+                        || match.getEtatCycle() == EtatCycleMatch.DEMARRE)
+                .forEach(this::actualiserDettePourMatch);
     }
 
     @Transactional(readOnly = true)

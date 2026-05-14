@@ -8,6 +8,7 @@ import com.padelMarius.backend.entity.*;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.repository.*;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -17,7 +18,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -55,8 +59,22 @@ class MatchCreationServiceTest {
     @Mock
     private ReglesReservationMembreService reglesReservationMembreService;
 
+    @Mock
+    private DetteService detteService;
+
+    @Mock
+    private Clock clock;
+
     @InjectMocks
     private MatchCreationService matchCreationService;
+
+    @BeforeEach
+    void configurerHorloge() {
+        lenient().when(clock.instant())
+                .thenReturn(Instant.parse("2026-05-14T10:00:00Z"));
+        lenient().when(clock.getZone())
+                .thenReturn(ZoneId.of("Europe/Brussels"));
+    }
 
     @Test
     void shouldCreatePrivateMatch() {
@@ -70,6 +88,11 @@ class MatchCreationServiceTest {
         );
 
         MatchResponse response = matchCreationService.creerMatch(request);
+
+        verify(detteService).creerDetteInitialeOrganisateur(
+                any(PadelMatch.class),
+                eq(scenario.organisateur())
+        );
 
         assertEquals(100L, response.matchId());
         assertEquals(10L, response.terrainId());
@@ -93,6 +116,25 @@ class MatchCreationServiceTest {
     }
 
     @Test
+    void shouldCreateInitialOrganizerDebtWhenMatchIsCreated() {
+        Scenario scenario = configurerCasValide();
+
+        CreerMatchRequest request = new CreerMatchRequest(
+                scenario.terrain().getId(),
+                scenario.organisateur().getMatricule(),
+                scenario.dateHeureDebut(),
+                ModeCreation.PUBLIC
+        );
+
+        matchCreationService.creerMatch(request);
+
+        verify(detteService).creerDetteInitialeOrganisateur(
+                any(PadelMatch.class),
+                eq(scenario.organisateur())
+        );
+    }
+
+    @Test
     void creerMatchDevraitVerifierLesReglesDeReservationDuMembre() {
         Scenario scenario = configurerCasValide();
 
@@ -110,6 +152,61 @@ class MatchCreationServiceTest {
                 scenario.terrain(),
                 request.dateHeureDebut()
         );
+    }
+
+    @Test
+    void creerMatchDevraitRefuserUneDateDansLePasseOuALHeureCourante() {
+        Scenario scenario = configurerCasValideSansDetteNiPenalite();
+
+        List<LocalDateTime> datesRefusees = List.of(
+                LocalDateTime.of(2026, 5, 13, 9, 0),
+                LocalDateTime.of(2026, 5, 14, 11, 59),
+                LocalDateTime.of(2026, 5, 14, 12, 0)
+        );
+
+        for (LocalDateTime dateRefusee : datesRefusees) {
+            CreerMatchRequest request = new CreerMatchRequest(
+                    scenario.terrain().getId(),
+                    scenario.organisateur().getMatricule(),
+                    dateRefusee,
+                    ModeCreation.PRIVE
+            );
+
+            assertThrows(
+                    ConfigurationMetierException.class,
+                    () -> matchCreationService.creerMatch(request)
+            );
+        }
+
+        verifyNoInteractions(reglesReservationMembreService);
+        verify(padelMatchRepository, never()).save(any());
+        verify(participationRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldThrowWhenMatchStartsBeforeCurrentTime() {
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        Membre organisateur = creerMembreGlobal(20L, "G0001");
+
+        CreerMatchRequest request = new CreerMatchRequest(
+                terrain.getId(),
+                organisateur.getMatricule(),
+                LocalDateTime.of(2026, 5, 14, 11, 59),
+                ModeCreation.PRIVE
+        );
+
+        when(terrainRepository.findById(10L)).thenReturn(Optional.of(terrain));
+        when(membreRepository.findByMatricule("G0001")).thenReturn(Optional.of(organisateur));
+
+        ConfigurationMetierException exception = assertThrows(
+                ConfigurationMetierException.class,
+                () -> matchCreationService.creerMatch(request)
+        );
+
+        assertTrue(exception.getMessage().contains("passé"));
+        verify(padelMatchRepository, never()).save(any(PadelMatch.class));
+        verify(participationRepository, never()).save(any(Participation.class));
     }
 
     @Test

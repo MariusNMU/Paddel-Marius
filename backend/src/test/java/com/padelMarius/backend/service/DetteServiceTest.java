@@ -148,22 +148,35 @@ class DetteServiceTest {
     }
 
     @Test
-    void genererDettePourMatch_shouldReject_whenDebtAlreadyExistsForMatch() {
+    void genererDettePourMatch_shouldUpdateExistingDebt_whenDebtAlreadyExistsForMatch() {
         Site site = creerSite(1L);
         Terrain terrain = creerTerrain(10L, site);
         PadelMatch match = creerMatch(100L, terrain);
         Membre organisateur = creerMembre(20L, "G0001");
         Dette detteExistante = creerDette(500L, match, organisateur, new BigDecimal("30.00"), StatutDette.OUVERTE);
+        Participation participationOrganisateur = creerParticipation(
+                300L,
+                match,
+                organisateur,
+                RoleParticipation.ORGANISATEUR
+        );
 
         when(padelMatchRepository.findById(100L)).thenReturn(Optional.of(match));
         when(detteRepository.findByMatchId(100L)).thenReturn(Optional.of(detteExistante));
+        when(participationRepository.findByMatchId(100L)).thenReturn(List.of(participationOrganisateur));
+        when(paiementRepository.findByParticipation_Match_IdAndNaturePaiementAndStatutPaiement(
+                100L,
+                NaturePaiement.PARTICIPATION,
+                StatutPaiement.PAYE
+        )).thenReturn(List.of());
+        when(detteRepository.save(any(Dette.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertThrows(
-                ConfigurationMetierException.class,
-                () -> detteService.genererDettePourMatch(100L)
-        );
+        DetteResponse response = detteService.genererDettePourMatch(100L);
 
-        verify(detteRepository, never()).save(any());
+        assertEquals(500L, response.detteId());
+        assertEquals(0, new BigDecimal("60.00").compareTo(response.montantRestant()));
+        assertEquals(StatutDette.OUVERTE, response.statutDette());
+        verify(detteRepository).save(detteExistante);
     }
 
     @Test

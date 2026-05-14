@@ -101,7 +101,7 @@ public class MatchPublicService {
                 participation.participationId(),
                 paiement.paiementId(),
                 matricule,
-                paiement.montant(),
+                paiement.montantTotalDebite(),
                 paiement.statutParticipation(),
                 membre.getSoldeCredit()
         );

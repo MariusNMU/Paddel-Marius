@@ -1,15 +1,20 @@
 package com.padelMarius.backend.service;
 
+import com.padelMarius.backend.dto.paiement.HistoriquePaiementResponse;
 import com.padelMarius.backend.dto.paiement.PaiementResponse;
 import com.padelMarius.backend.dto.paiement.PayerParticipationRequest;
+import com.padelMarius.backend.entity.Dette;
 import com.padelMarius.backend.entity.Membre;
 import com.padelMarius.backend.entity.NaturePaiement;
 import com.padelMarius.backend.entity.Paiement;
 import com.padelMarius.backend.entity.Participation;
+import com.padelMarius.backend.entity.StatutDette;
 import com.padelMarius.backend.entity.StatutPaiement;
 import com.padelMarius.backend.entity.StatutParticipation;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
+import com.padelMarius.backend.repository.DetteRepository;
+import com.padelMarius.backend.repository.MembreRepository;
 import com.padelMarius.backend.repository.PaiementRepository;
 import com.padelMarius.backend.repository.ParticipationRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,17 +22,24 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class PaiementService {
 
     private static final BigDecimal MONTANT_PARTICIPATION_STANDARD = new BigDecimal("15.00");
+    private static final BigDecimal ZERO = new BigDecimal("0.00");
 
     private final ParticipationRepository participationRepository;
     private final PaiementRepository paiementRepository;
+    private final DetteRepository detteRepository;
+    private final MembreRepository membreRepository;
+    private final DetteService detteService;
     private final Clock clock;
 
     @Transactional
@@ -40,7 +52,29 @@ public class PaiementService {
         verifierPaiementPossible(participation, request);
 
         Membre membre = participation.getMembre();
-        debiterSolde(membre, MONTANT_PARTICIPATION_STANDARD);
+
+        detteService.actualiserDettesOrganisateur(membre);
+
+        Long matchCourantId = participation.getMatch() != null
+                ? participation.getMatch().getId()
+                : null;
+
+        List<Dette> dettesOuvertes = detteRepository.findByMembreResponsableIdAndStatutDette(
+                        membre.getId(),
+                        StatutDette.OUVERTE
+                )
+                .stream()
+                .filter(dette -> dette.getMatch() == null
+                        || dette.getMatch().getId() == null
+                        || !Objects.equals(dette.getMatch().getId(), matchCourantId))
+                .toList();
+
+        BigDecimal montantDettesReglees = calculerMontantDettesOuvertes(dettesOuvertes);
+        BigDecimal montantTotalDebite = normaliserMontant(
+                MONTANT_PARTICIPATION_STANDARD.add(montantDettesReglees)
+        );
+
+        debiterSolde(membre, montantTotalDebite);
 
         LocalDateTime datePaiement = LocalDateTime.now(clock);
 
@@ -58,9 +92,36 @@ public class PaiementService {
                 .build();
 
         Paiement paiementSauvegarde = paiementRepository.save(paiement);
+
+        reglerDettesOuvertes(dettesOuvertes, membre, datePaiement);
+
         participationRepository.save(participation);
 
-        return convertirEnResponse(paiementSauvegarde, participation);
+        if (participation.getMatch() != null) {
+            detteService.actualiserDettePourMatch(participation.getMatch());
+        }
+
+        return convertirEnResponse(
+                paiementSauvegarde,
+                participation,
+                montantDettesReglees,
+                montantTotalDebite
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<HistoriquePaiementResponse> consulterHistoriquePaiements(String matricule) {
+        String matriculeNormalise = normaliserMatricule(matricule);
+
+        Membre membre = membreRepository.findByMatricule(matriculeNormalise)
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        "Membre introuvable avec le matricule " + matriculeNormalise
+                ));
+
+        return paiementRepository.findByMembreIdOrderByDateHeurePaiementDesc(membre.getId())
+                .stream()
+                .map(this::convertirEnHistoriquePaiementResponse)
+                .toList();
     }
 
     private void verifierPaiementPossible(Participation participation, PayerParticipationRequest request) {
@@ -105,7 +166,102 @@ public class PaiementService {
 
         membre.setSoldeCredit(membre.getSoldeCredit().subtract(montant));
     }
-    private PaiementResponse convertirEnResponse(Paiement paiement, Participation participation) {
+
+    private BigDecimal calculerMontantDettesOuvertes(List<Dette> dettesOuvertes) {
+        return dettesOuvertes.stream()
+                .map(Dette::getMontantRestant)
+                .map(this::normaliserMontant)
+                .reduce(ZERO, BigDecimal::add);
+    }
+
+    private void reglerDettesOuvertes(
+            List<Dette> dettesOuvertes,
+            Membre membre,
+            LocalDateTime datePaiement
+    ) {
+        for (Dette dette : dettesOuvertes) {
+            BigDecimal montantDette = normaliserMontant(dette.getMontantRestant());
+
+            if (montantDette.compareTo(ZERO) <= 0) {
+                continue;
+            }
+
+            if (paiementRepository.existsByDetteId(dette.getId())) {
+                continue;
+            }
+
+            dette.setMontantRestant(ZERO);
+            dette.setDateReglement(datePaiement);
+            dette.setStatutDette(StatutDette.REGLEE);
+
+            Paiement paiementDette = Paiement.builder()
+                    .membre(membre)
+                    .naturePaiement(NaturePaiement.REGLEMENT_DETTE)
+                    .montant(montantDette)
+                    .dateHeurePaiement(datePaiement)
+                    .statutPaiement(StatutPaiement.PAYE)
+                    .participation(null)
+                    .dette(dette)
+                    .build();
+
+            paiementRepository.save(paiementDette);
+            detteRepository.save(dette);
+        }
+    }
+
+    private BigDecimal normaliserMontant(BigDecimal montant) {
+        if (montant == null) {
+            return ZERO;
+        }
+
+        return montant.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private HistoriquePaiementResponse convertirEnHistoriquePaiementResponse(Paiement paiement) {
+        Participation participation = paiement.getParticipation();
+        Dette dette = paiement.getDette();
+
+        Long participationId = participation != null ? participation.getId() : null;
+        Long detteId = dette != null ? dette.getId() : null;
+
+        Long matchId = null;
+
+        if (participation != null && participation.getMatch() != null) {
+            matchId = participation.getMatch().getId();
+        } else if (dette != null && dette.getMatch() != null) {
+            matchId = dette.getMatch().getId();
+        }
+
+        Membre membre = paiement.getMembre();
+
+        return new HistoriquePaiementResponse(
+                paiement.getId(),
+                membre.getId(),
+                membre.getMatricule(),
+                paiement.getNaturePaiement(),
+                paiement.getMontant(),
+                paiement.getStatutPaiement(),
+                paiement.getDateHeurePaiement(),
+                participationId,
+                detteId,
+                matchId
+        );
+    }
+
+    private String normaliserMatricule(String matricule) {
+        if (matricule == null || matricule.isBlank()) {
+            throw new ConfigurationMetierException("Le matricule est obligatoire.");
+        }
+
+        return matricule.trim();
+    }
+
+    private PaiementResponse convertirEnResponse(
+            Paiement paiement,
+            Participation participation,
+            BigDecimal montantDettesReglees,
+            BigDecimal montantTotalDebite
+    ) {
         Membre membre = participation.getMembre();
 
         return new PaiementResponse(
@@ -115,6 +271,8 @@ public class PaiementService {
                 membre.getMatricule(),
                 paiement.getNaturePaiement(),
                 paiement.getMontant(),
+                montantDettesReglees,
+                montantTotalDebite,
                 paiement.getStatutPaiement(),
                 participation.getStatutParticipation(),
                 paiement.getDateHeurePaiement(),

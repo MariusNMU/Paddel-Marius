@@ -1,7 +1,11 @@
 ﻿import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { PaiementResponse, PayerParticipationRequest } from '../models/paiement.model';
+import {
+  HistoriquePaiementResponse,
+  PaiementResponse,
+  PayerParticipationRequest
+} from '../models/paiement.model';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -20,6 +24,12 @@ export class PaiementApiService {
     return this.http.post<PaiementResponse>(
       `${this.apiUrl}/api/participations/${participationId}/paiements`,
       request
+    );
+  }
+
+  consulterHistoriquePaiements(matricule: string): Observable<HistoriquePaiementResponse[]> {
+    return this.http.get<HistoriquePaiementResponse[]>(
+      `${this.apiUrl}/api/membres/${matricule}/paiements`
     );
   }
 }

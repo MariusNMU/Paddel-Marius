@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,6 +35,8 @@ public class MatchCreationService {
     private final ParticipationRepository participationRepository;
     private final DisponibiliteService disponibiliteService;
     private final ReglesReservationMembreService reglesReservationMembreService;
+    private final Clock clock;
+    private final DetteService detteService;
 
     @Transactional
     public MatchResponse creerMatch(CreerMatchRequest request) {
@@ -54,6 +57,7 @@ public class MatchCreationService {
         verifierOrganisateurReservable(organisateur);
 
         LocalDateTime dateHeureDebut = request.dateHeureDebut();
+        verifierMatchDansLeFutur(dateHeureDebut);
 
         reglesReservationMembreService.verifierReglesCreationMatch(
                 organisateur,
@@ -63,13 +67,14 @@ public class MatchCreationService {
 
         verifierAbsenceDetteOuverte(organisateur);
         verifierAbsencePenaliteActive(organisateur);
+        verifierAbsenceMatchOrganiseNonRegle(organisateur);
 
         LocalDateTime dateHeureFin = dateHeureDebut.plus(DUREE_MATCH);
 
         verifierDisponibiliteTerrain(terrain, dateHeureDebut, dateHeureFin);
         verifierOrganisateurSansMatchChevauchant(organisateur, dateHeureDebut, dateHeureFin);
 
-        LocalDateTime maintenant = LocalDateTime.now();
+        LocalDateTime maintenant = LocalDateTime.now(clock);
 
         PadelMatch match = PadelMatch.builder()
                 .terrain(terrain)
@@ -95,6 +100,8 @@ public class MatchCreationService {
 
         Participation participationEnregistree = participationRepository.save(participationOrganisateur);
 
+        detteService.creerDetteInitialeOrganisateur(matchEnregistre, organisateur);
+
         return new MatchResponse(
                 matchEnregistre.getId(),
                 matchEnregistre.getTerrain().getId(),
@@ -110,17 +117,27 @@ public class MatchCreationService {
         );
     }
 
+    private void verifierMatchDansLeFutur(LocalDateTime dateHeureDebut) {
+        LocalDateTime maintenant = LocalDateTime.now(clock);
+
+        if (!dateHeureDebut.isAfter(maintenant)) {
+            throw new ConfigurationMetierException(
+                    "Impossible d'organiser un match dans le passé ou à l'heure courante."
+            );
+        }
+    }
+
     private void verifierTerrainReservable(Terrain terrain) {
         if (!terrain.isActif()) {
-            throw new ConfigurationMetierException("Le terrain demandé est inactif.");
+            throw new ConfigurationMetierException("Le terrain demandÃ© est inactif.");
         }
 
         if (terrain.getSite() == null) {
-            throw new ConfigurationMetierException("Le terrain demandé n'est rattaché à aucun site.");
+            throw new ConfigurationMetierException("Le terrain demandÃ© n'est rattachÃ© Ã  aucun site.");
         }
 
         if (!terrain.getSite().isActif()) {
-            throw new ConfigurationMetierException("Le site du terrain demandé est inactif.");
+            throw new ConfigurationMetierException("Le site du terrain demandÃ© est inactif.");
         }
     }
 
@@ -138,7 +155,7 @@ public class MatchCreationService {
 
         if (detteOuverte) {
             throw new ConfigurationMetierException(
-                    "L'organisateur a une dette ouverte et ne peut pas créer un nouveau match."
+                    "L'organisateur a une dette ouverte et ne peut pas crÃ©er un nouveau match."
             );
         }
     }
@@ -151,9 +168,36 @@ public class MatchCreationService {
 
         if (penaliteActive) {
             throw new ConfigurationMetierException(
-                    "L'organisateur a une pénalité active et ne peut pas créer un nouveau match."
+                    "L'organisateur a une pÃ©nalitÃ© active et ne peut pas crÃ©er un nouveau match."
             );
         }
+    }
+
+    private void verifierAbsenceMatchOrganiseNonRegle(Membre organisateur) {
+        List<Participation> participations = participationRepository.findByMembreId(organisateur.getId());
+
+        boolean matchOrganiseNonRegle = participations.stream()
+                .filter(participation -> participation.getRoleParticipation() == RoleParticipation.ORGANISATEUR)
+                .filter(participation -> participation.getStatutParticipation() != StatutParticipation.LIBEREE)
+                .map(Participation::getMatch)
+                .filter(Objects::nonNull)
+                .filter(match -> match.getEtatCycle() == EtatCycleMatch.A_VENIR
+                        || match.getEtatCycle() == EtatCycleMatch.DEMARRE)
+                .anyMatch(this::matchNonTotalementPaye);
+
+        if (matchOrganiseNonRegle) {
+            throw new ConfigurationMetierException(
+                    "L'organisateur a déjà un match organisé non totalement payé."
+            );
+        }
+    }
+
+    private boolean matchNonTotalementPaye(PadelMatch match) {
+        boolean detteOuverte = detteRepository.findByMatchId(match.getId())
+                .filter(dette -> dette.getStatutDette() == StatutDette.OUVERTE)
+                .isPresent();
+
+        return detteOuverte;
     }
 
     private void verifierDisponibiliteTerrain(
@@ -171,7 +215,7 @@ public class MatchCreationService {
 
         if (!creneauDisponible) {
             throw new ConfigurationMetierException(
-                    "Le terrain n'est pas disponible sur le créneau demandé."
+                    "Le terrain n'est pas disponible sur le crÃ©neau demandÃ©."
             );
         }
     }
@@ -202,7 +246,7 @@ public class MatchCreationService {
 
         if (conflit) {
             throw new ConfigurationMetierException(
-                    "L'organisateur participe déjà à un autre match sur ce créneau."
+                    "L'organisateur participe dÃ©jÃ  Ã  un autre match sur ce crÃ©neau."
             );
         }
     }

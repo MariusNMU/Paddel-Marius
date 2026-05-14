@@ -13,6 +13,8 @@ public interface PaiementRepository extends JpaRepository<Paiement, Long> {
 
     List<Paiement> findByMembreId(Long membreId);
 
+    List<Paiement> findByMembreIdOrderByDateHeurePaiementDesc(Long membreId);
+
     List<Paiement> findByMembreIdAndStatutPaiement(
             Long membreId,
             StatutPaiement statutPaiement

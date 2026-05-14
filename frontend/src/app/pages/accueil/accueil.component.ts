@@ -1,62 +1,18 @@
 ﻿import { Component } from '@angular/core';
-import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-accueil',
   standalone: true,
-  imports: [RouterLink],
   template: `
     <section class="page">
       <h2>Homepage</h2>
 
       <p>
-        Bienvenue dans l'application Padel Marius. Cette interface permet de démontrer
-        le MVP de réservation de terrains de padel : connexion joueur, réservation,
-        paiement, dette, statistiques et administration.
+        Bienvenue dans l'application Padel Marius.
+        Cette interface permet de démontrer le MVP de réservation de terrains de padel :
+        connexion joueur, organisation de match, inscription publique, paiement,
+        dette, solde, statistiques et administration.
       </p>
-
-      <div class="bloc-info">
-        <h3>Rappel architecture</h3>
-
-        <ul>
-          <li>Le frontend Angular ne contient aucun SQL.</li>
-          <li>Le frontend n'accède jamais directement à la base de données.</li>
-          <li>Le frontend communique uniquement avec le backend via l'API REST.</li>
-          <li>Le backend applique les règles métier et accède à la base H2 du MVP.</li>
-        </ul>
-      </div>
-
-      <div class="bloc-info">
-        <h3>Parcours joueur recommandé</h3>
-
-        <ol>
-          <li>Cliquer sur <strong>Connexion joueur</strong>.</li>
-          <li>Utiliser un joueur de démonstration, par exemple <strong>G1001</strong>.</li>
-          <li>Consulter les créneaux via <strong>Réserver un terrain</strong>.</li>
-          <li>Créer un match via <strong>Créer un match</strong>.</li>
-          <li>Tester les dettes avec <strong>G1002</strong>.</li>
-        </ol>
-
-        <div class="actions">
-          <a routerLink="/joueur">Connexion joueur</a>
-        </div>
-      </div>
-
-      <div class="bloc-info">
-        <h3>Parcours admin recommandé</h3>
-
-        <ol>
-          <li>Cliquer sur <strong>Connexion admin</strong>.</li>
-          <li>Utiliser <strong>admin-global / secret</strong>.</li>
-          <li>Ouvrir le dashboard admin.</li>
-          <li>Consulter les statistiques.</li>
-          <li>Lancer le traitement de veille.</li>
-        </ol>
-
-        <div class="actions">
-          <a routerLink="/admin/login">Connexion admin</a>
-        </div>
-      </div>
 
       <div class="bloc-info">
         <h3>Légende des matricules</h3>

@@ -3,6 +3,7 @@ package com.padelMarius.backend.service;
 import com.padelMarius.backend.dto.paiement.PaiementResponse;
 import com.padelMarius.backend.dto.paiement.PayerParticipationRequest;
 import com.padelMarius.backend.entity.CategorieMembre;
+import com.padelMarius.backend.entity.Dette;
 import com.padelMarius.backend.entity.EtatCycleMatch;
 import com.padelMarius.backend.entity.Membre;
 import com.padelMarius.backend.entity.ModeCreation;
@@ -13,12 +14,15 @@ import com.padelMarius.backend.entity.Paiement;
 import com.padelMarius.backend.entity.Participation;
 import com.padelMarius.backend.entity.RoleParticipation;
 import com.padelMarius.backend.entity.Site;
+import com.padelMarius.backend.entity.StatutDette;
 import com.padelMarius.backend.entity.StatutPaiement;
 import com.padelMarius.backend.entity.StatutParticipation;
 import com.padelMarius.backend.entity.Terrain;
 import com.padelMarius.backend.entity.VisibiliteMatch;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
+import com.padelMarius.backend.repository.DetteRepository;
+import com.padelMarius.backend.repository.MembreRepository;
 import com.padelMarius.backend.repository.PaiementRepository;
 import com.padelMarius.backend.repository.ParticipationRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +37,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -51,6 +57,15 @@ class PaiementServiceTest {
 
     @Mock
     private PaiementRepository paiementRepository;
+
+    @Mock
+    private DetteRepository detteRepository;
+
+    @Mock
+    private MembreRepository membreRepository;
+
+    @Mock
+    private DetteService detteService;
 
     private PaiementService paiementService;
 
@@ -67,6 +82,9 @@ class PaiementServiceTest {
         paiementService = new PaiementService(
                 participationRepository,
                 paiementRepository,
+                detteRepository,
+                membreRepository,
+                detteService,
                 clockFixe
         );
     }
@@ -87,6 +105,10 @@ class PaiementServiceTest {
 
         when(participationRepository.findById(300L)).thenReturn(Optional.of(participation));
         when(paiementRepository.existsByParticipationId(300L)).thenReturn(false);
+        when(detteRepository.findByMembreResponsableIdAndStatutDette(
+                membre.getId(),
+                StatutDette.OUVERTE
+        )).thenReturn(List.of());
         when(paiementRepository.save(any(Paiement.class))).thenAnswer(invocation -> {
             Paiement paiement = invocation.getArgument(0);
             ReflectionTestUtils.setField(paiement, "id", 400L);
@@ -105,6 +127,8 @@ class PaiementServiceTest {
         assertEquals("G0002", response.matriculeMembre());
         assertEquals(NaturePaiement.PARTICIPATION, response.naturePaiement());
         assertEquals(0, new BigDecimal("15.00").compareTo(response.montant()));
+        assertEquals(0, new BigDecimal("0.00").compareTo(response.montantDettesReglees()));
+        assertEquals(0, new BigDecimal("15.00").compareTo(response.montantTotalDebite()));
         assertEquals(StatutPaiement.PAYE, response.statutPaiement());
         assertEquals(StatutParticipation.CONFIRMEE, response.statutParticipation());
         assertEquals(LocalDateTime.of(2026, 5, 7, 12, 0), response.dateHeurePaiement());
@@ -115,6 +139,7 @@ class PaiementServiceTest {
 
         verify(paiementRepository).save(any(Paiement.class));
         verify(participationRepository).save(participation);
+        verify(detteService).actualiserDettePourMatch(any(PadelMatch.class));
     }
 
     @Test
@@ -133,6 +158,10 @@ class PaiementServiceTest {
 
         when(participationRepository.findById(300L)).thenReturn(Optional.of(participation));
         when(paiementRepository.existsByParticipationId(300L)).thenReturn(false);
+        when(detteRepository.findByMembreResponsableIdAndStatutDette(
+                membre.getId(),
+                StatutDette.OUVERTE
+        )).thenReturn(List.of());
         when(paiementRepository.save(any(Paiement.class))).thenAnswer(invocation -> {
             Paiement paiement = invocation.getArgument(0);
             ReflectionTestUtils.setField(paiement, "id", 400L);
@@ -146,6 +175,69 @@ class PaiementServiceTest {
         );
 
         assertEquals(0, new BigDecimal("85.00").compareTo(membre.getSoldeCredit()));
+    }
+
+    @Test
+    void shouldAddOpenDebtsToParticipationPayment() {
+        // Objectif du test :
+        // - membre avec une dette ouverte de 30 euros
+        // - participation a payer de 15 euros
+        // - paiement attendu : 45 euros debites au total
+        // - montantDettesReglees = 30 euros
+        // - montantTotalDebite = 45 euros
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        PadelMatch match = creerMatch(100L, terrain);
+        PadelMatch autreMatch = creerMatch(101L, terrain);
+        Membre membre = creerMembre(21L, "G0002");
+
+        Participation participation = creerParticipation(
+                300L,
+                match,
+                membre,
+                StatutParticipation.EN_ATTENTE_PAIEMENT
+        );
+
+        Dette dette = Dette.builder()
+                .match(autreMatch)
+                .membreResponsable(membre)
+                .montantInitial(new BigDecimal("30.00"))
+                .montantRestant(new BigDecimal("30.00"))
+                .dateCreation(LocalDateTime.of(2026, 5, 1, 10, 0))
+                .dateReglement(null)
+                .statutDette(StatutDette.OUVERTE)
+                .build();
+
+        ReflectionTestUtils.setField(dette, "id", 500L);
+
+        when(participationRepository.findById(300L)).thenReturn(Optional.of(participation));
+        when(paiementRepository.existsByParticipationId(300L)).thenReturn(false);
+        when(detteRepository.findByMembreResponsableIdAndStatutDette(
+                membre.getId(),
+                StatutDette.OUVERTE
+        )).thenReturn(List.of(dette));
+        when(paiementRepository.save(any(Paiement.class))).thenAnswer(invocation -> {
+            Paiement paiement = invocation.getArgument(0);
+            ReflectionTestUtils.setField(paiement, "id", 400L);
+            return paiement;
+        });
+        when(participationRepository.save(any(Participation.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(detteRepository.save(any(Dette.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PaiementResponse response = paiementService.payerParticipation(
+                300L,
+                new PayerParticipationRequest(new BigDecimal("15.00"))
+        );
+
+        assertEquals(StatutParticipation.CONFIRMEE, participation.getStatutParticipation());
+        assertEquals(StatutDette.REGLEE, dette.getStatutDette());
+        assertEquals(0, new BigDecimal("55.00").compareTo(membre.getSoldeCredit()));
+        assertEquals(0, new BigDecimal("45.00").compareTo(response.montantTotalDebite()));
+        assertEquals(0, new BigDecimal("30.00").compareTo(response.montantDettesReglees()));
+
+        verify(paiementRepository, times(2)).save(any(Paiement.class));
+        verify(detteRepository).save(dette);
+        verify(participationRepository).save(participation);
     }
 
     @Test

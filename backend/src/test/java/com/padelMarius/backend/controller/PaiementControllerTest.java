@@ -18,12 +18,14 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -46,6 +48,8 @@ class PaiementControllerTest {
                 21L,
                 "G0002",
                 NaturePaiement.PARTICIPATION,
+                new BigDecimal("15.00"),
+                new BigDecimal("0.00"),
                 new BigDecimal("15.00"),
                 StatutPaiement.PAYE,
                 StatutParticipation.CONFIRMEE,
@@ -72,10 +76,21 @@ class PaiementControllerTest {
                 .andExpect(jsonPath("$.matriculeMembre").value("G0002"))
                 .andExpect(jsonPath("$.naturePaiement").value("PARTICIPATION"))
                 .andExpect(jsonPath("$.montant").value(15.00))
+                .andExpect(jsonPath("$.montantDettesReglees").value(0.00))
+                .andExpect(jsonPath("$.montantTotalDebite").value(15.00))
                 .andExpect(jsonPath("$.statutPaiement").value("PAYE"))
                 .andExpect(jsonPath("$.statutParticipation").value("CONFIRMEE"))
                 .andExpect(jsonPath("$.dateHeurePaiement").value("2026-05-07T12:00:00"))
                 .andExpect(jsonPath("$.dateConfirmationParticipation").value("2026-05-07T12:00:00"));
+    }
+
+    @Test
+    void shouldReturnPaymentHistoryForMember() throws Exception {
+        when(paiementService.consulterHistoriquePaiements("G1001"))
+                .thenReturn(List.of());
+
+        mockMvc.perform(get("/api/membres/G1001/paiements"))
+                .andExpect(status().isOk());
     }
 
     @Test

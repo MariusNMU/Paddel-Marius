@@ -6,6 +6,7 @@ import { CreerMatchComponent } from './pages/creer-match/creer-match.component';
 import { MatchesPublicsComponent } from './pages/matches-publics/matches-publics.component';
 import { MesReservationsComponent } from './pages/mes-reservations/mes-reservations.component';
 import { MesDettesComponent } from './pages/mes-dettes/mes-dettes.component';
+import { HistoriqueTransactionsComponent } from './pages/historique-transactions/historique-transactions.component';
 import { AdminLoginComponent } from './pages/admin-login/admin-login.component';
 import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard.component';
 import { AdminTraitementVeilleComponent } from './pages/admin-traitement-veille/admin-traitement-veille.component';
@@ -23,6 +24,7 @@ export const routes: Routes = [
   { path: 'joueur/matches-publics', component: MatchesPublicsComponent },
   { path: 'joueur/mes-reservations', component: MesReservationsComponent },
   { path: 'joueur/mes-dettes', component: MesDettesComponent },
+  { path: 'joueur/historique-transactions', component: HistoriqueTransactionsComponent },
   { path: 'joueur/mon-solde', component: MonSoldeComponent },
   { path: 'inscription-joueur', component: InscriptionJoueurComponent },
   { path: 'admin/login', component: AdminLoginComponent },

@@ -156,6 +156,8 @@ class MatchPublicServiceTest {
                 "G1001",
                 NaturePaiement.PARTICIPATION,
                 new BigDecimal("15.00"),
+                new BigDecimal("0.00"),
+                new BigDecimal("15.00"),
                 StatutPaiement.PAYE,
                 StatutParticipation.CONFIRMEE,
                 LocalDateTime.of(2026, 5, 12, 10, 1),

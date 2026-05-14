@@ -1,9 +1,9 @@
 # État du projet — Padel Marius
 
-Dernière mise à jour : 2026-05-12  
+Dernière mise à jour : 2026-05-14  
 Document de suivi rapide pour reprise par IA / Codex / développeur.
 
-Objectif du fichier : suivre clairement ce qui est fait, ce qui reste à faire, les limites connues, les PR en cours et le prochain pas concret.  
+Objectif du fichier : suivre clairement ce qui est fait, ce qui reste à faire, les limites connues, les PR importantes et le prochain pas concret.  
 À chaque PR mergée, mettre à jour ce fichier en déplaçant l'étape concernée vers `[FAIT]`.
 
 ---
@@ -11,11 +11,11 @@ Objectif du fichier : suivre clairement ce qui est fait, ce qui reste à faire, 
 ## 1. Statuts utilisés
 
 - `[FAIT]` : terminé, testé, mergé ou prêt à être considéré comme livré.
-- `[EN COURS]` : issue ouverte, branche active ou PR prévue.
+- `[EN COURS]` : issue ouverte, branche active ou PR non mergée.
 - `[A FAIRE]` : pas encore commencé.
 - `[A SURVEILLER]` : point technique connu, non bloquant pour le MVP.
 - `[A RESPECTER]` : exigence professeur ou règle projet permanente.
-- `[LIMITE MVP]` : fonctionnalité volontairement simplifiée ou non terminée pour garder un MVP stable.
+- `[LIMITE MVP]` : fonctionnalité volontairement simplifiée pour garder un MVP stable.
 
 ---
 
@@ -42,11 +42,14 @@ Priorité actuelle :
 4. `[FAIT]` Frontend simple et démontrable.
 5. `[FAIT]` Inscription joueur.
 6. `[FAIT]` Gestion admin des jours de fermeture.
-7. `[EN COURS]` Portefeuille virtuel — backend crédits lors des fermetures.
-8. `[EN COURS]` Portefeuille virtuel — affichage joueur après backend.
-9. `[A FAIRE]` Stabilisation finale.
-10. `[A FAIRE]` Documentation finale de remise.
-11. `[A FAIRE]` Préparation de la démo finale.
+7. `[FAIT]` Solde crédit joueur côté backend.
+8. `[FAIT]` Affichage du solde crédit joueur côté frontend.
+9. `[FAIT]` Matches publics listables et rejoignables avec paiement.
+10. `[FAIT]` Mes réservations joueur.
+11. `[FAIT]` Historique des transactions joueur.
+12. `[EN COURS]` Stabilisation finale.
+13. `[A FAIRE]` Documentation finale de remise.
+14. `[A FAIRE]` Préparation de la démo finale.
 
 ---
 
@@ -58,17 +61,17 @@ Priorité actuelle :
 - `[A RESPECTER]` Backend sous forme de REST API.
 - `[A RESPECTER]` Séparation claire controller / service / repository.
 - `[A RESPECTER]` Tests backend obligatoires :
-  - controllers
-  - services
-  - repositories
+  - controllers ;
+  - services ;
+  - repositories.
 - `[A RESPECTER]` Frontend Angular séparé du backend.
 - `[A RESPECTER]` Aucun SQL dans Angular.
 - `[A RESPECTER]` Aucun accès DB direct depuis Angular.
 - `[FAIT]` Accès joueur par matricule.
 - `[FAIT]` Inscription joueur avec génération automatique du matricule.
-- `[FAIT]` Admin avec rôles :
-  - GLOBAL
-  - SITE
+- `[FAIT]` Authentification admin simple avec rôles :
+  - GLOBAL ;
+  - SITE.
 - `[FAIT]` Script DB ou artefact de schéma prévu.
 - `[FAIT]` Seed automatique H2 au démarrage backend.
 - `[FAIT]` Explication des users DB et droits associés prévue.
@@ -95,8 +98,12 @@ Entités principales du MVP :
 - `[FAIT]` Paiement
 - `[FAIT]` Dette
 - `[FAIT]` Penalite
-- `[EN COURS]` CreditPortefeuille
-- `[EN COURS]` StatutCreditPortefeuille
+
+Point de modélisation important :
+
+- `[FAIT]` Le portefeuille virtuel est modélisé simplement par le champ `soldeCredit` du membre.
+- `[LIMITE MVP]` Il n'y a pas de table séparée `credit_portefeuille` dans le modèle relationnel actuel.
+- `[FAIT]` Le solde initial d'un nouveau joueur est `100.00`.
 
 Règles métier principales :
 
@@ -117,21 +124,30 @@ Règles métier principales :
 - `[FAIT]` Durée match = 1h30.
 - `[FAIT]` 15 minutes entre deux matches.
 - `[FAIT]` Paiement simple.
+- `[FAIT]` Paiement par débit du solde crédit joueur.
 - `[FAIT]` Dette organisateur si match incomplet ou pas totalement payé.
-- `[FAIT]` Blocage nouvelle réservation si dette active.
+- `[FAIT]` Création d'une dette initiale pour l'organisateur lors de la création d'un match.
+- `[FAIT]` Recalcul de la dette après paiement des participations.
+- `[FAIT]` Blocage nouvelle réservation si dette active ou match organisé non totalement payé.
+- `[FAIT]` Paiement d'une participation qui ajoute aussi les dettes ouvertes du joueur si nécessaire.
 - `[FAIT]` Blocage nouvelle réservation si pénalité active.
 - `[FAIT]` Pénalité simple de 7 jours.
 - `[FAIT]` Traitement de veille :
-  - match privé incomplet devient public
-  - participation non payée libérée
-  - pénalité organisateur possible
+  - match privé incomplet devient public ;
+  - participation non payée libérée ;
+  - pénalité organisateur possible.
+- `[FAIT]` Traitement d'échéance des matches.
 - `[FAIT]` Statistiques admin.
 - `[FAIT]` Authentification joueur par matricule.
 - `[FAIT]` Authentification admin simple.
 - `[FAIT]` Gestion admin des jours de fermeture.
 - `[FAIT]` Annulation des matches à venir concernés par une fermeture.
-- `[EN COURS]` Crédit de portefeuille automatique pour les joueurs ayant payé un match annulé par fermeture.
-- `[EN COURS]` Affichage du portefeuille virtuel joueur.
+- `[FAIT]` Remboursement du solde crédit des joueurs ayant payé un match annulé par fermeture.
+- `[FAIT]` Liste des matches publics disponibles.
+- `[FAIT]` Rejoindre un match public et payer en une action.
+- `[FAIT]` Consultation des réservations du joueur connecté.
+- `[FAIT]` Consultation de l'historique des paiements du joueur connecté.
+- `[FAIT]` Refus de création d'un match dans le passé ou à l'heure courante.
 
 ---
 
@@ -164,6 +180,8 @@ Structure Angular utilisée :
 - `[FAIT]` `pages` : composants standalone par page.
 - `[FAIT]` `app.routes.ts` : routes Angular.
 - `[FAIT]` `app.html` : menu principal et layout.
+- `[FAIT]` `shared/api-error.util.ts` : extraction lisible des erreurs API.
+- `[FAIT]` `services/auth-context.service.ts` : conservation simple de la session joueur/admin côté frontend.
 
 Règles respectées :
 
@@ -171,6 +189,7 @@ Règles respectées :
 - `[A RESPECTER]` Aucun accès DB direct.
 - `[A RESPECTER]` Angular appelle uniquement les endpoints REST.
 - `[A RESPECTER]` La logique métier reste côté backend.
+- `[A RESPECTER]` Le frontend reste simple et démontrable.
 
 ---
 
@@ -337,6 +356,8 @@ Statut :
 - `[FAIT]` Tests controller.
 - `[FAIT]` Tests renforcés ensuite.
 - `[FAIT]` PR mergée.
+- `[FAIT]` Refus de création dans le passé ajouté ensuite.
+- `[FAIT]` Création d'une dette initiale organisateur ajoutée ensuite.
 
 Endpoint :
 
@@ -356,6 +377,7 @@ Règles couvertes :
 - `[FAIT]` Créneau disponible.
 - `[FAIT]` Pas de dette active.
 - `[FAIT]` Pas de pénalité active.
+- `[FAIT]` Pas de match organisé non totalement payé.
 - `[FAIT]` Pas de conflit horaire pour l'organisateur.
 - `[FAIT]` Durée fixe de 1h30.
 - `[FAIT]` Prix total fixé à `60.00`.
@@ -447,6 +469,8 @@ Statut :
 - `[FAIT]` Tests controller.
 - `[FAIT]` Tests repository.
 - `[FAIT]` PR mergée.
+- `[FAIT]` Paiement ensuite relié au solde crédit joueur.
+- `[FAIT]` Paiement ensuite enrichi pour régler aussi les dettes ouvertes du joueur.
 
 Endpoint :
 
@@ -459,10 +483,13 @@ Règles couvertes :
 - `[FAIT]` Montant attendu : `15.00`.
 - `[FAIT]` Création d'un paiement de nature `PARTICIPATION`.
 - `[FAIT]` Participation passe à `CONFIRMEE`.
+- `[FAIT]` Solde crédit débité.
+- `[FAIT]` Dettes ouvertes du joueur réglées si nécessaire.
 - `[FAIT]` Refus double paiement.
 - `[FAIT]` Refus montant incorrect.
 - `[FAIT]` Refus participation libérée.
 - `[FAIT]` Refus participation déjà confirmée.
+- `[FAIT]` Refus si solde insuffisant.
 
 Tests :
 
@@ -487,6 +514,8 @@ Statut :
 - `[FAIT]` Tests controller.
 - `[FAIT]` Tests repository liés au paiement.
 - `[FAIT]` PR mergée.
+- `[FAIT]` Dette initiale organisateur ajoutée ensuite.
+- `[FAIT]` Recalcul de dette après paiement ajouté ensuite.
 
 Endpoints :
 
@@ -506,6 +535,7 @@ Règles couvertes :
 - `[FAIT]` Dette passe à `REGLEE`.
 - `[FAIT]` Paiement de nature `REGLEMENT_DETTE`.
 - `[FAIT]` Blocage création de match si dette ouverte conservé.
+- `[FAIT]` Paiement de dette par débit du solde crédit.
 
 Tests :
 
@@ -621,6 +651,7 @@ Statut :
 - `[FAIT]` Refus d'un admin inactif.
 - `[FAIT]` Retour du rôle administrateur `GLOBAL` ou `SITE`.
 - `[FAIT]` Retour du site administrateur si admin de site.
+- `[FAIT]` Retour du solde crédit dans la réponse joueur.
 - `[FAIT]` Gestion HTTP 401 pour identifiants admin invalides.
 - `[FAIT]` Tests controller.
 - `[FAIT]` Tests service.
@@ -701,6 +732,7 @@ Statut :
 - `[FAIT]` Documentation DB ajoutée dans `docs/db/README.md`.
 - `[FAIT]` Test manuel via Swagger validé.
 - `[FAIT]` PR mergée.
+- `[FAIT]` Schéma mis à jour avec `membre.solde_credit`.
 
 Fichiers DB :
 
@@ -786,7 +818,7 @@ Les changements de schéma sont faits par padel_migration.
 Issue initiale :
 
 ```txt
-[FULLSTACK] Ajouter inscription joueur et gestion des jours de fermeture
+[FULLSTACK] Ajouter inscription joueur
 ```
 
 Statut :
@@ -795,6 +827,7 @@ Statut :
 - `[FAIT]` Frontend inscription joueur.
 - `[FAIT]` Tests backend.
 - `[FAIT]` PR mergée.
+- `[FAIT]` Nouveau joueur créé avec `soldeCredit = 100.00`.
 
 Endpoint :
 
@@ -810,6 +843,7 @@ Règles couvertes :
 - `[FAIT]` Génération automatique du matricule côté backend.
 - `[FAIT]` Préfixe `G`, `S` ou `L` selon catégorie.
 - `[FAIT]` Le joueur créé est actif par défaut.
+- `[FAIT]` Le joueur créé reçoit un solde crédit initial.
 - `[FAIT]` Un membre `SITE` doit avoir un site de rattachement.
 - `[FAIT]` Un site inexistant est refusé.
 - `[FAIT]` Le frontend affiche le matricule généré.
@@ -851,6 +885,7 @@ Statut :
 - `[FAIT]` Frontend fermeture admin.
 - `[FAIT]` Tests backend.
 - `[FAIT]` PR #83 mergée.
+- `[FAIT]` Remboursement du solde crédit ajouté ensuite.
 
 Endpoint :
 
@@ -870,6 +905,9 @@ Règles couvertes :
 - `[FAIT]` Les disponibilités sont bloquées par les fermetures via la logique existante.
 - `[FAIT]` Frontend admin pour encoder une fermeture.
 - `[FAIT]` Affichage du nombre de matches annulés.
+- `[FAIT]` Remboursement des participations déjà payées.
+- `[FAIT]` Affichage du nombre de remboursements crédités.
+- `[FAIT]` Affichage du montant total remboursé.
 
 Tests :
 
@@ -885,140 +923,239 @@ Frontend :
 - `[FAIT]` Modèle Angular `fermeture.model.ts`.
 - `[FAIT]` Lien de menu admin `Jours de fermeture`.
 
-Limite remplacée par le travail en cours :
-
-- `[EN COURS]` Génération de crédits de portefeuille pour les joueurs ayant payé un match annulé par fermeture.
-
 ---
 
-## 8. PR / issues en cours
-
-### 8.1. PR 1 en cours — Backend portefeuille
+### 7.18. Solde crédit joueur
 
 Issue :
 
 ```txt
-#84 [BACK] Générer des crédits de portefeuille lors des fermetures
+#84 [BACK] Ajouter le solde joueur et le paiement par crédit
+```
+
+PR :
+
+```txt
+#86 [BACK] Ajouter le solde joueur et le paiement par crédit
 ```
 
 Statut :
 
-- `[EN COURS]` Issue ouverte.
-- `[EN COURS]` À développer en premier.
-- `[EN COURS]` Backend uniquement.
+- `[FAIT]` Backend solde crédit livré.
+- `[FAIT]` Tests backend.
+- `[FAIT]` PR #86 mergée.
 
-Branche prévue :
+Endpoint :
 
-```txt
-back/credits-portefeuille-fermetures
+```http
+GET /api/membres/{matricule}/solde
 ```
 
-Commit prévu :
+Règles couvertes :
 
-```txt
-feat(back): add wallet credits for closures
-```
+- `[FAIT]` Ajout du champ `soldeCredit` sur `Membre`.
+- `[FAIT]` Solde initial de `100.00`.
+- `[FAIT]` Solde retourné dans les réponses joueur.
+- `[FAIT]` Débit du solde lors du paiement d'une participation.
+- `[FAIT]` Débit du solde lors du paiement d'une dette.
+- `[FAIT]` Remboursement du solde lors d'une fermeture qui annule un match payé.
+- `[FAIT]` Refus si solde insuffisant.
+- `[FAIT]` Mise à jour de `data.sql`.
+- `[FAIT]` Mise à jour de `docs/db/schema.sql`.
 
-PR prévue :
+Tests :
 
-```txt
-[BACK] Générer des crédits de portefeuille lors des fermetures
-```
-
-Objectif :
-
-- créer `CreditPortefeuille` ;
-- créer `StatutCreditPortefeuille` ;
-- créer `CreditPortefeuilleRepository` ;
-- générer des crédits quand une fermeture annule un match ;
-- créditer uniquement les participations payées ;
-- éviter les doubles crédits ;
-- retourner `nombreCreditsPortefeuilleCrees` dans la réponse de fermeture ;
-- ajouter les tests backend.
-
-Validation attendue :
-
-```powershell
-cd backend
-.\mvnw.cmd clean test
-cd ..
-```
+- `[FAIT]` `MembreSoldeServiceTest`
+- `[FAIT]` `MembreControllerTest`
+- `[FAIT]` tests paiement/dette/fermeture renforcés.
 
 ---
 
-### 8.2. PR 2 en cours — Frontend portefeuille joueur
+### 7.19. Frontend solde crédit joueur
 
 Issue :
 
 ```txt
-#85 [FRONT] Afficher le portefeuille virtuel joueur
+#85 [FRONT] Afficher le solde crédit joueur
+```
+
+PR :
+
+```txt
+#87 [FRONT] Afficher le solde crédit joueur
 ```
 
 Statut :
 
-- `[EN COURS]` Issue ouverte.
-- `[EN COURS]` À faire après la PR #84.
-- `[EN COURS]` Dépend du backend portefeuille.
+- `[FAIT]` Frontend solde livré.
+- `[FAIT]` Build frontend validé.
+- `[FAIT]` PR #87 mergée.
 
-Branche prévue :
+Frontend :
 
-```txt
-front/portefeuille-joueur
-```
-
-Commit prévu :
-
-```txt
-feat(front): add player wallet page
-```
-
-PR prévue :
-
-```txt
-[FRONT] Afficher le portefeuille virtuel joueur
-```
-
-Objectif :
-
-- créer `portefeuille.model.ts` ;
-- créer `portefeuille-api.service.ts` ;
-- créer la page `Mon portefeuille` ;
-- ajouter la route `/joueur/mon-portefeuille` ;
-- ajouter un lien visible uniquement pour un joueur connecté ;
-- utiliser le matricule du joueur connecté ;
-- afficher les crédits disponibles et le total.
-
-Validation attendue :
-
-```powershell
-cd frontend
-npm run build
-cd ..
-cd backend
-.\mvnw.cmd clean test
-cd ..
-```
+- `[FAIT]` Modèle `solde-joueur.model.ts`.
+- `[FAIT]` Service `SoldeJoueurApiService`.
+- `[FAIT]` Page `Mon solde`.
+- `[FAIT]` Route `/joueur/mon-solde`.
+- `[FAIT]` Lien `Mon solde` dans le menu joueur.
+- `[FAIT]` Utilisation du joueur connecté via `AuthContextService`.
+- `[FAIT]` Aucun champ libre pour consulter le solde d'un autre joueur.
+- `[FAIT]` Rappel des règles financières dans la page.
 
 ---
 
-## 9. Frontend — état actuel
+### 7.20. Matches publics listables et rejoignables
 
-Pages Angular présentes ou prévues dans le MVP :
+Issue / PR :
+
+```txt
+#91 [FULLSTACK] Lister et rejoindre les matches publics
+```
+
+Statut :
+
+- `[FAIT]` Backend ajouté.
+- `[FAIT]` Frontend ajouté.
+- `[FAIT]` Tests backend.
+- `[FAIT]` PR #91 mergée.
+
+Endpoints :
+
+```http
+GET /api/matches/publics?siteId=1001&date=2026-06-20
+POST /api/matches/{matchId}/participants/public/payer
+```
+
+Règles couvertes :
+
+- `[FAIT]` Liste uniquement les matches publics.
+- `[FAIT]` Filtre par site.
+- `[FAIT]` Filtre par date.
+- `[FAIT]` Filtre sur l'état `A_VENIR`.
+- `[FAIT]` Masque les matches complets.
+- `[FAIT]` Inscription publique + paiement en une action métier.
+- `[FAIT]` Débit du solde joueur.
+- `[FAIT]` Premier payé = premier servi.
+
+Tests :
+
+- `[FAIT]` `MatchPublicServiceTest`
+- `[FAIT]` `MatchPublicControllerTest`
+- `[FAIT]` `MatchPublicRepositoryTest`
+
+Frontend :
+
+- `[FAIT]` Page `Rejoindre un match public`.
+- `[FAIT]` Bouton `Rejoindre et payer 15 €`.
+- `[FAIT]` Affichage du paiement et du solde restant.
+- `[FAIT]` Utilisation du joueur connecté.
+
+---
+
+### 7.21. Mes réservations joueur
+
+Issue / PR :
+
+```txt
+#93 [FULLSTACK] Afficher les réservations du joueur
+```
+
+Statut :
+
+- `[FAIT]` Backend ajouté.
+- `[FAIT]` Frontend ajouté.
+- `[FAIT]` Tests backend.
+- `[FAIT]` PR #93 mergée.
+
+Endpoint :
+
+```http
+GET /api/membres/{matricule}/reservations
+```
+
+Règles couvertes :
+
+- `[FAIT]` Consultation des réservations du joueur connecté.
+- `[FAIT]` Exclusion des participations libérées.
+- `[FAIT]` Affichage des informations match / terrain / site / participation.
+- `[FAIT]` Affichage du statut de participation.
+- `[FAIT]` Affichage de l'état du match, dont `ANNULE`.
+
+Tests :
+
+- `[FAIT]` `MembreReservationControllerTest`
+- `[FAIT]` service `MembreReservationService`
+
+Frontend :
+
+- `[FAIT]` Page `Mes réservations`.
+- `[FAIT]` Modèle `reservation.model.ts`.
+- `[FAIT]` Service `ReservationApiService`.
+- `[FAIT]` Lien dans le menu joueur.
+- `[FAIT]` Utilisation du joueur connecté via `AuthContextService`.
+
+---
+
+### 7.22. Historique des transactions et règles finales de dette
+
+Issue / PR :
+
+```txt
+#99 [FIX] Finaliser les règles métier de dette et historique joueur
+```
+
+Statut :
+
+- `[FAIT]` Backend finalisé.
+- `[FAIT]` Frontend finalisé.
+- `[FAIT]` PR #99 mergée.
+
+Endpoints :
+
+```http
+GET /api/membres/{matricule}/paiements
+POST /api/admin/matches/traitement-echeance
+```
+
+Règles couvertes :
+
+- `[FAIT]` Création d'une dette initiale pour l'organisateur lors de la création d'un match.
+- `[FAIT]` Blocage d'une nouvelle réservation si l'organisateur a encore un solde dû.
+- `[FAIT]` Recalcul de la dette du match après chaque paiement de participation.
+- `[FAIT]` Mise à jour de la dette organisateur selon le total réellement payé.
+- `[FAIT]` Ajout des dettes ouvertes au paiement lorsqu'un organisateur devient joueur dans un autre match.
+- `[FAIT]` Traitement d'échéance des matches.
+- `[FAIT]` Refus de création d'un match dans le passé ou à l'heure courante.
+- `[FAIT]` Historique des paiements d'un joueur.
+
+Frontend :
+
+- `[FAIT]` Onglet joueur `Historique des transactions`.
+- `[FAIT]` Route `/joueur/historique-transactions`.
+- `[FAIT]` Affichage des paiements de participation.
+- `[FAIT]` Affichage des règlements de dette.
+
+---
+
+## 8. Frontend — état actuel
+
+Pages Angular présentes dans le MVP :
 
 - `[FAIT]` Homepage.
 - `[FAIT]` Connexion joueur.
 - `[FAIT]` Inscription joueur.
-- `[FAIT]` Réserver un terrain / disponibilités.
-- `[FAIT]` Créer un match.
+- `[FAIT]` Organiser un match / disponibilités.
+- `[FAIT]` Créer un match via un créneau choisi.
+- `[FAIT]` Rejoindre un match public.
+- `[FAIT]` Mes réservations.
 - `[FAIT]` Mes dettes.
+- `[FAIT]` Mon solde.
+- `[FAIT]` Historique des transactions.
 - `[FAIT]` Connexion admin.
 - `[FAIT]` Dashboard admin.
 - `[FAIT]` Statistiques admin.
 - `[FAIT]` Traitement de veille.
 - `[FAIT]` Jours de fermeture.
-- `[EN COURS]` Mon portefeuille.
-- `[A SURVEILLER]` Matches publics : page existante mais fonctionnalité de liste/rejoindre pas entièrement démontrable depuis Angular.
-- `[A SURVEILLER]` Mes réservations : page existante mais à limiter dans la démo si elle n'est pas complète.
 
 Validations frontend :
 
@@ -1036,7 +1173,7 @@ Build frontend OK
 
 ---
 
-## 10. Tests backend actuels
+## 9. Tests backend actuels
 
 Commande à utiliser depuis le dossier `backend` :
 
@@ -1044,14 +1181,13 @@ Commande à utiliser depuis le dossier `backend` :
 .\mvnw.cmd clean test
 ```
 
-Dernier résultat connu après PR #83 :
+Résultat attendu :
 
 ```txt
-Tests run: 157, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
-Tests controller présents :
+Tests controller présents ou attendus :
 
 - `[FAIT]` `HealthControllerTest`
 - `[FAIT]` `DisponibiliteControllerTest`
@@ -1064,9 +1200,10 @@ Tests controller présents :
 - `[FAIT]` `AuthControllerTest`
 - `[FAIT]` `MembreControllerTest`
 - `[FAIT]` `AdminFermetureControllerTest`
-- `[EN COURS]` `CreditPortefeuilleControllerTest` ou équivalent si endpoint portefeuille ajouté.
+- `[FAIT]` `MatchPublicControllerTest`
+- `[FAIT]` `MembreReservationControllerTest`
 
-Tests service présents :
+Tests service présents ou attendus :
 
 - `[FAIT]` `DisponibiliteServiceTest`
 - `[FAIT]` `MatchCreationServiceTest`
@@ -1079,9 +1216,11 @@ Tests service présents :
 - `[FAIT]` `AuthServiceTest`
 - `[FAIT]` `MembreInscriptionServiceTest`
 - `[FAIT]` `AdminFermetureServiceTest`
-- `[EN COURS]` `CreditPortefeuilleServiceTest`.
+- `[FAIT]` `MembreSoldeServiceTest`
+- `[FAIT]` `MatchPublicServiceTest`
+- `[FAIT]` `MembreReservationService`
 
-Tests repository présents :
+Tests repository présents ou attendus :
 
 - `[FAIT]` `CoreRepositoryTest`
 - `[FAIT]` `ComplementaryRepositoryTest`
@@ -1092,15 +1231,20 @@ Tests repository présents :
 - `[FAIT]` `AuthRepositoryTest`
 - `[FAIT]` `MembreRepositoryTest`
 - `[FAIT]` `DemoSeedDataTest`
-- `[EN COURS]` `CreditPortefeuilleRepositoryTest`.
+- `[FAIT]` `MatchPublicRepositoryTest`
 
 Tests configuration / documentation technique :
 
 - `[FAIT]` `OpenApiDocumentationTest`
 
+Point à vérifier avant remise :
+
+- `[A SURVEILLER]` Relancer les tests backend sur le `main` local après avoir intégré les dernières corrections.
+- `[A SURVEILLER]` Relancer le build frontend sur le `main` local après avoir intégré les dernières corrections.
+
 ---
 
-## 11. Endpoints backend disponibles
+## 10. Endpoints backend disponibles
 
 Santé :
 
@@ -1127,6 +1271,9 @@ Membres :
 
 ```http
 POST /api/membres/inscription
+GET /api/membres/{matricule}/solde
+GET /api/membres/{matricule}/reservations
+GET /api/membres/{matricule}/paiements
 ```
 
 Disponibilités :
@@ -1139,6 +1286,7 @@ Matches :
 
 ```http
 POST /api/matches
+GET /api/matches/publics?siteId=1001&date=2026-06-20
 ```
 
 Participations :
@@ -1146,6 +1294,7 @@ Participations :
 ```http
 POST /api/matches/{matchId}/participants/prive
 POST /api/matches/{matchId}/participants/public
+POST /api/matches/{matchId}/participants/public/payer
 ```
 
 Paiements :
@@ -1162,22 +1311,17 @@ GET /api/membres/{matricule}/dettes/ouvertes
 POST /api/dettes/{detteId}/paiements
 ```
 
-Traitement admin :
+Traitements admin :
 
 ```http
 POST /api/admin/matches/traitement-veille?date=2026-05-19
+POST /api/admin/matches/traitement-echeance
 ```
 
 Fermetures admin :
 
 ```http
 POST /api/admin/fermetures
-```
-
-Portefeuille :
-
-```http
-[EN COURS] GET /api/membres/{matricule}/portefeuille/credits
 ```
 
 Statistiques admin :
@@ -1189,7 +1333,7 @@ GET /api/admin/statistiques?dateDebut=2026-05-01&dateFin=2026-06-30&siteId=1001
 
 ---
 
-## 12. Base de données et artefacts DB
+## 11. Base de données et artefacts DB
 
 Base MVP :
 
@@ -1201,7 +1345,7 @@ Base MVP :
 - `[FAIT]` Seed automatique via `data.sql`.
 - `[FAIT]` Aucun script SQL manuel nécessaire.
 - `[FAIT]` Aucun serveur DB externe nécessaire pour le MVP H2.
-- `[EN COURS]` Ajout de la table JPA `credit_portefeuille`.
+- `[FAIT]` Champ `membre.solde_credit` ajouté pour le solde virtuel joueur.
 
 Fichiers DB :
 
@@ -1221,15 +1365,14 @@ Users DB documentés :
 
 ---
 
-## 13. Roadmap restante — ordre à suivre
+## 12. Roadmap restante — ordre à suivre
 
 ### Priorité immédiate
 
-1. `[FAIT]` PR #84 — Backend crédits de portefeuille lors des fermetures.
-2. `[FAIT]` PR #85 — Frontend affichage portefeuille joueur.
-3. `[A FAIRE]` Stabilisation finale.
-4. `[A FAIRE]` Documentation finale de remise.
-5. `[A FAIRE]` Démo finale.
+1. `[EN COURS]` Stabilisation finale.
+2. `[A FAIRE]` Documentation finale de remise.
+3. `[A FAIRE]` Préparation de la démo finale.
+4. `[A FAIRE]` Nettoyage final Git local après merge des dernières petites PR.
 
 ### Stabilisation et documentation
 
@@ -1246,13 +1389,14 @@ Users DB documentés :
 
 ---
 
-## 14. Points techniques à surveiller
+## 13. Points techniques à surveiller
 
 - `[A SURVEILLER]` Le warning Java agent pendant les tests n'est pas bloquant si `BUILD SUCCESS`.
 - `[A SURVEILLER]` Vérifier cohérence entre `application.yml` et éventuels autres fichiers de config.
 - `[A SURVEILLER]` Vérifier que la version Java utilisée localement est compatible avec le projet.
 - `[A SURVEILLER]` Le package `com.padelMarius.backend` fonctionne, même si la majuscule n'est pas conventionnelle en Java.
 - `[A SURVEILLER]` Ne pas ajouter `backend/target/`.
+- `[A SURVEILLER]` Ne pas ajouter `frontend/dist/`.
 - `[A SURVEILLER]` Ne pas ajouter `.idea/` ou fichiers IDE.
 - `[A SURVEILLER]` Ne pas mélanger nettoyage Git avec une feature métier.
 - `[A SURVEILLER]` Ne pas modifier plusieurs sujets dans une même PR.
@@ -1260,13 +1404,13 @@ Users DB documentés :
 - `[A SURVEILLER]` Garder les tests backend passants après chaque merge.
 - `[A SURVEILLER]` Garder le build frontend passant après chaque merge.
 - `[A SURVEILLER]` Le frontend doit rester simple et ne jamais contenir de SQL.
-- `[A SURVEILLER]` Ne pas implémenter maintenant l'utilisation du crédit comme moyen de paiement, sauf décision explicite après stabilisation.
+- `[A SURVEILLER]` Le solde crédit est un choix MVP simple ; ne pas ajouter maintenant une table de mouvements financiers séparée sans nouvelle décision.
 
 ---
 
-## 15. Règles GitHub à suivre
+## 14. Règles GitHub à suivre
 
-Pour chaque nouvelle fonctionnalité :
+Pour chaque nouvelle fonctionnalité ou mise à jour documentaire :
 
 1. Créer une issue.
 2. Créer une branche depuis `main`.
@@ -1303,42 +1447,46 @@ cd ..
 
 ---
 
-## 16. Scénario de démo cible
+## 15. Scénario de démo cible
 
 Démo métier courte :
 
 1. `[A FAIRE]` Démarrer backend.
-2. `[A FAIRE]` Montrer `/api/health`.
-3. `[A FAIRE]` Montrer Swagger.
-4. `[A FAIRE]` Se connecter comme joueur avec `G1001`.
-5. `[A FAIRE]` Créer un nouveau joueur via la page `Inscription joueur`.
-6. `[A FAIRE]` Se connecter avec le nouveau matricule.
-7. `[A FAIRE]` Consulter les disponibilités.
-8. `[A FAIRE]` Créer un match public ou privé.
-9. `[A FAIRE]` Ajouter un participant via Swagger si nécessaire.
-10. `[A FAIRE]` Payer une participation.
-11. `[A FAIRE]` Générer une dette si match non payé entièrement.
-12. `[A FAIRE]` Montrer que la dette bloque une nouvelle réservation.
-13. `[A FAIRE]` Payer la dette.
-14. `[A FAIRE]` Se connecter comme admin avec `admin-global` / `secret`.
-15. `[A FAIRE]` Lancer le traitement de veille.
-16. `[A FAIRE]` Créer une fermeture via `Jours de fermeture`.
-17. `[A FAIRE]` Montrer que les matches concernés sont annulés.
-18. `[A FAIRE]` Montrer que les joueurs payés reçoivent un crédit portefeuille.
-19. `[A FAIRE]` Ouvrir la page `Mon portefeuille`.
-20. `[A FAIRE]` Montrer les statistiques admin.
-21. `[A FAIRE]` Montrer les fichiers DB :
+2. `[A FAIRE]` Démarrer frontend.
+3. `[A FAIRE]` Montrer `/api/health`.
+4. `[A FAIRE]` Montrer Swagger.
+5. `[A FAIRE]` Se connecter comme joueur avec `G1001`.
+6. `[A FAIRE]` Montrer le solde joueur.
+7. `[A FAIRE]` Créer un nouveau joueur via la page `Inscription joueur`.
+8. `[A FAIRE]` Se connecter avec le nouveau matricule.
+9. `[A FAIRE]` Consulter les disponibilités.
+10. `[A FAIRE]` Créer un match public ou privé.
+11. `[A FAIRE]` Rejoindre un match public et payer.
+12. `[A FAIRE]` Montrer la baisse du solde après paiement.
+13. `[A FAIRE]` Ouvrir `Mes réservations`.
+14. `[A FAIRE]` Ouvrir `Historique des transactions`.
+15. `[A FAIRE]` Générer ou montrer une dette organisateur.
+16. `[A FAIRE]` Montrer que la dette bloque une nouvelle réservation.
+17. `[A FAIRE]` Payer la dette.
+18. `[A FAIRE]` Se connecter comme admin avec `admin-global` / `secret`.
+19. `[A FAIRE]` Lancer le traitement de veille.
+20. `[A FAIRE]` Lancer le traitement d'échéance.
+21. `[A FAIRE]` Créer une fermeture via `Jours de fermeture`.
+22. `[A FAIRE]` Montrer que les matches concernés sont annulés.
+23. `[A FAIRE]` Montrer que les joueurs payés sont remboursés sur leur solde.
+24. `[A FAIRE]` Montrer les statistiques admin.
+25. `[A FAIRE]` Montrer les fichiers DB :
 - `schema.sql`
 - `data-demo.sql`
 - `db-users.md`
-22. `[A FAIRE]` Expliquer que le frontend n'a aucun accès DB.
-23. `[A FAIRE]` Montrer GitHub : issues, branches, commits, PR.
-24. `[A FAIRE]` Montrer les tests backend qui passent.
-25. `[A FAIRE]` Montrer architecture et exploitation.
+26. `[A FAIRE]` Expliquer que le frontend n'a aucun accès DB.
+27. `[A FAIRE]` Montrer GitHub : issues, branches, commits, PR.
+28. `[A FAIRE]` Montrer les tests backend qui passent.
+29. `[A FAIRE]` Montrer architecture et exploitation.
 
 ---
 
-## 17. Données de démonstration utiles
+## 16. Données de démonstration utiles
 
 Joueurs :
 
@@ -1374,14 +1522,18 @@ POST /api/auth/admin
 POST /api/membres/inscription
 GET /api/disponibilites?siteId=1001&date=2026-06-20
 POST /api/matches
+GET /api/matches/publics?siteId=1001&date=2026-06-20
+POST /api/matches/{matchId}/participants/public/payer
+GET /api/membres/{matricule}/solde
+GET /api/membres/{matricule}/reservations
+GET /api/membres/{matricule}/paiements
 POST /api/admin/fermetures
-GET /api/membres/{matricule}/portefeuille/credits
 GET /api/admin/statistiques?dateDebut=2026-05-01&dateFin=2026-06-30
 ```
 
 ---
 
-## 18. Dernier point d'arrêt
+## 17. Dernier point d'arrêt
 
 Dernier état connu :
 
@@ -1390,16 +1542,21 @@ Dernier état connu :
 - Tests backend complets sur les couches principales.
 - Inscription joueur terminée.
 - Gestion admin des jours de fermeture terminée.
-- PR #83 mergée.
-- Dette organisateur terminée.
+- Dette organisateur terminée et renforcée.
 - Traitement de veille terminé.
+- Traitement d'échéance ajouté.
 - Statistiques admin terminées.
 - Authentification simple joueurs/admins terminée.
 - Swagger/OpenAPI terminé.
 - Script DB / seed automatisé terminé.
 - Documentation users DB / droits terminée.
-- #84 [BACK] Ajouter le solde joueur et le paiement par crédit : EN COURS
-  #85 [FRONT] Afficher le solde crédit joueur : EN COURS / dépend de #84
+- Solde crédit joueur terminé.
+- Frontend `Mon solde` terminé.
+- Matches publics listables et rejoignables avec paiement terminés.
+- Mes réservations terminé.
+- Historique des transactions terminé.
+- PR #99 `[FIX] Finaliser les règles métier de dette et historique joueur` mergée.
+- Prochaine vraie étape : stabilisation finale + documentation de remise.
 
 Commande de validation backend :
 
@@ -1432,5 +1589,5 @@ Build frontend OK
 Objectif suivant immédiat :
 
 ```txt
-#84 [BACK] Générer des crédits de portefeuille lors des fermetures
+[DOC] Mettre à jour les documents projet après les dernières PR
 ```

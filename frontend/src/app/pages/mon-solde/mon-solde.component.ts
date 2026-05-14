@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { finalize, timeout } from 'rxjs';
 import { SoldeJoueurResponse } from '../../models/solde-joueur.model';
 import { AuthContextService } from '../../services/auth-context.service';
 import { SoldeJoueurApiService } from '../../services/solde-joueur-api.service';
@@ -53,29 +54,29 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
           <p><strong>Catégorie :</strong> {{ joueurConnecte()?.categorieMembre }}</p>
         </div>
 
-        <button type="button" (click)="chargerSolde()" [disabled]="chargement">
-          {{ chargement ? 'Chargement...' : 'Actualiser mon solde' }}
+        <button type="button" (click)="chargerSolde()" [disabled]="chargement()">
+          {{ chargement() ? 'Chargement...' : 'Actualiser mon solde' }}
         </button>
       }
 
-      @if (messageErreur) {
+      @if (messageErreur()) {
         <p class="erreur">
-          {{ messageErreur }}
+          {{ messageErreur() }}
         </p>
       }
 
-      @if (solde) {
+      @if (solde(); as soldeActuel) {
         <div class="resultat solde-card">
           <h3>Solde disponible</h3>
 
           <p class="montant-principal">
-            {{ solde.soldeCredit | number:'1.2-2' }} €
+            {{ soldeActuel.soldeCredit | number:'1.2-2' }} €
           </p>
 
           <div class="resume-grid">
-            <p><strong>ID membre</strong><br>{{ solde.membreId }}</p>
-            <p><strong>Matricule</strong><br>{{ solde.matricule }}</p>
-            <p><strong>Solde crédit</strong><br>{{ solde.soldeCredit | number:'1.2-2' }} €</p>
+            <p><strong>ID membre</strong><br>{{ soldeActuel.membreId }}</p>
+            <p><strong>Matricule</strong><br>{{ soldeActuel.matricule }}</p>
+            <p><strong>Solde crédit</strong><br>{{ soldeActuel.soldeCredit | number:'1.2-2' }} €</p>
           </div>
         </div>
       }
@@ -115,16 +116,18 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
     }
   `]
 })
-export class MonSoldeComponent {
-  solde: SoldeJoueurResponse | null = null;
-  messageErreur = '';
-  chargement = false;
+export class MonSoldeComponent implements OnInit {
+  readonly solde = signal<SoldeJoueurResponse | null>(null);
+  readonly messageErreur = signal('');
+  readonly chargement = signal(false);
 
   constructor(
     private readonly authContextService: AuthContextService,
-    private readonly soldeJoueurApiService: SoldeJoueurApiService,
-    private readonly changeDetectorRef: ChangeDetectorRef
+    private readonly soldeJoueurApiService: SoldeJoueurApiService
   ) {
+  }
+
+  ngOnInit(): void {
     if (this.joueurConnecte()) {
       this.chargerSolde();
     }
@@ -135,31 +138,30 @@ export class MonSoldeComponent {
   }
 
   chargerSolde(): void {
-    this.messageErreur = '';
-    this.solde = null;
+    this.messageErreur.set('');
+    this.solde.set(null);
 
     const joueur = this.joueurConnecte();
 
     if (!joueur) {
-      this.messageErreur = 'Aucun joueur connecté.';
-      this.changeDetectorRef.detectChanges();
+      this.messageErreur.set('Aucun joueur connecté.');
       return;
     }
 
-    this.chargement = true;
-    this.changeDetectorRef.detectChanges();
+    this.chargement.set(true);
 
-    this.soldeJoueurApiService.consulterSolde(joueur.matricule).subscribe({
-      next: (response) => {
-        this.solde = response;
-        this.chargement = false;
-        this.changeDetectorRef.detectChanges();
-      },
-      error: (error) => {
-        this.messageErreur = extraireMessageErreur(error);
-        this.chargement = false;
-        this.changeDetectorRef.detectChanges();
-      }
-    });
+    this.soldeJoueurApiService.consulterSolde(joueur.matricule)
+      .pipe(
+        timeout(10000),
+        finalize(() => this.chargement.set(false))
+      )
+      .subscribe({
+        next: (response) => {
+          this.solde.set(response);
+        },
+        error: (error) => {
+          this.messageErreur.set(extraireMessageErreur(error));
+        }
+      });
   }
 }

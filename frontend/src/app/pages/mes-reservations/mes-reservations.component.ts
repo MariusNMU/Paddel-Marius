@@ -1,6 +1,7 @@
 ﻿import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { finalize, timeout } from 'rxjs';
 import { ReservationJoueurResponse } from '../../models/reservation.model';
 import { AuthContextService } from '../../services/auth-context.service';
 import { ReservationApiService } from '../../services/reservation-api.service';
@@ -42,27 +43,27 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
           <p><strong>Catégorie :</strong> {{ joueurConnecte()?.categorieMembre }}</p>
         </div>
 
-        <button type="button" (click)="chargerReservations()" [disabled]="chargement">
-          {{ chargement ? 'Chargement...' : 'Actualiser mes réservations' }}
+        <button type="button" (click)="chargerReservations()" [disabled]="chargement()">
+          {{ chargement() ? 'Chargement...' : 'Actualiser mes réservations' }}
         </button>
       }
 
-      @if (messageErreur) {
+      @if (messageErreur()) {
         <p class="erreur">
-          {{ messageErreur }}
+          {{ messageErreur() }}
         </p>
       }
 
-      @if (reservations.length === 0 && rechercheEffectuee && !chargement) {
+      @if (reservations().length === 0 && rechercheEffectuee() && !chargement() && !messageErreur()) {
         <p>
           Aucune réservation trouvée pour ce joueur.
         </p>
       }
 
-      @if (reservations.length > 0) {
+      @if (reservations().length > 0) {
         <div class="reservations-grid">
           <article
-            *ngFor="let reservation of reservations"
+            *ngFor="let reservation of reservations()"
             class="reservation-card"
             [class.annulee]="reservation.etatCycle === 'ANNULE'"
           >
@@ -193,17 +194,19 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
     }
   `]
 })
-export class MesReservationsComponent {
-  reservations: ReservationJoueurResponse[] = [];
-  messageErreur = '';
-  chargement = false;
-  rechercheEffectuee = false;
+export class MesReservationsComponent implements OnInit {
+  readonly reservations = signal<ReservationJoueurResponse[]>([]);
+  readonly messageErreur = signal('');
+  readonly chargement = signal(false);
+  readonly rechercheEffectuee = signal(false);
 
   constructor(
     private readonly authContextService: AuthContextService,
-    private readonly reservationApiService: ReservationApiService,
-    private readonly changeDetectorRef: ChangeDetectorRef
+    private readonly reservationApiService: ReservationApiService
   ) {
+  }
+
+  ngOnInit(): void {
     if (this.joueurConnecte()) {
       this.chargerReservations();
     }
@@ -214,32 +217,31 @@ export class MesReservationsComponent {
   }
 
   chargerReservations(): void {
-    this.messageErreur = '';
-    this.reservations = [];
-    this.rechercheEffectuee = true;
+    this.messageErreur.set('');
+    this.reservations.set([]);
+    this.rechercheEffectuee.set(true);
 
     const joueur = this.joueurConnecte();
 
     if (!joueur) {
-      this.messageErreur = 'Aucun joueur connecté.';
-      this.changeDetectorRef.detectChanges();
+      this.messageErreur.set('Aucun joueur connecté.');
       return;
     }
 
-    this.chargement = true;
-    this.changeDetectorRef.detectChanges();
+    this.chargement.set(true);
 
-    this.reservationApiService.consulterMesReservations(joueur.matricule).subscribe({
-      next: (response) => {
-        this.reservations = response;
-        this.chargement = false;
-        this.changeDetectorRef.detectChanges();
-      },
-      error: (error) => {
-        this.messageErreur = extraireMessageErreur(error);
-        this.chargement = false;
-        this.changeDetectorRef.detectChanges();
-      }
-    });
+    this.reservationApiService.consulterMesReservations(joueur.matricule)
+      .pipe(
+        timeout(10000),
+        finalize(() => this.chargement.set(false))
+      )
+      .subscribe({
+        next: (response) => {
+          this.reservations.set(response);
+        },
+        error: (error) => {
+          this.messageErreur.set(extraireMessageErreur(error));
+        }
+      });
   }
 }

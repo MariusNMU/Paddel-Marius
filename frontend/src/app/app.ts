@@ -1,5 +1,5 @@
 ﻿import { Component } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthContextService } from './services/auth-context.service';
 
 @Component({
@@ -9,14 +9,19 @@ import { AuthContextService } from './services/auth-context.service';
   styleUrl: './app.css'
 })
 export class App {
-  constructor(readonly authContextService: AuthContextService) {
+  constructor(
+    readonly authContextService: AuthContextService,
+    private readonly router: Router
+  ) {
   }
 
   deconnecterJoueur(): void {
     this.authContextService.deconnecterJoueur();
+    void this.router.navigate(['/accueil']);
   }
 
   deconnecterAdmin(): void {
     this.authContextService.deconnecterAdmin();
+    void this.router.navigate(['/accueil']);
   }
 }

@@ -6,6 +6,7 @@ import { CreerMatchRequest, MatchResponse, ModeCreation } from '../../models/mat
 import { AuthContextService } from '../../services/auth-context.service';
 import { MatchApiService } from '../../services/match-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
+import { dateHeureDuJourPourInput } from '../../shared/date-ui.util';
 
 interface TerrainDemo {
   id: number;
@@ -198,7 +199,7 @@ export class CreerMatchComponent {
 
   terrainId = 1101;
   matriculeOrganisateur = 'G1001';
-  dateHeureDebut = '2026-06-20T13:00';
+  dateHeureDebut = dateHeureDuJourPourInput('13:00');
   modeCreation: ModeCreation = 'PUBLIC';
 
   chargement = false;

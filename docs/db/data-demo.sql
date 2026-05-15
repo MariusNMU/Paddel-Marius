@@ -13,6 +13,7 @@ INSERT INTO site (id, code, nom, adresse, actif) VALUES
 INSERT INTO terrain (id, site_id, numero, actif) VALUES
                                                      (1101, 1001, 'T1', TRUE),
                                                      (1102, 1001, 'T2', TRUE),
+                                                     (1103, 1001, 'T3', TRUE),
                                                      (1201, 1002, 'T1', TRUE),
                                                      (1202, 1002, 'T2', TRUE);
 

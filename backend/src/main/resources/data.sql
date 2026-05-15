@@ -71,7 +71,8 @@ INSERT INTO administrateur (
 ) VALUES
       (2101, 'Admin', 'Global', 'admin-global', 'secret', 'GLOBAL', NULL, TRUE),
       (2102, 'Admin', 'Bruxelles', 'admin-bruxelles', 'secret-site', 'SITE', 1001, TRUE),
-      (2103, 'Admin', 'Inactif', 'admin-inactif', 'secret', 'GLOBAL', NULL, FALSE);
+      (2103, 'Admin', 'Inactif', 'admin-inactif', 'secret', 'GLOBAL', NULL, FALSE),
+      (2104, 'Admin', 'Namur', 'admin-namur', 'secret-site', 'SITE', 1002, TRUE);
 
 -- Matches
 INSERT INTO padel_match (

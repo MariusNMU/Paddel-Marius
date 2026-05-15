@@ -25,7 +25,29 @@ interface SiteDemo {
       <p>
         Choisis un site et une date pour trouver un créneau disponible, puis utilise ce créneau pour créer un match public ou privé.
       </p>
+      <div class="bloc-info">
+        <h3>Horaires d'ouverture des sites</h3>
 
+        <div class="horaires-sites">
+          <article class="horaire-site-card">
+            <h4>Padel Bruxelles</h4>
+            <p><strong>Code :</strong> BRU</p>
+            <p><strong>Horaires :</strong> 08:00 - 22:00</p>
+            <p><strong>Terrains :</strong> T1 et T2</p>
+          </article>
+
+          <article class="horaire-site-card">
+            <h4>Padel Namur</h4>
+            <p><strong>Code :</strong> NAM</p>
+            <p><strong>Horaires :</strong> 09:00 - 21:00</p>
+            <p><strong>Terrains :</strong> T1 et T2</p>
+          </article>
+        </div>
+
+        <p class="aide">
+          Ces horaires sont affichés pour la démo. Les règles de disponibilité sont toujours vérifiées par le backend.
+        </p>
+      </div>
       <div class="bloc-info">
         <h3>Choix rapide de la date</h3>
 
@@ -128,6 +150,30 @@ interface SiteDemo {
     </section>
   `,
   styles: [`
+
+    .horaires-sites {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .horaire-site-card {
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      background: #ffffff;
+      padding: 14px;
+    }
+
+    .horaire-site-card h4 {
+      margin: 0 0 10px;
+      color: #003b95;
+    }
+
+    .horaire-site-card p {
+      margin: 6px 0;
+    }
+
     .jours-rapides {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));

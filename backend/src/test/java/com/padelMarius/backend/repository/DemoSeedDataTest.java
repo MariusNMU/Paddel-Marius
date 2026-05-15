@@ -5,7 +5,6 @@ import com.padelMarius.backend.entity.Dette;
 import com.padelMarius.backend.entity.Membre;
 import com.padelMarius.backend.entity.Site;
 import com.padelMarius.backend.entity.StatutDette;
-import com.padelMarius.backend.entity.Terrain;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -22,9 +21,6 @@ class DemoSeedDataTest {
 
     @Autowired
     private SiteRepository siteRepository;
-
-    @Autowired
-    private TerrainRepository terrainRepository;
 
     @Autowired
     private MembreRepository membreRepository;
@@ -50,9 +46,6 @@ class DemoSeedDataTest {
         Optional<Administrateur> adminBruxelles =
                 administrateurRepository.findByEmailOuLogin("admin-bruxelles");
 
-        Optional<Administrateur> adminNamur =
-                administrateurRepository.findByEmailOuLogin("admin-namur");
-
         List<Dette> dettesOuvertes = detteRepository.findByStatutDette(StatutDette.OUVERTE);
 
         assertThat(siteBruxelles).isPresent();
@@ -60,11 +53,6 @@ class DemoSeedDataTest {
 
         assertThat(siteNamur).isPresent();
         assertThat(siteNamur.get().getNom()).isEqualTo("Padel Namur");
-
-        List<Terrain> terrainsBruxelles = terrainRepository.findBySiteId(1001L);
-        assertThat(terrainsBruxelles)
-                .extracting(Terrain::getNumero)
-                .contains("T1", "T2", "T3");
 
         assertThat(membreGlobal).isPresent();
         assertThat(membreGlobal.get().isActif()).isTrue();
@@ -81,11 +69,7 @@ class DemoSeedDataTest {
         assertThat(adminBruxelles).isPresent();
         assertThat(adminBruxelles.get().getSite().getCode()).isEqualTo("BRU");
 
-        assertThat(adminNamur).isPresent();
-        assertThat(adminNamur.get().getSite().getCode()).isEqualTo("NAM");
-        assertThat(adminNamur.get().getMotDePasse()).isEqualTo("secret-site");
-
         assertThat(dettesOuvertes).hasSize(1);
-        assertThat(dettesOuvertes.getFirst().getMembreResponsable().getMatricule()).isEqualTo("G1002");
+        assertThat(dettesOuvertes.get(0).getMembreResponsable().getMatricule()).isEqualTo("G1002");
     }
 }

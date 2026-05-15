@@ -33,7 +33,7 @@ interface SiteDemo {
             <h4>Padel Bruxelles</h4>
             <p><strong>Code :</strong> BRU</p>
             <p><strong>Horaires :</strong> 08:00 - 22:00</p>
-            <p><strong>Terrains :</strong> T1 et T2</p>
+            <p><strong>Terrains :</strong> T1, T2 et T3</p>
           </article>
 
           <article class="horaire-site-card">
@@ -239,7 +239,7 @@ export class DisponibilitesComponent {
       id: 1001,
       nom: 'Padel Bruxelles',
       code: 'BRU',
-      description: 'Site de démonstration avec les terrains T1 et T2.'
+      description: 'Site de démonstration avec les terrains T1, T2 et T3.'
     },
     {
       id: 1002,

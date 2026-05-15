@@ -16,4 +16,5 @@ export interface MembreResponse {
   siteRattachementId: number | null;
   nomSiteRattachement: string | null;
   actif: boolean;
+  soldeCredit: number;
 }

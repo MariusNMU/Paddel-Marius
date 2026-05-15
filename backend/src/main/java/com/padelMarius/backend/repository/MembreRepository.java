@@ -13,8 +13,4 @@ public interface MembreRepository extends JpaRepository<Membre, Long> {
     boolean existsByMatricule(String matricule);
 
     List<Membre> findByMatriculeStartingWith(String prefixe);
-
-    List<Membre> findAllByOrderByMatriculeAsc();
-
-    List<Membre> findBySiteRattachementIdOrderByMatriculeAsc(Long siteId);
 }

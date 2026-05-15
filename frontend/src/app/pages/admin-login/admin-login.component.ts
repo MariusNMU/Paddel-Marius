@@ -76,19 +76,6 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
                 Utiliser ce compte
               </button>
             </article>
-
-            <article class="admin-demo-card">
-              <h4>Admin site Namur</h4>
-              <p>
-                Accès de démonstration limité au site Padel Namur (1002).
-              </p>
-              <p><strong>Login :</strong> admin-namur</p>
-              <p><strong>Mot de passe :</strong> secret-site</p>
-
-              <button type="button" (click)="utiliserAdminNamur()">
-                Utiliser ce compte
-              </button>
-            </article>
           </div>
         </div>
 
@@ -188,13 +175,6 @@ export class AdminLoginComponent {
 
   utiliserAdminBruxelles(): void {
     this.login = 'admin-bruxelles';
-    this.motDePasse = 'secret-site';
-    this.messageErreur.set(null);
-    this.messageSucces.set(null);
-  }
-
-  utiliserAdminNamur(): void {
-    this.login = 'admin-namur';
     this.motDePasse = 'secret-site';
     this.messageErreur.set(null);
     this.messageSucces.set(null);

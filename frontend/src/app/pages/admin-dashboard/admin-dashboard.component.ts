@@ -48,6 +48,14 @@ import { AuthContextService } from '../../services/auth-context.service';
 
           <div class="admin-actions-grid">
             <article class="admin-action-card">
+              <h4>Membres</h4>
+              <p>
+                Lister tous les membres ou afficher uniquement les membres rattachés
+                à un site précis.
+              </p>
+              <a routerLink="/admin/membres">Voir les membres</a>
+            </article>
+            <article class="admin-action-card">
               <h4>Statistiques</h4>
               <p>
                 Consulter les matches, paiements, dettes ouvertes,

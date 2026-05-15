@@ -50,6 +50,9 @@ class DemoSeedDataTest {
         Optional<Administrateur> adminBruxelles =
                 administrateurRepository.findByEmailOuLogin("admin-bruxelles");
 
+        Optional<Administrateur> adminNamur =
+                administrateurRepository.findByEmailOuLogin("admin-namur");
+
         List<Dette> dettesOuvertes = detteRepository.findByStatutDette(StatutDette.OUVERTE);
 
         assertThat(siteBruxelles).isPresent();
@@ -75,6 +78,10 @@ class DemoSeedDataTest {
 
         assertThat(adminBruxelles).isPresent();
         assertThat(adminBruxelles.get().getSite().getCode()).isEqualTo("BRU");
+
+        assertThat(adminNamur).isPresent();
+        assertThat(adminNamur.get().getMotDePasse()).isEqualTo("secret-site");
+        assertThat(adminNamur.get().getSite().getCode()).isEqualTo("NAM");
 
         assertThat(dettesOuvertes).hasSize(1);
         assertThat(dettesOuvertes.get(0).getMembreResponsable().getMatricule()).isEqualTo("G1002");

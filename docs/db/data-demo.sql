@@ -47,31 +47,33 @@ INSERT INTO membre (
     prenom,
     categorie_membre,
     site_rattachement_id,
-    actif
+    actif,
+    mot_de_passe_hash,
+    solde_credit
 ) VALUES
-      (2001, 'G1001', 'Dupont', 'Marie', 'GLOBAL', NULL, TRUE),
-      (2002, 'G1002', 'Lambert', 'Paul', 'GLOBAL', NULL, TRUE),
-      (2003, 'S1001', 'Martin', 'Sophie', 'SITE', 1001, TRUE),
-      (2004, 'S1002', 'Bernard', 'Luc', 'SITE', 1002, TRUE),
-      (2005, 'L1001', 'Durand', 'Nina', 'LIBRE', NULL, TRUE),
-      (2006, 'L1002', 'Petit', 'Hugo', 'LIBRE', NULL, TRUE),
-      (2007, 'G9999', 'Inactif', 'Test', 'GLOBAL', NULL, FALSE);
+      (2001, 'G1001', 'Dupont', 'Marie', 'GLOBAL', NULL, TRUE, '$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK', 100.00),
+      (2002, 'G1002', 'Lambert', 'Paul', 'GLOBAL', NULL, TRUE, '$2y$10$Rh28chj1ghKjqw6glJwO7ujROBPlWMykS5VG3iOt0mhmzh8pplP46', 100.00),
+      (2003, 'S1001', 'Martin', 'Sophie', 'SITE', 1001, TRUE, '$2y$10$puiefDGYIGQ4RVkEwNV9OuKYfqs9mdn5c6pP4EiEo2CEaDLMiB7RS', 100.00),
+      (2004, 'S1002', 'Bernard', 'Luc', 'SITE', 1002, TRUE, '$2y$10$g3AYSKR2m3WQuFI7sZFIh.bHfaRutGSwSbqwrLVkENOqcDyeYAjce', 100.00),
+      (2005, 'L1001', 'Durand', 'Nina', 'LIBRE', NULL, TRUE, '$2y$10$kOdTqIion2NAEdmjH5na2e3GuMO9c5tVKLmUOJoJpzHQqXCDrGyfy', 100.00),
+      (2006, 'L1002', 'Petit', 'Hugo', 'LIBRE', NULL, TRUE, '$2y$10$O2n1/VVVle3C4HJtzZblwOmpFx1EKRBbEZQ/qT/DBe0QQGYk1/66m', 100.00),
+      (2007, 'G9999', 'Inactif', 'Test', 'GLOBAL', NULL, FALSE, '$2y$10$CCb6yUS4grhSHq5ou4tL7.BfjjnK4ahv/qEuiF9Bj.rxiG1ofstya', 100.00);
 
 -- Administrateurs
-INSERT INTO administrateur (
+ININSERT INTO administrateur (
     id,
     nom,
     prenom,
     email_ou_login,
-    mot_de_passe,
+    mot_de_passe_hash,
     role_administrateur,
     site_id,
     actif
 ) VALUES
-      (2101, 'Admin', 'Global', 'admin-global', 'secret', 'GLOBAL', NULL, TRUE),
-      (2102, 'Admin', 'Bruxelles', 'admin-bruxelles', 'secret-site', 'SITE', 1001, TRUE),
-      (2103, 'Admin', 'Inactif', 'admin-inactif', 'secret', 'GLOBAL', NULL, FALSE),
-      (2104, 'Admin', 'Namur', 'admin-namur', 'secret-site', 'SITE', 1002, TRUE);
+      (2101, 'Admin', 'Global', 'admin-global', '$2y$10$8LeMp7OiV51kw/ixDBrUd.cihLaw6UMWoNV1WKuXfxpI9dyZxdcUK', 'GLOBAL', NULL, TRUE),
+      (2102, 'Admin', 'Bruxelles', 'admin-bruxelles', '$2y$10$NfvQuu66degMeOzxLi5q1.mpoEhsdnUpoiAWGRUE2Ma9zydeH5GEu', 'SITE', 1001, TRUE),
+      (2103, 'Admin', 'Inactif', 'admin-inactif', '$2y$10$bWjqVrWLmIB9Nyx83hPWvuD7Jb0j34k25WKhM3d7Y4.ltruuVINFy', 'GLOBAL', NULL, FALSE),
+      (2104, 'Admin', 'Namur', 'admin-namur', '$2y$10$Pynh4YlaL1ya8I9fq3nvJuX2v7BSjUwbROsKg3iZYn8XYc9DNeACm', 'SITE', 1002, TRUE);
 
 -- Matches
 INSERT INTO padel_match (

@@ -374,6 +374,7 @@ class ParticipationServiceTest {
                 .matricule(matricule)
                 .nom("Nom")
                 .prenom("Prenom")
+                .motDePasseHash("$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK")
                 .categorieMembre(CategorieMembre.GLOBAL)
                 .actif(true)
                 .build();

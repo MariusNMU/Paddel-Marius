@@ -48,8 +48,8 @@ public class Administrateur {
     @Column(name = "email_ou_login", nullable = false, length = 150)
     private String emailOuLogin;
 
-    @Column(name = "mot_de_passe", length = 100)
-    private String motDePasse;
+    @Column(name = "mot_de_passe_hash", nullable = false, length = 255)
+    private String motDePasseHash;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role_administrateur", nullable = false, length = 20)

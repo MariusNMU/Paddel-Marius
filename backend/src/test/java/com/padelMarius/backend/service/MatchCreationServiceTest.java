@@ -652,6 +652,7 @@ class MatchCreationServiceTest {
                 .matricule(matricule)
                 .nom("Dupont")
                 .prenom("Jean")
+                .motDePasseHash("$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK")
                 .categorieMembre(CategorieMembre.GLOBAL)
                 .actif(true)
                 .build();
@@ -665,6 +666,7 @@ class MatchCreationServiceTest {
                 .matricule(matricule)
                 .nom("Martin")
                 .prenom("Sophie")
+                .motDePasseHash("$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK")
                 .categorieMembre(CategorieMembre.SITE)
                 .siteRattachement(siteRattachement)
                 .actif(true)

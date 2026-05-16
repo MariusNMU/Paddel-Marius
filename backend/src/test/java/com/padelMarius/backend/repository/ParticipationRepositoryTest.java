@@ -225,6 +225,7 @@ class ParticipationRepositoryTest {
         membre.setMatricule(matricule);
         membre.setNom("Nom " + matricule);
         membre.setPrenom("Prenom " + matricule);
+        membre.setMotDePasseHash("$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK");
         membre.setCategorieMembre(categorieMembre);
         membre.setSiteRattachement(siteRattachement);
         membre.setActif(true);

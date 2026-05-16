@@ -12,6 +12,7 @@ import com.padelMarius.backend.repository.SiteRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
@@ -21,9 +22,11 @@ import java.util.Comparator;
 public class MembreInscriptionService {
 
     private static final BigDecimal SOLDE_INITIAL = new BigDecimal("100.00");
+    private static final String MOT_DE_PASSE_INITIAL = "password";
 
     private final MembreRepository membreRepository;
     private final SiteRepository siteRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public MembreResponse inscrireMembre(InscriptionMembreRequest request) {
@@ -38,6 +41,7 @@ public class MembreInscriptionService {
                 .categorieMembre(request.categorieMembre())
                 .siteRattachement(siteRattachement)
                 .actif(true)
+                .motDePasseHash(passwordEncoder.encode(MOT_DE_PASSE_INITIAL))
                 .soldeCredit(SOLDE_INITIAL)
                 .build();
 

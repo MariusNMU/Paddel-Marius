@@ -11,7 +11,6 @@ import com.padelMarius.backend.entity.RoleAdministrateur;
 import com.padelMarius.backend.entity.Site;
 import com.padelMarius.backend.exception.AuthentificationException;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
-import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.repository.AdministrateurRepository;
 import com.padelMarius.backend.repository.MembreRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +18,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Optional;
@@ -38,12 +39,16 @@ class AuthServiceTest {
     private AdministrateurRepository administrateurRepository;
 
     private AuthService authService;
+    private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
+        passwordEncoder = new BCryptPasswordEncoder();
+
         authService = new AuthService(
                 membreRepository,
-                administrateurRepository
+                administrateurRepository,
+                passwordEncoder
         );
     }
 
@@ -63,7 +68,7 @@ class AuthServiceTest {
                 .thenReturn(Optional.of(membre));
 
         AuthJoueurResponse response = authService.authentifierJoueur(
-                new ConnexionJoueurRequest("S00001")
+                new ConnexionJoueurRequest("S00001", "password")
         );
 
         assertEquals(10L, response.membreId());
@@ -81,15 +86,15 @@ class AuthServiceTest {
         when(membreRepository.findByMatricule("G9999"))
                 .thenReturn(Optional.empty());
 
-        RessourceIntrouvableException exception = assertThrows(
-                RessourceIntrouvableException.class,
+        AuthentificationException exception = assertThrows(
+                AuthentificationException.class,
                 () -> authService.authentifierJoueur(
-                        new ConnexionJoueurRequest("G9999")
+                        new ConnexionJoueurRequest("G9999", "password")
                 )
         );
 
         assertEquals(
-                "Membre introuvable avec le matricule G9999",
+                "Identifiants joueur invalides.",
                 exception.getMessage()
         );
 
@@ -112,11 +117,39 @@ class AuthServiceTest {
         ConfigurationMetierException exception = assertThrows(
                 ConfigurationMetierException.class,
                 () -> authService.authentifierJoueur(
-                        new ConnexionJoueurRequest("G0001")
+                        new ConnexionJoueurRequest("G0001", "password")
                 )
         );
 
         assertEquals("Le membre est inactif.", exception.getMessage());
+
+        verifyNoInteractions(administrateurRepository);
+    }
+
+    @Test
+    void authentifierJoueur_shouldRejectWrongPassword() {
+        Membre membre = creerMembre(
+                10L,
+                "G0001",
+                CategorieMembre.GLOBAL,
+                null,
+                true
+        );
+
+        when(membreRepository.findByMatricule("G0001"))
+                .thenReturn(Optional.of(membre));
+
+        AuthentificationException exception = assertThrows(
+                AuthentificationException.class,
+                () -> authService.authentifierJoueur(
+                        new ConnexionJoueurRequest("G0001", "mauvais")
+                )
+        );
+
+        assertEquals(
+                "Identifiants joueur invalides.",
+                exception.getMessage()
+        );
 
         verifyNoInteractions(administrateurRepository);
     }
@@ -305,6 +338,7 @@ class AuthServiceTest {
                 .matricule(matricule)
                 .nom("Nom " + id)
                 .prenom("Prenom " + id)
+                .motDePasseHash(passwordEncoder.encode("password"))
                 .categorieMembre(categorieMembre)
                 .siteRattachement(siteRattachement)
                 .actif(actif)
@@ -327,7 +361,7 @@ class AuthServiceTest {
                 .nom("Nom Admin " + id)
                 .prenom("Prenom Admin " + id)
                 .emailOuLogin(login)
-                .motDePasse(motDePasse)
+                .motDePasseHash(motDePasse == null ? null : passwordEncoder.encode(motDePasse))
                 .roleAdministrateur(roleAdministrateur)
                 .site(site)
                 .actif(actif)

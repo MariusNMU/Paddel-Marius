@@ -38,6 +38,7 @@ class MembreAdminServiceTest {
                 .matricule("L1001")
                 .nom("Durand")
                 .prenom("Nina")
+                .motDePasseHash("$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK")
                 .categorieMembre(CategorieMembre.LIBRE)
                 .actif(true)
                 .build();
@@ -47,6 +48,7 @@ class MembreAdminServiceTest {
                 .matricule("G1001")
                 .nom("Dupont")
                 .prenom("Marie")
+                .motDePasseHash("$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK")
                 .categorieMembre(CategorieMembre.GLOBAL)
                 .actif(true)
                 .build();
@@ -75,6 +77,7 @@ class MembreAdminServiceTest {
                 .matricule("S1001")
                 .nom("Martin")
                 .prenom("Sophie")
+                .motDePasseHash("$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK")
                 .categorieMembre(CategorieMembre.SITE)
                 .siteRattachement(bruxelles)
                 .actif(true)

@@ -45,6 +45,9 @@ public class Membre {
     @Column(nullable = false)
     private boolean actif;
 
+    @Column(name = "mot_de_passe_hash", nullable = false, length = 255)
+    private String motDePasseHash;
+
     @Builder.Default
     @Column(name = "solde_credit", nullable = false, precision = 10, scale = 2)
     private BigDecimal soldeCredit = SOLDE_INITIAL;

@@ -55,6 +55,7 @@ CREATE TABLE membre (
                         categorie_membre VARCHAR(20) NOT NULL,
                         site_rattachement_id BIGINT,
                         actif BOOLEAN NOT NULL,
+                        mot_de_passe_hash VARCHAR(255) NOT NULL,
                         solde_credit DECIMAL(10,2) NOT NULL,
                         CONSTRAINT fk_membre_site_rattachement FOREIGN KEY (site_rattachement_id) REFERENCES site(id)
 );
@@ -64,7 +65,7 @@ CREATE TABLE administrateur (
                                 nom VARCHAR(100) NOT NULL,
                                 prenom VARCHAR(100) NOT NULL,
                                 email_ou_login VARCHAR(150) NOT NULL UNIQUE,
-                                mot_de_passe VARCHAR(100),
+                                mot_de_passe_hash VARCHAR(255) NOT NULL,
                                 role_administrateur VARCHAR(20) NOT NULL,
                                 site_id BIGINT,
                                 actif BOOLEAN NOT NULL,

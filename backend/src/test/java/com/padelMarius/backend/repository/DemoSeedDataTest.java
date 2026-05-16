@@ -66,6 +66,7 @@ class DemoSeedDataTest {
 
         assertThat(membreGlobal).isPresent();
         assertThat(membreGlobal.get().isActif()).isTrue();
+        assertThat(membreGlobal.get().getMotDePasseHash()).startsWith("$2");
 
         assertThat(membreAvecDette).isPresent();
         assertThat(membreAvecDette.get().isActif()).isTrue();
@@ -74,13 +75,14 @@ class DemoSeedDataTest {
         assertThat(membreInactif.get().isActif()).isFalse();
 
         assertThat(adminGlobal).isPresent();
-        assertThat(adminGlobal.get().getMotDePasse()).isEqualTo("secret");
+        assertThat(adminGlobal.get().getMotDePasseHash()).startsWith("$2");
 
         assertThat(adminBruxelles).isPresent();
+        assertThat(adminBruxelles.get().getMotDePasseHash()).startsWith("$2");
         assertThat(adminBruxelles.get().getSite().getCode()).isEqualTo("BRU");
 
         assertThat(adminNamur).isPresent();
-        assertThat(adminNamur.get().getMotDePasse()).isEqualTo("secret-site");
+        assertThat(adminNamur.get().getMotDePasseHash()).startsWith("$2");
         assertThat(adminNamur.get().getSite().getCode()).isEqualTo("NAM");
 
         assertThat(dettesOuvertes).hasSize(1);

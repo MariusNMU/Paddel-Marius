@@ -15,7 +15,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
       <h2>Connexion joueur</h2>
 
       <p>
-        Connexion par matricule uniquement. Aucun login ni mot de passe n'est demandé au joueur.
+        Connexion joueur avec le matricule et le mot de passe de démonstration.
       </p>
 
       <p>
@@ -66,6 +66,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
                 Peut réserver sur tous les sites selon les règles métier.
               </p>
               <p><strong>Matricule :</strong> G1001</p>
+              <p><strong>Mot de passe :</strong> password</p>
               <p><strong>Statut :</strong> actif</p>
 
               <button type="button" (click)="utiliserG1001()">
@@ -79,6 +80,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
                 Permet de tester l'écran Mes dettes et le paiement d'une dette.
               </p>
               <p><strong>Matricule :</strong> G1002</p>
+              <p><strong>Mot de passe :</strong> password</p>
               <p><strong>Statut :</strong> actif avec dette ouverte</p>
 
               <button type="button" (click)="utiliserG1002()">
@@ -92,6 +94,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
                 Permet de tester le refus backend lors de la connexion joueur.
               </p>
               <p><strong>Matricule :</strong> G9999</p>
+              <p><strong>Mot de passe :</strong> password</p>
               <p><strong>Statut :</strong> inactif</p>
 
               <button type="button" (click)="utiliserG9999()">
@@ -109,6 +112,16 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
             type="text"
             [(ngModel)]="matricule"
             placeholder="Exemple : G1001"
+            required
+          />
+
+          <label for="motDePasse">Mot de passe</label>
+          <input
+            id="motDePasse"
+            name="motDePasse"
+            type="password"
+            [(ngModel)]="motDePasse"
+            placeholder="password"
             required
           />
 
@@ -166,6 +179,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
 })
 export class JoueurAuthComponent {
   matricule = 'G1001';
+  motDePasse = 'password';
   chargement = false;
   messageErreur = '';
   messageSucces = '';
@@ -180,18 +194,21 @@ export class JoueurAuthComponent {
 
   utiliserG1001(): void {
     this.matricule = 'G1001';
+    this.motDePasse = 'password';
     this.messageErreur = '';
     this.messageSucces = '';
   }
 
   utiliserG1002(): void {
     this.matricule = 'G1002';
+    this.motDePasse = 'password';
     this.messageErreur = '';
     this.messageSucces = '';
   }
 
   utiliserG9999(): void {
     this.matricule = 'G9999';
+    this.motDePasse = 'password';
     this.messageErreur = '';
     this.messageSucces = '';
   }
@@ -201,9 +218,10 @@ export class JoueurAuthComponent {
     this.messageSucces = '';
 
     const matriculeNettoye = this.matricule.trim();
+    const motDePasseNettoye = this.motDePasse.trim();
 
-    if (!matriculeNettoye) {
-      this.messageErreur = 'Le matricule est obligatoire.';
+    if (!matriculeNettoye || !motDePasseNettoye) {
+      this.messageErreur = 'Le matricule et le mot de passe sont obligatoires.';
       this.changeDetectorRef.detectChanges();
       return;
     }
@@ -211,7 +229,10 @@ export class JoueurAuthComponent {
     this.chargement = true;
     this.changeDetectorRef.detectChanges();
 
-    this.authApiService.connecterJoueur({ matricule: matriculeNettoye }).subscribe({
+    this.authApiService.connecterJoueur({
+      matricule: matriculeNettoye,
+      motDePasse: motDePasseNettoye
+    }).subscribe({
       next: (joueur) => {
         this.authContext.definirJoueur(joueur);
         this.messageSucces = `Joueur connecté : ${joueur.prenom} ${joueur.nom} (${joueur.matricule}).`;

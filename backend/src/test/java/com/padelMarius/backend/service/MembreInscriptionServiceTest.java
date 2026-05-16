@@ -12,8 +12,11 @@ import com.padelMarius.backend.repository.SiteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -21,7 +24,9 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,12 +39,16 @@ class MembreInscriptionServiceTest {
     private SiteRepository siteRepository;
 
     private MembreInscriptionService membreInscriptionService;
+    private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
+        passwordEncoder = new BCryptPasswordEncoder();
+
         membreInscriptionService = new MembreInscriptionService(
                 membreRepository,
-                siteRepository
+                siteRepository,
+                passwordEncoder
         );
     }
 
@@ -69,6 +78,13 @@ class MembreInscriptionServiceTest {
                 });
 
         MembreResponse response = membreInscriptionService.inscrireMembre(request);
+        ArgumentCaptor<Membre> membreCaptor = ArgumentCaptor.forClass(Membre.class);
+        verify(membreRepository).save(membreCaptor.capture());
+        assertTrue(passwordEncoder.matches(
+                "password",
+                membreCaptor.getValue().getMotDePasseHash()
+        ));
+        assertTrue(membreCaptor.getValue().getMotDePasseHash().startsWith("$2"));
 
         assertEquals(10L, response.membreId());
         assertEquals("G1003", response.matricule());
@@ -218,6 +234,7 @@ class MembreInscriptionServiceTest {
                 .matricule(matricule)
                 .nom("Nom " + id)
                 .prenom("Prenom " + id)
+                .motDePasseHash(passwordEncoder.encode("password"))
                 .categorieMembre(categorieMembre)
                 .siteRattachement(siteRattachement)
                 .actif(true)

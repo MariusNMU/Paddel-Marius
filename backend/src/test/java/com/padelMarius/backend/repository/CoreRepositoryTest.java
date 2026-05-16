@@ -70,6 +70,7 @@ class CoreRepositoryTest {
                 .matricule("G0001")
                 .nom("Dupont")
                 .prenom("Jean")
+                .motDePasseHash("$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK")
                 .categorieMembre(CategorieMembre.GLOBAL)
                 .actif(true)
                 .build();
@@ -99,6 +100,7 @@ class CoreRepositoryTest {
                 .matricule("G0002")
                 .nom("Martin")
                 .prenom("Sophie")
+                .motDePasseHash("$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK")
                 .categorieMembre(CategorieMembre.GLOBAL)
                 .actif(true)
                 .build());

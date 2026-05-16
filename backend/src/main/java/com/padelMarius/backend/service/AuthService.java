@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 @RequiredArgsConstructor
@@ -24,24 +25,44 @@ public class AuthService {
     private static final String MESSAGE_IDENTIFIANTS_ADMIN_INVALIDES =
             "Identifiants administrateur invalides.";
 
+    private static final String MESSAGE_IDENTIFIANTS_JOUEUR_INVALIDES =
+            "Identifiants joueur invalides.";
+
     private final MembreRepository membreRepository;
     private final AdministrateurRepository administrateurRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public AuthJoueurResponse authentifierJoueur(ConnexionJoueurRequest request) {
-        if (request == null || !StringUtils.hasText(request.matricule())) {
-            throw new ConfigurationMetierException("Le matricule est obligatoire.");
+        if (request == null
+                || !StringUtils.hasText(request.matricule())
+                || !StringUtils.hasText(request.motDePasse())) {
+            throw new ConfigurationMetierException(
+                    "Le matricule et le mot de passe sont obligatoires."
+            );
         }
 
         String matricule = request.matricule().trim();
 
         Membre membre = membreRepository.findByMatricule(matricule)
-                .orElseThrow(() -> new RessourceIntrouvableException(
-                        "Membre introuvable avec le matricule " + matricule
+                .orElseThrow(() -> new AuthentificationException(
+                        MESSAGE_IDENTIFIANTS_JOUEUR_INVALIDES
                 ));
 
         if (!membre.isActif()) {
             throw new ConfigurationMetierException("Le membre est inactif.");
+        }
+
+        if (!StringUtils.hasText(membre.getMotDePasseHash())) {
+            throw new ConfigurationMetierException(
+                    "Le mot de passe joueur n'est pas configuré."
+            );
+        }
+
+        if (!passwordEncoder.matches(request.motDePasse(), membre.getMotDePasseHash())) {
+            throw new AuthentificationException(
+                    MESSAGE_IDENTIFIANTS_JOUEUR_INVALIDES
+            );
         }
 
         return convertirJoueur(membre);
@@ -68,13 +89,13 @@ public class AuthService {
             throw new ConfigurationMetierException("L'administrateur est inactif.");
         }
 
-        if (!StringUtils.hasText(administrateur.getMotDePasse())) {
+        if (!StringUtils.hasText(administrateur.getMotDePasseHash())) {
             throw new ConfigurationMetierException(
                     "Le mot de passe administrateur n'est pas configuré."
             );
         }
 
-        if (!administrateur.getMotDePasse().equals(request.motDePasse())) {
+        if (!passwordEncoder.matches(request.motDePasse(), administrateur.getMotDePasseHash())) {
             throw new AuthentificationException(
                     MESSAGE_IDENTIFIANTS_ADMIN_INVALIDES
             );

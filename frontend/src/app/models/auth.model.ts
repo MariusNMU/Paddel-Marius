@@ -3,6 +3,7 @@ export type RoleAdministrateur = 'GLOBAL' | 'SITE';
 
 export interface ConnexionJoueurRequest {
   matricule: string;
+  motDePasse: string;
 }
 
 export interface AuthJoueurResponse {

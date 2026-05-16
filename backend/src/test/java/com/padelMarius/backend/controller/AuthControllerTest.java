@@ -8,7 +8,6 @@ import com.padelMarius.backend.entity.CategorieMembre;
 import com.padelMarius.backend.entity.RoleAdministrateur;
 import com.padelMarius.backend.exception.AuthentificationException;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
-import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.service.AuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +58,8 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "matricule": "G0001"
+                                  "matricule": "G0001",
+                                  "motDePasse": "password"
                                 }
                                 """))
                 .andExpect(status().isOk())
@@ -106,23 +106,24 @@ class AuthControllerTest {
     }
 
     @Test
-    void shouldReturn404_whenPlayerMatriculeDoesNotExist() throws Exception {
+    void shouldReturn401_whenPlayerCredentialsAreInvalid() throws Exception {
         when(authService.authentifierJoueur(any(ConnexionJoueurRequest.class)))
-                .thenThrow(new RessourceIntrouvableException(
-                        "Membre introuvable avec le matricule G9999"
+                .thenThrow(new AuthentificationException(
+                        "Identifiants joueur invalides."
                 ));
 
         mockMvc.perform(post("/api/auth/joueur")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "matricule": "G9999"
+                                  "matricule": "G9999",
+                                  "motDePasse": "mauvais"
                                 }
                                 """))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("RESSOURCE_INTROUVABLE"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("AUTHENTIFICATION_INVALIDE"))
                 .andExpect(jsonPath("$.message").value(
-                        "Membre introuvable avec le matricule G9999"
+                        "Identifiants joueur invalides."
                 ));
     }
 
@@ -137,7 +138,8 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "matricule": "G0001"
+                                  "matricule": "G0001",
+                                  "motDePasse": "password"
                                 }
                                 """))
                 .andExpect(status().isConflict())
@@ -168,12 +170,29 @@ class AuthControllerTest {
     }
 
     @Test
-    void shouldReturn400_whenPlayerMatriculeIsMissing() throws Exception {
+    void shouldReturn400_whenPlayerCredentialsAreMissing() throws Exception {
         mockMvc.perform(post("/api/auth/joueur")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "matricule": ""
+                                  "matricule": "",
+                                  "motDePasse": ""
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        verify(authService, never())
+                .authentifierJoueur(any(ConnexionJoueurRequest.class));
+    }
+
+    @Test
+    void shouldReturn400_whenPlayerPasswordIsMissing() throws Exception {
+        mockMvc.perform(post("/api/auth/joueur")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "matricule": "G0001",
+                                  "motDePasse": ""
                                 }
                                 """))
                 .andExpect(status().isBadRequest());

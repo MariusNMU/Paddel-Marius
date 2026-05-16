@@ -38,6 +38,7 @@ class MembreSoldeServiceTest {
                 .matricule("G1001")
                 .nom("Dupont")
                 .prenom("Marie")
+                .motDePasseHash("$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK")
                 .categorieMembre(CategorieMembre.GLOBAL)
                 .actif(true)
                 .soldeCredit(new BigDecimal("85.00"))

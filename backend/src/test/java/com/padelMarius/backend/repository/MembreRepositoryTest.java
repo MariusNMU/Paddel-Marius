@@ -26,6 +26,7 @@ class MembreRepositoryTest {
                 .matricule("G2001")
                 .nom("Nom Global")
                 .prenom("Prenom Global")
+                .motDePasseHash("$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK")
                 .categorieMembre(CategorieMembre.GLOBAL)
                 .actif(true)
                 .build());
@@ -34,6 +35,7 @@ class MembreRepositoryTest {
                 .matricule("G2002")
                 .nom("Nom Global 2")
                 .prenom("Prenom Global 2")
+                .motDePasseHash("$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK")
                 .categorieMembre(CategorieMembre.GLOBAL)
                 .actif(true)
                 .build());
@@ -42,6 +44,7 @@ class MembreRepositoryTest {
                 .matricule("L2001")
                 .nom("Nom Libre")
                 .prenom("Prenom Libre")
+                .motDePasseHash("$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK")
                 .categorieMembre(CategorieMembre.LIBRE)
                 .actif(true)
                 .build());
@@ -71,6 +74,7 @@ class MembreRepositoryTest {
                 .matricule("S3001")
                 .nom("Nom Bruxelles")
                 .prenom("Prenom Bruxelles")
+                .motDePasseHash("$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK")
                 .categorieMembre(CategorieMembre.SITE)
                 .siteRattachement(bruxelles)
                 .actif(true)
@@ -80,6 +84,7 @@ class MembreRepositoryTest {
                 .matricule("S3002")
                 .nom("Nom Namur")
                 .prenom("Prenom Namur")
+                .motDePasseHash("$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK")
                 .categorieMembre(CategorieMembre.SITE)
                 .siteRattachement(namur)
                 .actif(true)
@@ -89,6 +94,7 @@ class MembreRepositoryTest {
                 .matricule("G3001")
                 .nom("Nom Global")
                 .prenom("Prenom Global")
+                .motDePasseHash("$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK")
                 .categorieMembre(CategorieMembre.GLOBAL)
                 .actif(true)
                 .build());

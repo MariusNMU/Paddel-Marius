@@ -108,6 +108,7 @@ class ComplementaryRepositoryTest {
                 .nom("Admin")
                 .prenom("Global")
                 .emailOuLogin("admin.global@padel.local")
+                .motDePasseHash("$2y$10$8LeMp7OiV51kw/ixDBrUd.cihLaw6UMWoNV1WKuXfxpI9dyZxdcUK")
                 .roleAdministrateur(RoleAdministrateur.GLOBAL)
                 .site(null)
                 .actif(true)
@@ -117,6 +118,7 @@ class ComplementaryRepositoryTest {
                 .nom("Admin")
                 .prenom("Site")
                 .emailOuLogin("admin.site@padel.local")
+                .motDePasseHash("$2y$10$8LeMp7OiV51kw/ixDBrUd.cihLaw6UMWoNV1WKuXfxpI9dyZxdcUK")
                 .roleAdministrateur(RoleAdministrateur.SITE)
                 .site(site)
                 .actif(true)
@@ -270,6 +272,7 @@ class ComplementaryRepositoryTest {
                 .matricule(matricule)
                 .nom("Dupont")
                 .prenom("Jean")
+                .motDePasseHash("$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK")
                 .categorieMembre(CategorieMembre.GLOBAL)
                 .actif(true)
                 .build());

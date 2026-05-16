@@ -126,6 +126,7 @@ Colonnes :
 - `matricule` : VARCHAR(10), NOT NULL, UNIQUE
 - `nom` : VARCHAR(100), NOT NULL
 - `prenom` : VARCHAR(100), NOT NULL
+- `mot_de_passe_hash` : VARCHAR(255), NOT NULL
 - `categorie_membre` : VARCHAR(20), NOT NULL
 - `site_rattachement_id` : BIGINT, NULL, FK vers `site(id)`
 - `actif` : BOOLEAN, NOT NULL
@@ -155,7 +156,7 @@ Colonnes :
 - `nom` : VARCHAR(100), NOT NULL
 - `prenom` : VARCHAR(100), NOT NULL
 - `email_ou_login` : VARCHAR(150), NOT NULL, UNIQUE
-- `mot_de_passe` : VARCHAR(100), NULL dans le MVP actuel mais requis pour la connexion admin
+- `mot_de_passe_hash` : VARCHAR(255), NOT NULL, hash BCrypt du mot de passe administrateur
 - `role_administrateur` : VARCHAR(20), NOT NULL
 - `site_id` : BIGINT, NULL, FK vers `site(id)`
 - `actif` : BOOLEAN, NOT NULL
@@ -436,6 +437,7 @@ CREATE TABLE membre (
     matricule VARCHAR(10) NOT NULL UNIQUE,
     nom VARCHAR(100) NOT NULL,
     prenom VARCHAR(100) NOT NULL,
+    mot_de_passe_hash VARCHAR(255) NOT NULL,
     categorie_membre VARCHAR(20) NOT NULL,
     site_rattachement_id BIGINT,
     actif BOOLEAN NOT NULL,
@@ -476,6 +478,7 @@ Choix cible expliqué dans la documentation DB :
 - `padel_app` : user applicatif backend avec droits CRUD ;
 - `padel_readonly` : lecture seule ;
 - aucun user DB pour le frontend.
+- les mots de passe ne sont jamais stockés en clair. La base stocke uniquement des hash BCrypt.
 
 Phrase à savoir dire :
 

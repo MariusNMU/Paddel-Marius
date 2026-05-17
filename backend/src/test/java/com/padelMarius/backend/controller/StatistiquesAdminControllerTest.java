@@ -1,8 +1,10 @@
 package com.padelMarius.backend.controller;
 
 import com.padelMarius.backend.dto.statistique.StatistiquesAdminResponse;
+import com.padelMarius.backend.exception.AuthentificationException;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
+import com.padelMarius.backend.service.AdminAuthorizationService;
 import com.padelMarius.backend.service.StatistiquesAdminService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +36,9 @@ class StatistiquesAdminControllerTest {
     @MockitoBean
     private StatistiquesAdminService statistiquesAdminService;
 
+    @MockitoBean
+    private AdminAuthorizationService adminAuthorizationService;
+
     @Test
     void shouldReturnOk_whenRequestingGlobalStats() throws Exception {
         StatistiquesAdminResponse response = new StatistiquesAdminResponse(
@@ -60,6 +65,7 @@ class StatistiquesAdminControllerTest {
         )).thenReturn(response);
 
         mockMvc.perform(get("/api/admin/statistiques")
+                        .header("X-Admin-Login", "admin-global")
                         .param("dateDebut", "2026-05-01")
                         .param("dateFin", "2026-05-31"))
                 .andExpect(status().isOk())
@@ -103,6 +109,7 @@ class StatistiquesAdminControllerTest {
         )).thenReturn(response);
 
         mockMvc.perform(get("/api/admin/statistiques")
+                        .header("X-Admin-Login", "admin-global")
                         .param("dateDebut", "2026-05-01")
                         .param("dateFin", "2026-05-31")
                         .param("siteId", "1"))
@@ -125,6 +132,7 @@ class StatistiquesAdminControllerTest {
         ));
 
         mockMvc.perform(get("/api/admin/statistiques")
+                        .header("X-Admin-Login", "admin-global")
                         .param("dateDebut", "2026-05-01")
                         .param("dateFin", "2026-05-31")
                         .param("siteId", "999"))
@@ -144,6 +152,7 @@ class StatistiquesAdminControllerTest {
         ));
 
         mockMvc.perform(get("/api/admin/statistiques")
+                        .header("X-Admin-Login", "admin-global")
                         .param("dateDebut", "2026-05-31")
                         .param("dateFin", "2026-05-01"))
                 .andExpect(status().isConflict())
@@ -156,6 +165,7 @@ class StatistiquesAdminControllerTest {
     @Test
     void shouldReturn400_whenDateDebutIsMissing() throws Exception {
         mockMvc.perform(get("/api/admin/statistiques")
+                        .header("X-Admin-Login", "admin-global")
                         .param("dateFin", "2026-05-31"))
                 .andExpect(status().isBadRequest());
 
@@ -166,11 +176,35 @@ class StatistiquesAdminControllerTest {
     @Test
     void shouldReturn400_whenDateFormatIsInvalid() throws Exception {
         mockMvc.perform(get("/api/admin/statistiques")
+                        .header("X-Admin-Login", "admin-global")
                         .param("dateDebut", "date-invalide")
                         .param("dateFin", "2026-05-31"))
                 .andExpect(status().isBadRequest());
 
         verify(statistiquesAdminService, never())
                 .calculerStatistiques(any(), any(), any());
+    }
+
+    @Test
+    void shouldReturn401_whenAdminHeaderIsMissing() throws Exception {
+        when(statistiquesAdminService.calculerStatistiques(
+                eq(LocalDate.of(2026, 5, 1)),
+                eq(LocalDate.of(2026, 5, 31)),
+                isNull()
+        )).thenReturn(null);
+
+        org.mockito.Mockito.doThrow(new AuthentificationException(
+                "Administrateur requis pour accéder à cette opération."
+        )).when(adminAuthorizationService)
+                .verifierAccesAdminSite(null, null);
+
+        mockMvc.perform(get("/api/admin/statistiques")
+                        .param("dateDebut", "2026-05-01")
+                        .param("dateFin", "2026-05-31"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("AUTHENTIFICATION_INVALIDE"))
+                .andExpect(jsonPath("$.message").value(
+                        "Administrateur requis pour accéder à cette opération."
+                ));
     }
 }

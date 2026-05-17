@@ -16,25 +16,84 @@ import { AdminFermeturesComponent } from './pages/admin-fermetures/admin-fermetu
 import { MonSoldeComponent } from './pages/mon-solde/mon-solde.component';
 import { AdminMembresComponent } from './pages/admin-membres/admin-membres.component';
 import { InvitationsRecuesComponent } from './pages/invitations-recues/invitations-recues.component';
+import { joueurGuard } from './guards/joueur.guard';
+import { adminGuard } from './guards/admin.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'accueil', pathMatch: 'full' },
   { path: 'accueil', component: AccueilComponent },
+
   { path: 'joueur', component: JoueurAuthComponent },
-  { path: 'joueur/disponibilites', component: DisponibilitesComponent },
-  { path: 'joueur/creer-match', component: CreerMatchComponent },
-  { path: 'joueur/matches-publics', component: MatchesPublicsComponent },
-  { path: 'joueur/mes-reservations', component: MesReservationsComponent },
-  { path: 'joueur/mes-dettes', component: MesDettesComponent },
-  { path: 'joueur/historique-transactions', component: HistoriqueTransactionsComponent },
-  { path: 'joueur/mon-solde', component: MonSoldeComponent },
   { path: 'inscription-joueur', component: InscriptionJoueurComponent },
+
+  {
+    path: 'joueur/disponibilites',
+    component: DisponibilitesComponent,
+    canActivate: [joueurGuard]
+  },
+  {
+    path: 'joueur/creer-match',
+    component: CreerMatchComponent,
+    canActivate: [joueurGuard]
+  },
+  {
+    path: 'joueur/matches-publics',
+    component: MatchesPublicsComponent,
+    canActivate: [joueurGuard]
+  },
+  {
+    path: 'joueur/mes-reservations',
+    component: MesReservationsComponent,
+    canActivate: [joueurGuard]
+  },
+  {
+    path: 'joueur/mes-dettes',
+    component: MesDettesComponent,
+    canActivate: [joueurGuard]
+  },
+  {
+    path: 'joueur/historique-transactions',
+    component: HistoriqueTransactionsComponent,
+    canActivate: [joueurGuard]
+  },
+  {
+    path: 'joueur/mon-solde',
+    component: MonSoldeComponent,
+    canActivate: [joueurGuard]
+  },
+  {
+    path: 'joueur/invitations-recues',
+    component: InvitationsRecuesComponent,
+    canActivate: [joueurGuard]
+  },
+
   { path: 'admin/login', component: AdminLoginComponent },
-  { path: 'admin/dashboard', component: AdminDashboardComponent },
-  { path: 'admin/traitement-veille', component: AdminTraitementVeilleComponent },
-  { path: 'admin/fermetures', component: AdminFermeturesComponent },
-  { path: 'admin/statistiques', component: AdminStatistiquesComponent },
-  { path: 'admin/membres', component: AdminMembresComponent },
-  { path: 'joueur/invitations-recues', component: InvitationsRecuesComponent },
+
+  {
+    path: 'admin/dashboard',
+    component: AdminDashboardComponent,
+    canActivate: [adminGuard]
+  },
+  {
+    path: 'admin/traitement-veille',
+    component: AdminTraitementVeilleComponent,
+    canActivate: [adminGuard]
+  },
+  {
+    path: 'admin/fermetures',
+    component: AdminFermeturesComponent,
+    canActivate: [adminGuard]
+  },
+  {
+    path: 'admin/statistiques',
+    component: AdminStatistiquesComponent,
+    canActivate: [adminGuard]
+  },
+  {
+    path: 'admin/membres',
+    component: AdminMembresComponent,
+    canActivate: [adminGuard]
+  },
+
   { path: '**', redirectTo: 'accueil' }
 ];

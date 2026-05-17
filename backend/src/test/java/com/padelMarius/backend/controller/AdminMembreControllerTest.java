@@ -2,10 +2,13 @@ package com.padelMarius.backend.controller;
 
 import com.padelMarius.backend.dto.membre.MembreResponse;
 import com.padelMarius.backend.entity.CategorieMembre;
+import com.padelMarius.backend.exception.AuthentificationException;
+import com.padelMarius.backend.service.AdminAuthorizationService;
 import com.padelMarius.backend.service.MembreAdminService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -17,6 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AdminMembreController.class)
+@Import(ApiExceptionHandler.class)
 class AdminMembreControllerTest {
 
     @Autowired
@@ -24,6 +28,9 @@ class AdminMembreControllerTest {
 
     @MockitoBean
     private MembreAdminService membreAdminService;
+
+    @MockitoBean
+    private AdminAuthorizationService adminAuthorizationService;
 
     @Test
     void listerMembres_shouldReturnAllMembers_whenNoSiteId() throws Exception {
@@ -53,7 +60,8 @@ class AdminMembreControllerTest {
                         )
                 ));
 
-        mockMvc.perform(get("/api/admin/membres"))
+        mockMvc.perform(get("/api/admin/membres")
+                        .header("X-Admin-Login", "admin-global"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].matricule").value("G1001"))
                 .andExpect(jsonPath("$[1].matricule").value("S1001"));
@@ -77,9 +85,25 @@ class AdminMembreControllerTest {
                 ));
 
         mockMvc.perform(get("/api/admin/membres")
+                        .header("X-Admin-Login", "admin-global")
                         .param("siteId", "1001"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].matricule").value("S1001"))
                 .andExpect(jsonPath("$[0].siteRattachementId").value(1001));
+    }
+
+    @Test
+    void listerMembres_shouldReturn401_whenAdminHeaderIsMissing() throws Exception {
+        org.mockito.Mockito.doThrow(new AuthentificationException(
+                "Administrateur requis pour accéder à cette opération."
+        )).when(adminAuthorizationService)
+                .verifierAccesAdminSite(null, null);
+
+        mockMvc.perform(get("/api/admin/membres"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("AUTHENTIFICATION_INVALIDE"))
+                .andExpect(jsonPath("$.message").value(
+                        "Administrateur requis pour accéder à cette opération."
+                ));
     }
 }

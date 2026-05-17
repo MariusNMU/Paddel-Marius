@@ -1,6 +1,7 @@
 package com.padelMarius.backend.controller;
 
 import com.padelMarius.backend.dto.membre.MembreResponse;
+import com.padelMarius.backend.service.AdminAuthorizationService;
 import com.padelMarius.backend.service.MembreAdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -14,11 +15,18 @@ import java.util.List;
 public class AdminMembreController {
 
     private final MembreAdminService membreAdminService;
+    private final AdminAuthorizationService adminAuthorizationService;
 
     @GetMapping
     public ResponseEntity<List<MembreResponse>> listerMembres(
-            @RequestParam(required = false) Long siteId
+            @RequestHeader(name = "X-Admin-Login", required = false)
+            String adminLogin,
+
+            @RequestParam(required = false)
+            Long siteId
     ) {
+        adminAuthorizationService.verifierAccesAdminSite(adminLogin, siteId);
+
         if (siteId == null) {
             return ResponseEntity.ok(membreAdminService.listerTousLesMembres());
         }

@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import com.padelMarius.backend.exception.AutorisationException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -44,4 +45,15 @@ public class ApiExceptionHandler {
                 exception.getMessage()
         );
     }
+    @ExceptionHandler(AutorisationException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ApiErrorResponse gererAutorisation(
+            AutorisationException exception
+    ) {
+        return new ApiErrorResponse(
+                "ACCES_REFUSE",
+                exception.getMessage()
+        );
+    }
+
 }

@@ -1,7 +1,9 @@
 package com.padelMarius.backend.controller;
 
 import com.padelMarius.backend.dto.traitement.TraitementVeilleResponse;
+import com.padelMarius.backend.exception.AuthentificationException;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
+import com.padelMarius.backend.service.AdminAuthorizationService;
 import com.padelMarius.backend.service.TraitementVeilleService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +32,9 @@ class TraitementVeilleControllerTest {
     @MockitoBean
     private TraitementVeilleService traitementVeilleService;
 
+    @MockitoBean
+    private AdminAuthorizationService adminAuthorizationService;
+
     @Test
     void shouldReturnOk_whenPreMatchProcessingRuns() throws Exception {
         TraitementVeilleResponse response = new TraitementVeilleResponse(
@@ -45,6 +50,7 @@ class TraitementVeilleControllerTest {
                 .thenReturn(response);
 
         mockMvc.perform(post("/api/admin/matches/traitement-veille")
+                        .header("X-Admin-Login", "admin-global")
                         .param("date", "2026-05-19"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.dateTraitement").value("2026-05-19"))
@@ -63,6 +69,7 @@ class TraitementVeilleControllerTest {
                 ));
 
         mockMvc.perform(post("/api/admin/matches/traitement-veille")
+                        .header("X-Admin-Login", "admin-global")
                         .param("date", "2026-05-19"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CONFIGURATION_METIER_INVALIDE"))
@@ -71,7 +78,8 @@ class TraitementVeilleControllerTest {
 
     @Test
     void shouldReturn400_whenDateParameterIsMissing() throws Exception {
-        mockMvc.perform(post("/api/admin/matches/traitement-veille"))
+        mockMvc.perform(post("/api/admin/matches/traitement-veille")
+                        .header("X-Admin-Login", "admin-global"))
                 .andExpect(status().isBadRequest());
 
         verify(traitementVeilleService, never()).traiterVeille(any(LocalDate.class));
@@ -80,9 +88,26 @@ class TraitementVeilleControllerTest {
     @Test
     void shouldReturn400_whenDateParameterHasInvalidFormat() throws Exception {
         mockMvc.perform(post("/api/admin/matches/traitement-veille")
+                        .header("X-Admin-Login", "admin-global")
                         .param("date", "date-invalide"))
                 .andExpect(status().isBadRequest());
 
         verify(traitementVeilleService, never()).traiterVeille(any(LocalDate.class));
+    }
+
+    @Test
+    void shouldReturn401_whenAdminHeaderIsMissing() throws Exception {
+        org.mockito.Mockito.doThrow(new AuthentificationException(
+                "Administrateur requis pour accéder à cette opération."
+        )).when(adminAuthorizationService)
+                .verifierAdminGlobal(null);
+
+        mockMvc.perform(post("/api/admin/matches/traitement-veille")
+                        .param("date", "2026-05-19"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("AUTHENTIFICATION_INVALIDE"))
+                .andExpect(jsonPath("$.message").value(
+                        "Administrateur requis pour accéder à cette opération."
+                ));
     }
 }

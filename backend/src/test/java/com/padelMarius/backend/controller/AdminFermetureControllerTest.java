@@ -3,7 +3,9 @@ package com.padelMarius.backend.controller;
 import com.padelMarius.backend.dto.fermeture.CreerFermetureRequest;
 import com.padelMarius.backend.dto.fermeture.FermetureAdminResponse;
 import com.padelMarius.backend.entity.PorteeFermeture;
+import com.padelMarius.backend.exception.AuthentificationException;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
+import com.padelMarius.backend.service.AdminAuthorizationService;
 import com.padelMarius.backend.service.AdminFermetureService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +33,9 @@ class AdminFermetureControllerTest {
     @MockitoBean
     private AdminFermetureService adminFermetureService;
 
+    @MockitoBean
+    private AdminAuthorizationService adminAuthorizationService;
+
     @Test
     void creerFermeture_shouldReturnCreated() throws Exception {
         FermetureAdminResponse response = new FermetureAdminResponse(
@@ -49,6 +54,7 @@ class AdminFermetureControllerTest {
                 .thenReturn(response);
 
         mockMvc.perform(post("/api/admin/fermetures")
+                        .header("X-Admin-Login", "admin-global")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -69,6 +75,7 @@ class AdminFermetureControllerTest {
     @Test
     void creerFermeture_shouldReturnBadRequest_whenDateIsMissing() throws Exception {
         mockMvc.perform(post("/api/admin/fermetures")
+                        .header("X-Admin-Login", "admin-global")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -88,6 +95,7 @@ class AdminFermetureControllerTest {
                 ));
 
         mockMvc.perform(post("/api/admin/fermetures")
+                        .header("X-Admin-Login", "admin-global")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -101,6 +109,30 @@ class AdminFermetureControllerTest {
                 .andExpect(jsonPath("$.code").value("CONFIGURATION_METIER_INVALIDE"))
                 .andExpect(jsonPath("$.message").value(
                         "Une fermeture globale ne doit pas avoir de site."
+                ));
+    }
+
+    @Test
+    void creerFermeture_shouldReturn401_whenAdminHeaderIsMissing() throws Exception {
+        org.mockito.Mockito.doThrow(new AuthentificationException(
+                "Administrateur requis pour accéder à cette opération."
+        )).when(adminAuthorizationService)
+                .verifierAccesFermeture(null, PorteeFermeture.GLOBALE, null);
+
+        mockMvc.perform(post("/api/admin/fermetures")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "dateFermeture": "2026-07-21",
+                                  "portee": "GLOBALE",
+                                  "siteId": null,
+                                  "motif": "Fermeture exceptionnelle"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("AUTHENTIFICATION_INVALIDE"))
+                .andExpect(jsonPath("$.message").value(
+                        "Administrateur requis pour accéder à cette opération."
                 ));
     }
 }

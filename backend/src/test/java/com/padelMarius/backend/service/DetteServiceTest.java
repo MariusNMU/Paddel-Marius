@@ -33,6 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -313,6 +314,35 @@ class DetteServiceTest {
         );
 
         verify(paiementRepository, never()).save(any());
+    }
+
+    @Test
+    void actualiserDettePourMatch_shouldNotReopenDebt_whenDebtAlreadyHasPayment() {
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        PadelMatch match = creerMatch(100L, terrain);
+        Membre organisateur = creerMembre(20L, "G0001");
+
+        Dette detteExistante = creerDette(
+                500L,
+                match,
+                organisateur,
+                new BigDecimal("0.00"),
+                StatutDette.REGLEE
+        );
+
+        when(detteRepository.findByMatchId(100L)).thenReturn(Optional.of(detteExistante));
+        when(paiementRepository.existsByDetteId(500L)).thenReturn(true);
+        when(detteRepository.save(any(Dette.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Optional<DetteResponse> response = detteService.actualiserDettePourMatch(match);
+
+        assertTrue(response.isEmpty());
+        assertEquals(StatutDette.REGLEE, detteExistante.getStatutDette());
+        assertEquals(0, new BigDecimal("0.00").compareTo(detteExistante.getMontantRestant()));
+        assertEquals(LocalDateTime.of(2026, 5, 7, 12, 0), detteExistante.getDateReglement());
+
+        verify(detteRepository).save(detteExistante);
     }
 
     private Site creerSite(Long id) {

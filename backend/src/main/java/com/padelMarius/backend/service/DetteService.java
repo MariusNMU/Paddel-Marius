@@ -99,6 +99,23 @@ public class DetteService {
             return Optional.empty();
         }
 
+        Optional<Dette> detteExistante = detteRepository.findByMatchId(match.getId());
+
+        if (detteExistante.isPresent() && dettePossedeDejaUnPaiement(detteExistante.get())) {
+            Dette dette = detteExistante.get();
+
+            dette.setMontantRestant(ZERO);
+
+            if (dette.getDateReglement() == null) {
+                dette.setDateReglement(LocalDateTime.now(clock));
+            }
+
+            dette.setStatutDette(StatutDette.REGLEE);
+            detteRepository.save(dette);
+
+            return Optional.empty();
+        }
+
         Participation participationOrganisateur = trouverParticipationOrganisateur(match.getId());
         Membre responsable = participationOrganisateur.getMembre();
 
@@ -110,7 +127,6 @@ public class DetteService {
         BigDecimal totalPaye = calculerTotalPayePourMatch(match.getId());
         BigDecimal montantRestant = normaliserMontant(prixTotal.subtract(totalPaye));
 
-        Optional<Dette> detteExistante = detteRepository.findByMatchId(match.getId());
 
         if (montantRestant.compareTo(ZERO) <= 0) {
             detteExistante.ifPresent(dette -> {
@@ -216,6 +232,11 @@ public class DetteService {
         Dette detteSauvegardee = detteRepository.save(dette);
 
         return convertirEnPaiementDetteResponse(paiementSauvegarde, detteSauvegardee);
+    }
+    private boolean dettePossedeDejaUnPaiement(Dette dette) {
+        return dette != null
+                && dette.getId() != null
+                && paiementRepository.existsByDetteId(dette.getId());
     }
 
     private Participation trouverParticipationOrganisateur(Long matchId) {

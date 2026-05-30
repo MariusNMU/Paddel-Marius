@@ -15,6 +15,9 @@ export interface AuthJoueurResponse {
   siteRattachementId: number | null;
   nomSiteRattachement: string | null;
   actif: boolean;
+  soldeCredit?: number;
+  token?: string;
+  expirationToken?: string;
 }
 
 export interface ConnexionAdminRequest {
@@ -31,4 +34,6 @@ export interface AuthAdminResponse {
   siteId: number | null;
   nomSite: string | null;
   actif: boolean;
+  token?: string;
+  expirationToken?: string;
 }

@@ -19,18 +19,31 @@ public class AdminMembreController {
 
     @GetMapping
     public ResponseEntity<List<MembreResponse>> listerMembres(
+            @RequestHeader(name = "Authorization", required = false)
+            String authorization,
+
             @RequestHeader(name = "X-Admin-Login", required = false)
             String adminLogin,
 
             @RequestParam(required = false)
             Long siteId
     ) {
-        adminAuthorizationService.verifierAccesAdminSite(adminLogin, siteId);
+        String adminIdentite = choisirIdentiteAdmin(authorization, adminLogin);
+
+        adminAuthorizationService.verifierAccesAdminSite(adminIdentite, siteId);
 
         if (siteId == null) {
             return ResponseEntity.ok(membreAdminService.listerTousLesMembres());
         }
 
         return ResponseEntity.ok(membreAdminService.listerMembresParSite(siteId));
+    }
+
+    private String choisirIdentiteAdmin(String authorization, String adminLogin) {
+        if (authorization != null && !authorization.isBlank()) {
+            return authorization;
+        }
+
+        return adminLogin;
     }
 }

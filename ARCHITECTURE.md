@@ -534,7 +534,17 @@ Règles :
 
 Les mots de passe ne sont pas stockés en clair.  
 Le backend utilise BCrypt via `spring-security-crypto`.
+### JWT MVP compatible
 
+Le projet utilise un JWT MVP compatible avec l'architecture existante.
+
+Après une connexion réussie, le backend génère un token signé.
+Le token est renvoyé au frontend dans la réponse d'authentification.
+Le frontend le stocke dans le service d'authentification existant.
+Un interceptor Angular ajoute ensuite le token aux requêtes HTTP avec :
+
+```txt
+Authorization: Bearer <token>
 ---
 
 ## 9. Base de données

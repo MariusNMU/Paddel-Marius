@@ -22,6 +22,9 @@ public class TraitementVeilleController {
 
     @PostMapping("/api/admin/matches/traitement-veille")
     public ResponseEntity<TraitementVeilleResponse> traiterVeille(
+            @RequestHeader(name = "Authorization", required = false)
+            String authorization,
+
             @RequestHeader(name = "X-Admin-Login", required = false)
             String adminLogin,
 
@@ -29,9 +32,19 @@ public class TraitementVeilleController {
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
     ) {
-        adminAuthorizationService.verifierAdminGlobal(adminLogin);
+        String adminIdentite = choisirIdentiteAdmin(authorization, adminLogin);
+
+        adminAuthorizationService.verifierAdminGlobal(adminIdentite);
 
         TraitementVeilleResponse response = traitementVeilleService.traiterVeille(date);
         return ResponseEntity.ok(response);
+    }
+
+    private String choisirIdentiteAdmin(String authorization, String adminLogin) {
+        if (authorization != null && !authorization.isBlank()) {
+            return authorization;
+        }
+
+        return adminLogin;
     }
 }

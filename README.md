@@ -45,6 +45,7 @@ Bean Validation
 H2 Database
 OpenAPI / Swagger
 BCrypt pour les mots de passe
+JWT MVP compatible avec signature HMAC SHA-256
 ```
 
 ### Frontend
@@ -144,6 +145,7 @@ Paddel-Marius/
 
 - inscription joueur ;
 - connexion joueur ;
+- - authentification avec token JWT MVP côté joueur et admin ;
 - consultation du solde ;
 - consultation des disponibilités ;
 - création d'un match ;

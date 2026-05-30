@@ -18,13 +18,26 @@ public class TraitementEcheanceController {
 
     @PostMapping("/api/admin/matches/traitement-echeance")
     public ResponseEntity<TraitementEcheanceResponse> traiterMatchesArrivesAEcheance(
+            @RequestHeader(name = "Authorization", required = false)
+            String authorization,
+
             @RequestHeader(name = "X-Admin-Login", required = false)
             String adminLogin
     ) {
-        adminAuthorizationService.verifierAdminGlobal(adminLogin);
+        String adminIdentite = choisirIdentiteAdmin(authorization, adminLogin);
+
+        adminAuthorizationService.verifierAdminGlobal(adminIdentite);
 
         return ResponseEntity.ok(
                 traitementEcheanceService.traiterMatchesArrivesAEcheance()
         );
+    }
+
+    private String choisirIdentiteAdmin(String authorization, String adminLogin) {
+        if (authorization != null && !authorization.isBlank()) {
+            return authorization;
+        }
+
+        return adminLogin;
     }
 }

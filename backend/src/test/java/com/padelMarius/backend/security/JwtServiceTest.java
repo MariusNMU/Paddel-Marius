@@ -1,0 +1,163 @@
+package com.padelMarius.backend.security;
+
+
+import com.padelMarius.backend.entity.Administrateur;
+import com.padelMarius.backend.entity.CategorieMembre;
+import com.padelMarius.backend.entity.Membre;
+import com.padelMarius.backend.entity.RoleAdministrateur;
+import com.padelMarius.backend.entity.Site;
+import com.padelMarius.backend.exception.AuthentificationException;
+import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+class JwtServiceTest {
+
+    private static final String SECRET =
+            "secret-de-test-suffisamment-long-pour-jwt-mvp";
+
+
+    private final Clock clock = Clock.fixed(
+            Instant.parse("2026-05-30T10:00:00Z"),
+            ZoneId.of("UTC")
+    );
+
+    @Test
+    void genererTokenAdmin_shouldReturnValidAdminToken() {
+        JwtService jwtService = new JwtService(
+                SECRET,
+                120,
+                clock
+        );
+
+        Site site = creerSite(1001L);
+
+        Administrateur administrateur = Administrateur.builder()
+                .emailOuLogin("admin-bruxelles")
+                .roleAdministrateur(RoleAdministrateur.SITE)
+                .site(site)
+                .actif(true)
+                .build();
+
+        JwtService.TokenGenere token = jwtService.genererTokenAdmin(administrateur);
+
+        JwtUtilisateur utilisateur = jwtService.extraireUtilisateurDepuisAuthorization(
+                "Bearer " + token.valeur()
+        );
+
+        assertEquals("admin-bruxelles", utilisateur.sujet());
+        assertEquals(JwtService.TYPE_UTILISATEUR_ADMIN, utilisateur.typeUtilisateur());
+        assertEquals("SITE", utilisateur.role());
+        assertEquals(1001L, utilisateur.siteId());
+    }
+
+    @Test
+    void genererTokenJoueur_shouldReturnValidPlayerToken() {
+        JwtService jwtService = new JwtService(
+                SECRET,
+                120,
+
+                clock
+        );
+
+        Membre membre = Membre.builder()
+                .matricule("G1001")
+                .categorieMembre(CategorieMembre.GLOBAL)
+                .actif(true)
+                .build();
+
+        JwtService.TokenGenere token = jwtService.genererTokenJoueur(membre);
+
+        JwtUtilisateur utilisateur = jwtService.extraireUtilisateurDepuisAuthorization(
+                "Bearer " + token.valeur()
+        );
+
+        assertEquals("G1001", utilisateur.sujet());
+        assertEquals(JwtService.TYPE_UTILISATEUR_JOUEUR, utilisateur.typeUtilisateur());
+        assertEquals("GLOBAL", utilisateur.role());
+        assertEquals(null, utilisateur.siteId());
+    }
+
+    @Test
+    void validerToken_shouldRejectTamperedToken() {
+        JwtService jwtService = new JwtService(
+                SECRET,
+                120,
+
+                clock
+        );
+
+        Membre membre = Membre.builder()
+                .matricule("G1001")
+                .categorieMembre(CategorieMembre.GLOBAL)
+                .actif(true)
+                .build();
+
+        JwtService.TokenGenere token = jwtService.genererTokenJoueur(membre);
+
+        String tokenModifie = token.valeur().substring(0, token.valeur().length() - 2) + "xx";
+
+        AuthentificationException exception = assertThrows(
+                AuthentificationException.class,
+                () -> jwtService.validerToken(tokenModifie)
+        );
+
+        assertEquals("Token JWT invalide.", exception.getMessage());
+    }
+
+    @Test
+    void validerToken_shouldRejectExpiredToken() {
+        JwtService jwtService = new JwtService(
+                SECRET,
+                1,
+
+                clock
+        );
+
+        Membre membre = Membre.builder()
+                .matricule("G1001")
+                .categorieMembre(CategorieMembre.GLOBAL)
+                .actif(true)
+                .build();
+
+        JwtService.TokenGenere token = jwtService.genererTokenJoueur(membre);
+
+        Clock clockApresExpiration = Clock.fixed(
+                Instant.parse("2026-05-30T10:02:00Z"),
+                ZoneId.of("UTC")
+        );
+
+        JwtService jwtServiceApresExpiration = new JwtService(
+                SECRET,
+                1,
+
+                clockApresExpiration
+        );
+
+        AuthentificationException exception = assertThrows(
+                AuthentificationException.class,
+                () -> jwtServiceApresExpiration.validerToken(token.valeur())
+        );
+
+        assertEquals("Token JWT expiré.", exception.getMessage());
+    }
+
+    private Site creerSite(Long id) {
+        Site site = Site.builder()
+                .code("BRU")
+                .nom("Padel Bruxelles")
+                .adresse("Rue du Padel 1")
+                .actif(true)
+                .build();
+
+        ReflectionTestUtils.setField(site, "id", id);
+
+        return site;
+    }
+}

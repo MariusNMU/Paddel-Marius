@@ -5,21 +5,40 @@ import { AuthContextService } from '../services/auth-context.service';
 export const adminAuthInterceptor: HttpInterceptorFn = (request, next) => {
   const authContextService = inject(AuthContextService);
 
-  if (!request.url.includes('/api/admin/')) {
+  if (!request.url.includes('/api/')) {
     return next(request);
   }
 
-  const admin = authContextService.admin();
+  const headers: Record<string, string> = {};
 
-  if (!admin) {
-    return next(request);
-  }
+  if (request.url.includes('/api/admin/')) {
+    const admin = authContextService.admin();
 
-  const requestAvecAdmin = request.clone({
-    setHeaders: {
-      'X-Admin-Login': admin.login
+    if (admin?.token) {
+      headers['Authorization'] = `Bearer ${admin.token}`;
     }
-  });
 
-  return next(requestAvecAdmin);
+    // Compatibilité MVP temporaire :
+    // l'ancien backend acceptait X-Admin-Login.
+    // On le garde pendant cette PR pour éviter une régression brutale.
+    if (admin?.login) {
+      headers['X-Admin-Login'] = admin.login;
+    }
+  } else {
+    const joueur = authContextService.joueur();
+
+    if (joueur?.token) {
+      headers['Authorization'] = `Bearer ${joueur.token}`;
+    }
+  }
+
+  if (Object.keys(headers).length === 0) {
+    return next(request);
+  }
+
+  return next(
+    request.clone({
+      setHeaders: headers
+    })
+  );
 };

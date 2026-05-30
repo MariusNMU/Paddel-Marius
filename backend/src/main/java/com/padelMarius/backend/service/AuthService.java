@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import com.padelMarius.backend.security.JwtService;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +32,7 @@ public class AuthService {
     private final MembreRepository membreRepository;
     private final AdministrateurRepository administrateurRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     @Transactional(readOnly = true)
     public AuthJoueurResponse authentifierJoueur(ConnexionJoueurRequest request) {
@@ -106,6 +108,7 @@ public class AuthService {
 
     private AuthJoueurResponse convertirJoueur(Membre membre) {
         Site siteRattachement = membre.getSiteRattachement();
+        JwtService.TokenGenere token = jwtService.genererTokenJoueur(membre);
 
         return new AuthJoueurResponse(
                 membre.getId(),
@@ -116,12 +119,15 @@ public class AuthService {
                 siteRattachement == null ? null : siteRattachement.getId(),
                 siteRattachement == null ? null : siteRattachement.getNom(),
                 membre.isActif(),
-                membre.getSoldeCredit()
+                membre.getSoldeCredit(),
+                token.valeur(),
+                token.expiration()
         );
     }
 
     private AuthAdminResponse convertirAdmin(Administrateur administrateur) {
         Site site = administrateur.getSite();
+        JwtService.TokenGenere token = jwtService.genererTokenAdmin(administrateur);
 
         return new AuthAdminResponse(
                 administrateur.getId(),
@@ -131,7 +137,9 @@ public class AuthService {
                 administrateur.getRoleAdministrateur(),
                 site == null ? null : site.getId(),
                 site == null ? null : site.getNom(),
-                administrateur.isActif()
+                administrateur.isActif(),
+                token.valeur(),
+                token.expiration()
         );
     }
 }

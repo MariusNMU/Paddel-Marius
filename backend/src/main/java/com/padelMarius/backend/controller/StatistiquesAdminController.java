@@ -22,6 +22,9 @@ public class StatistiquesAdminController {
 
     @GetMapping("/api/admin/statistiques")
     public ResponseEntity<StatistiquesAdminResponse> consulterStatistiques(
+            @RequestHeader(name = "Authorization", required = false)
+            String authorization,
+
             @RequestHeader(name = "X-Admin-Login", required = false)
             String adminLogin,
 
@@ -36,7 +39,9 @@ public class StatistiquesAdminController {
             @RequestParam(required = false)
             Long siteId
     ) {
-        adminAuthorizationService.verifierAccesAdminSite(adminLogin, siteId);
+        String adminIdentite = choisirIdentiteAdmin(authorization, adminLogin);
+
+        adminAuthorizationService.verifierAccesAdminSite(adminIdentite, siteId);
 
         StatistiquesAdminResponse response = statistiquesAdminService.calculerStatistiques(
                 dateDebut,
@@ -45,5 +50,13 @@ public class StatistiquesAdminController {
         );
 
         return ResponseEntity.ok(response);
+    }
+
+    private String choisirIdentiteAdmin(String authorization, String adminLogin) {
+        if (authorization != null && !authorization.isBlank()) {
+            return authorization;
+        }
+
+        return adminLogin;
     }
 }

@@ -7,6 +7,8 @@ import com.padelMarius.backend.entity.Site;
 import com.padelMarius.backend.exception.AuthentificationException;
 import com.padelMarius.backend.exception.AutorisationException;
 import com.padelMarius.backend.repository.AdministrateurRepository;
+import com.padelMarius.backend.security.JwtService;
+import com.padelMarius.backend.security.JwtUtilisateur;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,11 +28,17 @@ class AdminAuthorizationServiceTest {
     @Mock
     private AdministrateurRepository administrateurRepository;
 
+    @Mock
+    private JwtService jwtService;
+
     private AdminAuthorizationService adminAuthorizationService;
 
     @BeforeEach
     void setUp() {
-        adminAuthorizationService = new AdminAuthorizationService(administrateurRepository);
+        adminAuthorizationService = new AdminAuthorizationService(
+                administrateurRepository,
+                jwtService
+        );
     }
 
     @Test
@@ -46,6 +54,47 @@ class AdminAuthorizationServiceTest {
                 .thenReturn(Optional.of(admin));
 
         adminAuthorizationService.verifierAdminGlobal("admin-global");
+    }
+
+    @Test
+    void verifierAdminGlobal_shouldAcceptBearerJwtAdminToken() {
+        Administrateur admin = creerAdmin(
+                "admin-global",
+                RoleAdministrateur.GLOBAL,
+                null,
+                true
+        );
+
+        when(jwtService.extraireUtilisateurDepuisAuthorization("Bearer jwt-admin"))
+                .thenReturn(new JwtUtilisateur(
+                        "admin-global",
+                        JwtService.TYPE_UTILISATEUR_ADMIN,
+                        "GLOBAL",
+                        null
+                ));
+
+        when(administrateurRepository.findByEmailOuLogin("admin-global"))
+                .thenReturn(Optional.of(admin));
+
+        adminAuthorizationService.verifierAdminGlobal("Bearer jwt-admin");
+    }
+
+    @Test
+    void verifierAdminGlobal_shouldRejectBearerJwtPlayerToken() {
+        when(jwtService.extraireUtilisateurDepuisAuthorization("Bearer jwt-joueur"))
+                .thenReturn(new JwtUtilisateur(
+                        "G1001",
+                        JwtService.TYPE_UTILISATEUR_JOUEUR,
+                        "GLOBAL",
+                        null
+                ));
+
+        AuthentificationException exception = assertThrows(
+                AuthentificationException.class,
+                () -> adminAuthorizationService.verifierAdminGlobal("Bearer jwt-joueur")
+        );
+
+        assertEquals("Token administrateur requis.", exception.getMessage());
     }
 
     @Test

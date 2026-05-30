@@ -21,6 +21,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
+import com.padelMarius.backend.security.JwtService;
+import java.time.LocalDateTime;
 
 import java.util.Optional;
 
@@ -38,6 +40,9 @@ class AuthServiceTest {
     @Mock
     private AdministrateurRepository administrateurRepository;
 
+    @Mock
+    private JwtService jwtService;
+
     private AuthService authService;
     private PasswordEncoder passwordEncoder;
 
@@ -48,7 +53,8 @@ class AuthServiceTest {
         authService = new AuthService(
                 membreRepository,
                 administrateurRepository,
-                passwordEncoder
+                passwordEncoder,
+                jwtService
         );
     }
 
@@ -66,6 +72,11 @@ class AuthServiceTest {
 
         when(membreRepository.findByMatricule("S00001"))
                 .thenReturn(Optional.of(membre));
+        when(jwtService.genererTokenJoueur(membre))
+                .thenReturn(new JwtService.TokenGenere(
+                        "jwt-joueur",
+                        LocalDateTime.of(2026, 5, 30, 12, 0)
+                ));
 
         AuthJoueurResponse response = authService.authentifierJoueur(
                 new ConnexionJoueurRequest("S00001", "password")
@@ -79,6 +90,8 @@ class AuthServiceTest {
         assertEquals(1L, response.siteRattachementId());
         assertEquals("Padel Bruxelles", response.nomSiteRattachement());
         assertEquals(true, response.actif());
+        assertEquals("jwt-joueur", response.token());
+        assertEquals(LocalDateTime.of(2026, 5, 30, 12, 0), response.expirationToken());
     }
 
     @Test
@@ -167,6 +180,11 @@ class AuthServiceTest {
 
         when(administrateurRepository.findByEmailOuLogin("admin-global"))
                 .thenReturn(Optional.of(administrateur));
+        when(jwtService.genererTokenAdmin(administrateur))
+                .thenReturn(new JwtService.TokenGenere(
+                        "jwt-admin-global",
+                        LocalDateTime.of(2026, 5, 30, 12, 0)
+                ));
 
         AuthAdminResponse response = authService.authentifierAdmin(
                 new ConnexionAdminRequest("admin-global", "secret")
@@ -180,6 +198,7 @@ class AuthServiceTest {
         assertEquals(null, response.siteId());
         assertEquals(null, response.nomSite());
         assertEquals(true, response.actif());
+        assertEquals("jwt-admin-global", response.token());
     }
 
     @Test
@@ -197,6 +216,11 @@ class AuthServiceTest {
 
         when(administrateurRepository.findByEmailOuLogin("admin-bruxelles"))
                 .thenReturn(Optional.of(administrateur));
+        when(jwtService.genererTokenAdmin(administrateur))
+                .thenReturn(new JwtService.TokenGenere(
+                        "jwt-admin-site",
+                        LocalDateTime.of(2026, 5, 30, 12, 0)
+                ));
 
         AuthAdminResponse response = authService.authentifierAdmin(
                 new ConnexionAdminRequest("admin-bruxelles", "secret-site")
@@ -208,6 +232,7 @@ class AuthServiceTest {
         assertEquals(1L, response.siteId());
         assertEquals("Padel Bruxelles", response.nomSite());
         assertEquals(true, response.actif());
+        assertEquals("jwt-admin-site", response.token());
     }
 
     @Test

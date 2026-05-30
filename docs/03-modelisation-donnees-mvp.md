@@ -1,6 +1,6 @@
 # Modélisation des données du MVP
 
-Dernière mise à jour : 2026-05-14
+Dernière mise à jour : 2026-05-25
 
 ## 1. Objectif du document
 
@@ -145,11 +145,12 @@ Ce choix reste simple pour l’examen :
 - siteRattachement optionnel
 - actif
 - soldeCredit
+- motDePasseHash
 
 **Règles principales :**
 
 - le matricule est unique ;
-- un joueur se connecte uniquement avec son matricule ;
+- un joueur se connecte avec son matricule  + mot de passe ;
 - pas de login ni mot de passe pour les joueurs ;
 - un membre `GLOBAL` a un matricule de type `Gxxxx` ;
 - un membre `SITE` a un matricule de type `Sxxxx` ;
@@ -158,6 +159,9 @@ Ce choix reste simple pour l’examen :
 - un membre `SITE` doit avoir un site de rattachement ;
 - un membre `GLOBAL` ou `LIBRE` n’a pas besoin de site de rattachement ;
 - un membre inactif ne peut pas être utilisé pour les actions métier.
+
+
+---
 
 ---
 

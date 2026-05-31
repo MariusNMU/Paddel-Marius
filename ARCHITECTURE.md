@@ -658,21 +658,3 @@ start-server-and-test
 ```
 
 ---
-
-## 12. Conclusion
-
-L'architecture retenue est volontairement simple et claire.
-
-Elle respecte les exigences principales :
-
-- frontend séparé du backend ;
-- backend REST API ;
-- base relationnelle ;
-- couches controller / service / repository ;
-- tests backend visibles ;
-- tests frontend et Cypress ;
-- OpenAPI ;
-- CORS ;
-- guards Angular ;
-- rôles admin ;
-- aucun SQL dans le frontend.

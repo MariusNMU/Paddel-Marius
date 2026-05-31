@@ -447,15 +447,7 @@ CREATE TABLE membre (
 );
 ```
 
-Point important pour l’oral :
 
-```txt
-Le solde joueur est un champ du membre.
-Les paiements et remboursements modifient ce solde via les services backend.
-Le frontend ne modifie jamais la base directement.
-```
-
----
 
 ## 9. Choix DB et sécurité
 
@@ -490,27 +482,3 @@ En cible, le backend utilise un user applicatif avec droits CRUD, pas un user av
 
 ---
 
-## 10. Conclusion
-
-Ce modèle relationnel est volontairement simple pour accélérer la livraison du MVP.
-
-Il couvre les besoins essentiels :
-
-- sites ;
-- terrains ;
-- horaires ;
-- fermetures ;
-- joueurs ;
-- administrateurs ;
-- matches ;
-- participations ;
-- paiements ;
-- dettes ;
-- pénalités ;
-- solde crédit joueur ;
-- statistiques ;
-- historique des transactions.
-
-La logique métier complexe reste dans les services backend.  
-La base porte les relations, les clés étrangères et les contraintes simples.  
-Le frontend Angular consomme uniquement l’API REST et ne contient aucun SQL.

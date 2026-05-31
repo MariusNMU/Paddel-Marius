@@ -60,7 +60,7 @@ INSERT INTO membre (
       (2007, 'G9999', 'Inactif', 'Test', 'GLOBAL', NULL, FALSE, '$2y$10$CCb6yUS4grhSHq5ou4tL7.BfjjnK4ahv/qEuiF9Bj.rxiG1ofstya', 100.00);
 
 -- Administrateurs
-ININSERT INTO administrateur (
+INSERT INTO administrateur (
     id,
     nom,
     prenom,

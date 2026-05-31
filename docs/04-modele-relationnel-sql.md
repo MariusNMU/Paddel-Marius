@@ -126,7 +126,7 @@ Colonnes :
 - `matricule` : VARCHAR(10), NOT NULL, UNIQUE
 - `nom` : VARCHAR(100), NOT NULL
 - `prenom` : VARCHAR(100), NOT NULL
-- `mot_de_passe_hash` : VARCHAR(255), NOT NULL
+- `mot_de_passe_hash` : VARCHAR(255), NOT NULL, hash BCrypt du mot de passe joueur
 - `categorie_membre` : VARCHAR(20), NOT NULL
 - `site_rattachement_id` : BIGINT, NULL, FK vers `site(id)`
 - `actif` : BOOLEAN, NOT NULL
@@ -472,13 +472,6 @@ Choix cible expliqué dans la documentation DB :
 - aucun user DB pour le frontend.
 - les mots de passe ne sont jamais stockés en clair. La base stocke uniquement des hash BCrypt.
 
-Phrase à savoir dire :
-
-```txt
-Le frontend n'a aucun accès à la base.
-Le backend est le seul composant qui se connecte à la DB.
-En cible, le backend utilise un user applicatif avec droits CRUD, pas un user avec tous les droits.
-```
 
 ---
 

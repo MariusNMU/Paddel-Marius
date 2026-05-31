@@ -150,8 +150,10 @@ Ce choix reste simple pour l’examen :
 **Règles principales :**
 
 - le matricule est unique ;
-- un joueur se connecte avec son matricule  + mot de passe ;
-- pas de login ni mot de passe pour les joueurs ;
+- un joueur se connecte avec son matricule et son mot de passe ;
+- le matricule reste l'identifiant métier principal du joueur ;
+- il n'y a pas de login séparé pour les joueurs ;
+- le mot de passe est stocké sous forme de hash BCrypt côté backend ;
 - un membre `GLOBAL` a un matricule de type `Gxxxx` ;
 - un membre `SITE` a un matricule de type `Sxxxx` ;
 - un membre `LIBRE` a un matricule de type `Lxxxx` ;

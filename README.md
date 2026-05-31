@@ -2,32 +2,30 @@
 
 Application web de réservation de terrains de padel.
 
-Le projet est réalisé dans le cadre des cours PDW / SGBD.  
-L'objectif est de fournir un MVP fonctionnel, démontrable, testé et documenté.
+Le projet est réalisé dans le cadre du cours de développement web et du cahier des charges SGBD.
 
 ---
 
-## 1. Résumé du projet
+## 1. Objectif du projet
 
-Padel Marius permet de gérer plusieurs sites de padel.
+Padel Marius permet de gérer la réservation de terrains de padel sur plusieurs sites.
 
-Le MVP couvre :
+Le projet couvre les besoins suivants :
 
-- les sites ;
-- les terrains par site ;
-- les horaires annuels par site ;
-- les jours de fermeture globaux et locaux ;
-- les membres `GLOBAL`, `SITE`, `LIBRE` ;
-- les matches privés et publics ;
-- les réservations de terrains ;
-- les participations ;
-- les paiements ;
-- les dettes organisateur ;
-- les pénalités ;
-- le solde crédit joueur ;
-- les statistiques admin ;
-- une interface joueur ;
-- une interface administrateur.
+- gestion de plusieurs sites ;
+- gestion des terrains par site ;
+- gestion des horaires annuels propres à chaque site ;
+- gestion des jours de fermeture globaux et locaux ;
+- gestion des membres `GLOBAL`, `SITE` et `LIBRE` ;
+- réservation de matches privés ou publics ;
+- inscription et paiement des participants ;
+- gestion des dettes de l'organisateur ;
+- gestion des pénalités ;
+- consultation des réservations joueur ;
+- consultation du solde crédit joueur ;
+- consultation de l'historique des transactions ;
+- interface administrateur ;
+- statistiques administrateur.
 
 ---
 
@@ -38,14 +36,15 @@ Le MVP couvre :
 ```txt
 Java 21
 Spring Boot
-Maven Wrapper
 Spring Web MVC
 Spring Data JPA
 Bean Validation
+Maven Wrapper
 H2 Database
+PostgreSQL Docker optionnel
 OpenAPI / Swagger
-BCrypt pour les mots de passe
-JWT MVP compatible avec signature HMAC SHA-256
+BCrypt
+JWT MVP
 ```
 
 ### Frontend
@@ -55,6 +54,8 @@ Angular
 TypeScript
 Angular Router
 Angular HttpClient
+Angular Guards
+Angular Interceptor
 Vitest / Angular unit tests
 Cypress E2E
 ```
@@ -62,10 +63,11 @@ Cypress E2E
 ### Base de données
 
 ```txt
-H2 en mémoire pour le MVP
 SQL relationnel
-Seed automatique au démarrage backend
-Artefacts SQL fournis dans docs/db
+H2 en mémoire par défaut
+Seed automatique au démarrage du backend
+PostgreSQL Docker optionnel
+Artefacts SQL disponibles dans docs/db
 ```
 
 ---
@@ -81,16 +83,16 @@ Backend Spring Boot REST API
         |
         | JPA / Repositories
         v
-Base de données H2 SQL
+Base de données SQL
 ```
 
-Règles importantes :
+Règles d'architecture :
 
 ```txt
 Le frontend ne contient aucun SQL.
 Le frontend ne se connecte jamais directement à la base de données.
-Le backend est le seul composant qui accède à la base de données.
-Le backend expose une API REST.
+Le frontend appelle uniquement l'API HTTP du backend.
+Le backend est le seul composant applicatif qui accède à la base de données.
 ```
 
 ---
@@ -101,36 +103,59 @@ Le backend expose une API REST.
 Paddel-Marius/
   backend/
     src/main/java/com/padelMarius/backend/
-      controller/
-      service/
-      repository/
-      entity/
-      dto/
-      exception/
       config/
+      controller/
+      dto/
+      entity/
+      exception/
+      repository/
+      security/
+      service/
+
+    src/main/resources/
+      application.yml
+      application.properties
+      application-postgres.properties
+      data.sql
 
     src/test/java/com/padelMarius/backend/
-      controller/
-      service/
-      repository/
       config/
+      controller/
+      repository/
+      security/
+      service/
 
   frontend/
     src/app/
-      pages/
-      services/
-      models/
       guards/
       interceptors/
+      models/
+      pages/
+      services/
       shared/
+      app.config.ts
+      app.routes.ts
+      app.html
+      app.css
+
+    cypress/
+      e2e/
 
   docs/
     db/
+      README.md
       schema.sql
       data-demo.sql
       db-users.md
       db-users-h2.sql
+      postgres-demo-seed.md
 
+  docker/
+    postgres/
+      init/
+        01-create-users-and-rights.sql
+
+  docker-compose.yml
   README.md
   ARCHITECTURE.md
   EXPLOITATION.md
@@ -141,103 +166,205 @@ Paddel-Marius/
 
 ## 5. Fonctionnalités principales
 
-### Joueur
+### 5.1. Espace joueur
 
-- inscription joueur ;
-- connexion joueur ;
-- - authentification avec token JWT MVP côté joueur et admin ;
-- consultation du solde ;
-- consultation des disponibilités ;
-- création d'un match ;
-- consultation des matches publics ;
-- inscription à un match public avec paiement ;
-- consultation des réservations ;
-- consultation des dettes ;
-- paiement d'une dette ;
-- consultation de l'historique des transactions.
+L'espace joueur permet de :
 
-### Admin
+- se connecter avec un matricule et un mot de passe ;
+- consulter son solde crédit ;
+- consulter les disponibilités ;
+- organiser un match privé ou public ;
+- consulter les matches publics ;
+- rejoindre un match public avec paiement ;
+- consulter ses réservations ;
+- consulter ses invitations privées ;
+- confirmer et payer une invitation privée ;
+- refuser une invitation privée ;
+- consulter ses dettes ;
+- payer une dette ;
+- consulter l'historique de ses transactions.
 
-- connexion admin ;
-- dashboard admin ;
-- consultation des statistiques ;
-- consultation des membres ;
-- création d'une fermeture globale ou locale ;
-- traitement de veille ;
-- traitement d'échéance.
+### 5.2. Espace administrateur
+
+L'espace administrateur permet de :
+
+- se connecter avec un login et un mot de passe ;
+- consulter un tableau de bord ;
+- consulter les statistiques ;
+- consulter la liste des membres ;
+- créer une fermeture globale ;
+- créer une fermeture locale ;
+- annuler les matches concernés par une fermeture ;
+- déclencher le traitement de veille ;
+- déclencher le traitement d'échéance.
 
 ---
 
 ## 6. Règles métier principales
 
-- un match dure 1h30 ;
-- il y a 15 minutes entre deux matches ;
-- un match coûte 60 euros ;
-- une participation coûte 15 euros ;
-- un match contient maximum 4 joueurs ;
-- un match privé incomplet peut devenir public à J-1 ;
-- une participation non payée peut être libérée à J-1 ;
-- l'organisateur peut recevoir une dette si le match n'est pas entièrement payé ;
-- une dette ouverte bloque une nouvelle réservation ;
-- une pénalité active bloque une nouvelle réservation ;
-- un membre `GLOBAL` peut réserver sur tous les sites ;
-- un membre `SITE` peut réserver uniquement sur son site ;
-- un membre `LIBRE` peut réserver sur tous les sites mais avec une fenêtre plus courte ;
-- un admin `GLOBAL` gère tous les sites ;
-- un admin `SITE` gère uniquement son site.
+### 6.1. Sites, terrains et horaires
+
+- Un site possède plusieurs terrains.
+- Chaque terrain appartient à un seul site.
+- Les horaires de réservation sont définis par site et par année civile.
+- Les heures de début et de fin de réservation peuvent être différentes selon le site.
+- Une fermeture peut être globale ou locale.
+- Une fermeture globale concerne tous les sites.
+- Une fermeture locale concerne un seul site.
+
+### 6.2. Réservations et matches
+
+- Un match correspond à une réservation de terrain.
+- Un match dure 1h30.
+- Il y a 15 minutes entre deux matches sur un même terrain.
+- Un match coûte 60 euros.
+- Un match peut être privé ou public.
+- Un match contient au maximum 4 joueurs.
+- Une participation standard coûte 15 euros.
+- Une inscription à un match public est confirmée après paiement.
+
+### 6.3. Matches privés
+
+- Un match privé est organisé par un membre.
+- L'organisateur invite les autres joueurs.
+- Si une participation privée n'est pas payée à temps, la place peut être libérée.
+- Un match privé incomplet peut devenir public à J-1.
+- Une pénalité peut être appliquée à l'organisateur selon les règles métier.
+
+### 6.4. Matches publics
+
+- Les places disponibles sont visibles par les joueurs.
+- Un joueur rejoint lui-même un match public.
+- La validation est immédiate après paiement.
+- Le principe appliqué est : premier payé, premier servi.
+- Si le match n'est pas entièrement payé, l'organisateur porte le solde dû.
+
+### 6.5. Dettes et pénalités
+
+- Une dette ouverte bloque l'organisation d'un nouveau match.
+- Une dette peut être réglée par paiement.
+- Une pénalité active bloque l'organisation d'un nouveau match.
+- Une pénalité simple dure 7 jours.
+
+### 6.6. Catégories de membres
+
+```txt
+GLOBAL : matricule Gxxxx, réservation possible jusqu'à 21 jours avant le match, tous sites
+SITE   : matricule Sxxxx, réservation possible jusqu'à 14 jours avant le match, site de rattachement
+LIBRE  : matricule Lxxxx, réservation possible jusqu'à 5 jours avant le match, tous sites
+```
 
 ---
 
-## 7. Comptes de démonstration
+## 7. Authentification et sécurité
 
-### Joueurs
+### 7.1. Joueurs
 
-```txt
-G1001 / password
-Joueur GLOBAL actif
-
-G1002 / password
-Joueur GLOBAL actif avec dette ouverte
-
-S1001 / password
-Joueur SITE Bruxelles
-
-S1002 / password
-Joueur SITE Namur
-
-L1001 / password
-Joueur LIBRE actif
-
-L1002 / password
-Joueur LIBRE avec pénalité active
-
-G9999 / password
-Joueur inactif pour tester le refus
-```
-
-### Administrateurs
+Les joueurs se connectent avec :
 
 ```txt
-admin-global / secret
-Admin GLOBAL
-
-admin-bruxelles / secret-site
-Admin SITE Bruxelles
-
-admin-namur / secret-site
-Admin SITE Namur
-
-admin-inactif / secret
-Admin inactif pour tester le refus
+matricule
+mot de passe
 ```
 
-Les mots de passe de démonstration sont saisis en clair par l'utilisateur, mais ils sont stockés sous forme hashée côté backend.
+Le matricule est l'identifiant métier du joueur.
+
+Il n'y a pas de login séparé pour les joueurs.
+
+Le mot de passe est utilisé pour sécuriser l'authentification de session.
+
+Le backend ne stocke pas les mots de passe en clair.  
+Il stocke uniquement des hash BCrypt.
+
+### 7.2. Administrateurs
+
+Les administrateurs se connectent avec :
+
+```txt
+login
+mot de passe
+```
+
+Deux rôles administrateur existent :
+
+```txt
+GLOBAL
+SITE
+```
+
+Un administrateur `GLOBAL` peut gérer tous les sites.
+
+Un administrateur `SITE` est limité à son site de rattachement.
+
+### 7.3. JWT
+
+Après une connexion réussie, le backend génère un token JWT MVP.
+
+Le frontend stocke le token dans son service d'authentification.
+
+Un interceptor Angular ajoute le token aux requêtes HTTP.
+
+Header utilisé :
+
+```txt
+Authorization: Bearer <token>
+```
+
+### 7.4. Protection côté frontend et backend
+
+Le projet contient :
+
+- un service Angular d'authentification ;
+- des guards Angular pour protéger les routes joueur et administrateur ;
+- un interceptor Angular pour ajouter le JWT aux requêtes HTTP ;
+- une vérification backend des rôles administrateur ;
+- un stockage hashé des mots de passe avec BCrypt.
 
 ---
 
-## 8. Démarrage rapide
+## 8. API HTTP
 
-### Backend
+Le backend expose une API REST.
+
+Exemples d'endpoints :
+
+```http
+GET /api/health
+POST /api/auth/joueur
+POST /api/auth/admin
+GET /api/disponibilites?siteId=1001&date=2026-06-20
+POST /api/matches
+GET /api/matches/publics?siteId=1001&date=2026-06-20
+POST /api/matches/{matchId}/participants/public/payer
+GET /api/membres/{matricule}/solde
+GET /api/membres/{matricule}/reservations
+GET /api/membres/{matricule}/dettes/ouvertes
+GET /api/membres/{matricule}/paiements
+POST /api/dettes/{detteId}/paiements
+POST /api/admin/fermetures
+GET /api/admin/statistiques?dateDebut=2026-05-01&dateFin=2026-06-30
+GET /api/admin/membres
+```
+
+Swagger est disponible quand le backend est démarré :
+
+```txt
+http://localhost:8080/swagger-ui.html
+```
+
+La spécification OpenAPI JSON est disponible ici :
+
+```txt
+http://localhost:8080/v3/api-docs
+```
+
+---
+
+## 9. Démarrage rapide
+
+### 9.1. Backend
+
+Depuis la racine du projet :
 
 ```powershell
 cd backend
@@ -250,19 +377,19 @@ Backend disponible sur :
 http://localhost:8080
 ```
 
-Swagger :
-
-```txt
-http://localhost:8080/swagger-ui.html
-```
-
 Health check :
 
 ```txt
 http://localhost:8080/api/health
 ```
 
-### Frontend
+Swagger :
+
+```txt
+http://localhost:8080/swagger-ui.html
+```
+
+### 9.2. Frontend
 
 Dans un deuxième terminal :
 
@@ -278,11 +405,126 @@ Frontend disponible sur :
 http://localhost:4200
 ```
 
+Le frontend utilise un proxy Angular pour rediriger les appels `/api/**` vers le backend Spring Boot.
+
+Fichier concerné :
+
+```txt
+frontend/proxy.conf.json
+```
+
 ---
 
-## 9. Tests
+## 10. Base de données
 
-### Backend
+### 10.1. H2 par défaut
+
+Le MVP utilise H2 en mémoire par défaut.
+
+```txt
+URL      : jdbc:h2:mem:padeldb
+Username : sa
+Password : vide
+```
+
+La base démarre automatiquement avec le backend.
+
+Le schéma est créé automatiquement par JPA/Hibernate pour le MVP local.
+
+Les données de démonstration sont chargées automatiquement via :
+
+```txt
+backend/src/main/resources/data.sql
+```
+
+Aucun script SQL manuel n'est nécessaire pour lancer la démonstration locale avec H2.
+
+### 10.2. Artefacts DB
+
+Les artefacts DB sont disponibles dans :
+
+```txt
+docs/db/
+```
+
+Fichiers principaux :
+
+```txt
+docs/db/README.md
+docs/db/schema.sql
+docs/db/data-demo.sql
+docs/db/db-users.md
+docs/db/db-users-h2.sql
+docs/db/postgres-demo-seed.md
+```
+
+Rôle des fichiers :
+
+```txt
+schema.sql            : schéma relationnel du MVP
+data-demo.sql         : données de démonstration lisibles
+db-users.md           : explication des users DB et droits associés
+db-users-h2.sql       : exemple pédagogique de users DB H2
+postgres-demo-seed.md : explication du seed PostgreSQL optionnel
+```
+
+### 10.3. PostgreSQL Docker optionnel
+
+H2 reste la configuration par défaut.
+
+Une base PostgreSQL locale peut aussi être lancée avec Docker :
+
+```powershell
+docker compose up -d postgres
+```
+
+Puis le backend peut être démarré avec le profil PostgreSQL :
+
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=postgres
+```
+
+Le seed PostgreSQL de démonstration est exécuté automatiquement avec ce profil.
+
+Documentation complémentaire :
+
+```txt
+docs/db/postgres-demo-seed.md
+```
+
+### 10.4. Users DB
+
+Pour le MVP local H2 :
+
+```txt
+sa
+mot de passe vide
+```
+
+Pour une cible plus réaliste, la documentation DB prévoit :
+
+```txt
+padel_migration : création / évolution du schéma
+padel_app       : user applicatif backend avec droits CRUD
+padel_readonly  : user lecture seule
+```
+
+Point important :
+
+```txt
+Le frontend n'a aucun user DB.
+Le frontend ne se connecte jamais à la base.
+Le backend est le seul composant qui accède à la DB.
+```
+
+---
+
+## 11. Tests et validation
+
+### 11.1. Tests backend
+
+Depuis la racine du projet :
 
 ```powershell
 cd backend
@@ -290,15 +532,19 @@ cd backend
 cd ..
 ```
 
-### Frontend unit tests
+Les tests backend couvrent notamment :
 
-```powershell
-cd frontend
-npm run test
-cd ..
+```txt
+controllers
+services
+repositories
+config
+security
 ```
 
-### Frontend build
+### 11.2. Build frontend
+
+Depuis la racine du projet :
 
 ```powershell
 cd frontend
@@ -306,7 +552,19 @@ npm run build
 cd ..
 ```
 
-### Cypress E2E
+### 11.3. Tests unitaires frontend
+
+Depuis la racine du projet :
+
+```powershell
+cd frontend
+npm run test
+cd ..
+```
+
+### 11.4. Tests Cypress E2E
+
+Depuis la racine du projet :
 
 ```powershell
 cd frontend
@@ -314,42 +572,145 @@ npm run cypress:run
 cd ..
 ```
 
+Les tests Cypress couvrent les principaux happy flows de l'application.
+
 ---
 
-## 10. Documentation de remise
+## 12. Documentation du projet
 
 Les documents principaux sont à la racine :
 
 ```txt
+README.md
 ARCHITECTURE.md
 EXPLOITATION.md
 DEMO.md
 ```
 
-Les documents DB sont dans :
+### `ARCHITECTURE.md`
 
-```txt
-docs/db/
-```
+Décrit :
 
-Fichiers DB importants :
+- l'architecture frontend ;
+- l'architecture backend ;
+- la séparation controller / service / repository ;
+- les outils et frameworks structurants ;
+- Swagger / OpenAPI ;
+- CORS ;
+- sécurité MVP ;
+- JWT ;
+- tests.
 
-```txt
-docs/db/schema.sql
-docs/db/data-demo.sql
-docs/db/db-users.md
-docs/db/db-users-h2.sql
-```
+### `EXPLOITATION.md`
+
+Décrit :
+
+- les prérequis ;
+- les commandes backend ;
+- les commandes frontend ;
+- les ports utilisés ;
+- les commandes de test ;
+- la base de données utilisée ;
+- les comptes de démonstration ;
+- les informations utiles pour démarrer le projet.
+
+### `DEMO.md`
+
+Décrit :
+
+- le scénario de démonstration ;
+- les comptes de démonstration ;
+- les fonctionnalités principales à parcourir ;
+- les cas de refus prévus ;
+- les points techniques visibles dans le projet.
+
+### `docs/db/`
+
+Contient :
+
+- le schéma SQL ;
+- les données de démonstration ;
+- la documentation des users DB ;
+- les scripts DB utiles au projet.
 
 ---
 
-## 11. GitHub
+## 13. GitHub et méthode de travail
 
-Le projet est suivi avec :
+Le projet est suivi avec GitHub.
 
-- issues GitHub ;
-- branche par issue ;
-- commits courts et cohérents ;
-- pull requests ;
-- validation avant merge.
+Méthode utilisée :
 
+```txt
+issue GitHub par fonctionnalité
+branche par issue
+commits courts et cohérents
+pull request avant merge
+validation avant merge
+```
+
+Le dépôt contient le frontend et le backend dans un seul repository.
+
+---
+
+## 14. Commandes utiles
+
+### Backend
+
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run
+```
+
+### Tests backend
+
+```powershell
+cd backend
+.\mvnw.cmd clean test
+cd ..
+```
+
+### Frontend
+
+```powershell
+cd frontend
+npm install
+npm start
+```
+
+### Build frontend
+
+```powershell
+cd frontend
+npm run build
+cd ..
+```
+
+### Tests frontend
+
+```powershell
+cd frontend
+npm run test
+cd ..
+```
+
+### Cypress
+
+```powershell
+cd frontend
+npm run cypress:run
+cd ..
+```
+
+### PostgreSQL Docker optionnel
+
+```powershell
+docker compose up -d postgres
+```
+
+### Backend avec PostgreSQL optionnel
+
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=postgres
+```

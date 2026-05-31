@@ -408,8 +408,9 @@ admin-auth.interceptor.ts
 
 Rôle :
 
-- ajouter le header `X-Admin-Login` aux requêtes `/api/admin/**` ;
-- permettre au backend de vérifier le rôle admin.
+- ajouter le header `Authorization: Bearer <token>` aux requêtes API quand un joueur ou un administrateur est connecté ;
+- garder temporairement `X-Admin-Login` pour compatibilité MVP sur les endpoints admin ;
+- permettre au backend de vérifier l'identité et le rôle admin.
 
 ---
 

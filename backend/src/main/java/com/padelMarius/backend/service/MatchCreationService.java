@@ -100,8 +100,6 @@ public class MatchCreationService {
 
         Participation participationEnregistree = participationRepository.save(participationOrganisateur);
 
-        detteService.creerDetteInitialeOrganisateur(matchEnregistre, organisateur);
-
         return new MatchResponse(
                 matchEnregistre.getId(),
                 matchEnregistre.getTerrain().getId(),

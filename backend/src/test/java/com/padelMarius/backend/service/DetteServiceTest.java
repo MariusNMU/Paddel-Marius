@@ -384,10 +384,30 @@ class DetteServiceTest {
     }
 
     private PadelMatch creerMatch(Long id, Terrain terrain) {
+        return creerMatch(
+                id,
+                terrain,
+                LocalDateTime.of(2026, 5, 7, 11, 0)
+        );
+    }
+
+    private PadelMatch creerMatchFutur(Long id, Terrain terrain) {
+        return creerMatch(
+                id,
+                terrain,
+                LocalDateTime.of(2026, 5, 8, 9, 0)
+        );
+    }
+
+    private PadelMatch creerMatch(
+            Long id,
+            Terrain terrain,
+            LocalDateTime dateHeureDebut
+    ) {
         PadelMatch match = PadelMatch.builder()
                 .terrain(terrain)
-                .dateHeureDebut(LocalDateTime.of(2026, 5, 20, 9, 0))
-                .dateHeureFin(LocalDateTime.of(2026, 5, 20, 10, 30))
+                .dateHeureDebut(dateHeureDebut)
+                .dateHeureFin(dateHeureDebut.plusMinutes(90))
                 .modeCreation(ModeCreation.PUBLIC)
                 .visibiliteCourante(VisibiliteMatch.PUBLIC)
                 .prixTotal(new BigDecimal("60.00"))

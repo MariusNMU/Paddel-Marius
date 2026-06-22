@@ -3,6 +3,7 @@ package com.padelMarius.backend.controller;
 import com.padelMarius.backend.dto.membre.InscriptionMembreRequest;
 import com.padelMarius.backend.dto.membre.MembreResponse;
 import com.padelMarius.backend.dto.membre.SoldeJoueurResponse;
+import com.padelMarius.backend.service.JoueurAuthorizationService;
 import com.padelMarius.backend.service.MembreInscriptionService;
 import com.padelMarius.backend.service.MembreSoldeService;
 import jakarta.validation.Valid;
@@ -18,6 +19,7 @@ public class MembreController {
 
     private final MembreInscriptionService membreInscriptionService;
     private final MembreSoldeService membreSoldeService;
+    private final JoueurAuthorizationService joueurAuthorizationService;
 
     @PostMapping("/inscription")
     public ResponseEntity<MembreResponse> inscrireMembre(
@@ -32,8 +34,22 @@ public class MembreController {
 
     @GetMapping("/{matricule}/solde")
     public ResponseEntity<SoldeJoueurResponse> consulterSolde(
-            @PathVariable String matricule
+            @RequestHeader(
+                    name = "Authorization",
+                    required = false
+            )
+            String authorization,
+
+            @PathVariable
+            String matricule
     ) {
-        return ResponseEntity.ok(membreSoldeService.consulterSolde(matricule));
+        joueurAuthorizationService.verifierAccesMatricule(
+                authorization,
+                matricule
+        );
+
+        return ResponseEntity.ok(
+                membreSoldeService.consulterSolde(matricule)
+        );
     }
 }

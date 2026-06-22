@@ -25,9 +25,6 @@ public class StatistiquesAdminController {
             @RequestHeader(name = "Authorization", required = false)
             String authorization,
 
-            @RequestHeader(name = "X-Admin-Login", required = false)
-            String adminLogin,
-
             @RequestParam
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate dateDebut,
@@ -39,24 +36,18 @@ public class StatistiquesAdminController {
             @RequestParam(required = false)
             Long siteId
     ) {
-        String adminIdentite = choisirIdentiteAdmin(authorization, adminLogin);
-
-        adminAuthorizationService.verifierAccesAdminSite(adminIdentite, siteId);
-
-        StatistiquesAdminResponse response = statistiquesAdminService.calculerStatistiques(
-                dateDebut,
-                dateFin,
+        adminAuthorizationService.verifierAccesAdminSite(
+                authorization,
                 siteId
         );
 
+        StatistiquesAdminResponse response =
+                statistiquesAdminService.calculerStatistiques(
+                        dateDebut,
+                        dateFin,
+                        siteId
+                );
+
         return ResponseEntity.ok(response);
-    }
-
-    private String choisirIdentiteAdmin(String authorization, String adminLogin) {
-        if (authorization != null && !authorization.isBlank()) {
-            return authorization;
-        }
-
-        return adminLogin;
     }
 }

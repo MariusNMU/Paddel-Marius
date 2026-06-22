@@ -15,14 +15,11 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AdminAuthorizationService {
 
-    private static final String HEADER_ADMIN_OBLIGATOIRE =
-            "Administrateur requis pour accéder à cette opération.";
-
     private final AdministrateurRepository administrateurRepository;
     private final JwtService jwtService;
 
-    public void verifierAdminGlobal(String adminIdentite) {
-        Administrateur administrateur = chargerAdministrateurActif(adminIdentite);
+    public void verifierAdminGlobal(String authorizationHeader) {
+        Administrateur administrateur = chargerAdministrateurActif(authorizationHeader);
 
         if (administrateur.getRoleAdministrateur() != RoleAdministrateur.GLOBAL) {
             throw new AutorisationException(
@@ -31,8 +28,8 @@ public class AdminAuthorizationService {
         }
     }
 
-    public void verifierAccesAdminSite(String adminIdentite, Long siteIdDemande) {
-        Administrateur administrateur = chargerAdministrateurActif(adminIdentite);
+    public void verifierAccesAdminSite(String authorizationHeader, Long siteIdDemande) {
+        Administrateur administrateur = chargerAdministrateurActif(authorizationHeader);
 
         if (administrateur.getRoleAdministrateur() == RoleAdministrateur.GLOBAL) {
             return;
@@ -48,11 +45,11 @@ public class AdminAuthorizationService {
     }
 
     public void verifierAccesFermeture(
-            String adminIdentite,
+            String authorizationHeader,
             PorteeFermeture portee,
             Long siteId
     ) {
-        Administrateur administrateur = chargerAdministrateurActif(adminIdentite);
+        Administrateur administrateur = chargerAdministrateurActif(authorizationHeader);
 
         if (administrateur.getRoleAdministrateur() == RoleAdministrateur.GLOBAL) {
             return;
@@ -73,8 +70,8 @@ public class AdminAuthorizationService {
         verifierAdminSiteSurSonSite(administrateur, siteId);
     }
 
-    private Administrateur chargerAdministrateurActif(String adminIdentite) {
-        String login = extraireLoginAdministrateur(adminIdentite);
+    private Administrateur chargerAdministrateurActif(String authorizationHeader) {
+        String login = extraireLoginAdministrateur(authorizationHeader);
 
         Administrateur administrateur = administrateurRepository
                 .findByEmailOuLogin(login)
@@ -91,26 +88,19 @@ public class AdminAuthorizationService {
         return administrateur;
     }
 
-    private String extraireLoginAdministrateur(String adminIdentite) {
-        if (adminIdentite == null || adminIdentite.isBlank()) {
-            throw new AuthentificationException(HEADER_ADMIN_OBLIGATOIRE);
+    private String extraireLoginAdministrateur(String authorizationHeader) {
+        JwtUtilisateur utilisateur = jwtService
+                .extraireUtilisateurDepuisAuthorization(authorizationHeader);
+
+        if (!JwtService.TYPE_UTILISATEUR_ADMIN.equals(
+                utilisateur.typeUtilisateur()
+        )) {
+            throw new AuthentificationException(
+                    "Token administrateur requis."
+            );
         }
 
-        String valeur = adminIdentite.trim();
-
-        if (valeur.startsWith("Bearer ")) {
-            JwtUtilisateur utilisateur = jwtService.extraireUtilisateurDepuisAuthorization(valeur);
-
-            if (!JwtService.TYPE_UTILISATEUR_ADMIN.equals(utilisateur.typeUtilisateur())) {
-                throw new AuthentificationException("Token administrateur requis.");
-            }
-
-            return utilisateur.sujet();
-        }
-
-        // Compatibilité MVP temporaire :
-        // permet encore aux anciens tests et anciens appels X-Admin-Login de fonctionner.
-        return valeur;
+        return utilisateur.sujet();
     }
 
     private void verifierAdminSiteSurSonSite(

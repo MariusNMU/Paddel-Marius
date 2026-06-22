@@ -25,26 +25,15 @@ public class TraitementVeilleController {
             @RequestHeader(name = "Authorization", required = false)
             String authorization,
 
-            @RequestHeader(name = "X-Admin-Login", required = false)
-            String adminLogin,
-
             @RequestParam
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             LocalDate date
     ) {
-        String adminIdentite = choisirIdentiteAdmin(authorization, adminLogin);
+        adminAuthorizationService.verifierAdminGlobal(authorization);
 
-        adminAuthorizationService.verifierAdminGlobal(adminIdentite);
+        TraitementVeilleResponse response =
+                traitementVeilleService.traiterVeille(date);
 
-        TraitementVeilleResponse response = traitementVeilleService.traiterVeille(date);
         return ResponseEntity.ok(response);
-    }
-
-    private String choisirIdentiteAdmin(String authorization, String adminLogin) {
-        if (authorization != null && !authorization.isBlank()) {
-            return authorization;
-        }
-
-        return adminLogin;
     }
 }

@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -43,25 +44,36 @@ class TraitementEcheanceControllerTest {
                 .thenReturn(response);
 
         mockMvc.perform(post("/api/admin/matches/traitement-echeance")
-                        .header("X-Admin-Login", "admin-global"))
+                        .header(
+                                "Authorization",
+                                "Bearer jwt-admin-global"
+                        ))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.matchesAnalyses").value(2))
                 .andExpect(jsonPath("$.matchesDemarres").value(1))
                 .andExpect(jsonPath("$.dettesCreees").value(1));
+
+        verify(adminAuthorizationService).verifierAdminGlobal(
+                "Bearer jwt-admin-global"
+        );
     }
 
     @Test
-    void shouldReturn401_whenAdminHeaderIsMissing() throws Exception {
+    void shouldReturn401_whenOnlyLegacyAdminHeaderIsProvided() throws Exception {
         org.mockito.Mockito.doThrow(new AuthentificationException(
-                        "Administrateur requis pour accéder à cette opération."
+                        "Token JWT obligatoire."
                 )).when(adminAuthorizationService)
                 .verifierAdminGlobal(null);
 
-        mockMvc.perform(post("/api/admin/matches/traitement-echeance"))
+        mockMvc.perform(post("/api/admin/matches/traitement-echeance")
+                        .header(
+                                "X-Admin-Login",
+                                "admin-global"
+                        ))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("AUTHENTIFICATION_INVALIDE"))
                 .andExpect(jsonPath("$.message").value(
-                        "Administrateur requis pour accéder à cette opération."
+                        "Token JWT obligatoire."
                 ));
     }
 }

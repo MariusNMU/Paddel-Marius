@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -54,7 +55,10 @@ class AdminFermetureControllerTest {
                 .thenReturn(response);
 
         mockMvc.perform(post("/api/admin/fermetures")
-                        .header("X-Admin-Login", "admin-global")
+                        .header(
+                                "Authorization",
+                                "Bearer jwt-admin-global"
+                        )
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -70,12 +74,21 @@ class AdminFermetureControllerTest {
                 .andExpect(jsonPath("$.portee").value("GLOBALE"))
                 .andExpect(jsonPath("$.motif").value("Fermeture exceptionnelle"))
                 .andExpect(jsonPath("$.nombreMatchesAnnules").value(2));
+
+        verify(adminAuthorizationService).verifierAccesFermeture(
+                "Bearer jwt-admin-global",
+                PorteeFermeture.GLOBALE,
+                null
+        );
     }
 
     @Test
     void creerFermeture_shouldReturnBadRequest_whenDateIsMissing() throws Exception {
         mockMvc.perform(post("/api/admin/fermetures")
-                        .header("X-Admin-Login", "admin-global")
+                        .header(
+                                "Authorization",
+                                "Bearer jwt-admin-global"
+                        )
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -95,7 +108,10 @@ class AdminFermetureControllerTest {
                 ));
 
         mockMvc.perform(post("/api/admin/fermetures")
-                        .header("X-Admin-Login", "admin-global")
+                        .header(
+                                "Authorization",
+                                "Bearer jwt-admin-global"
+                        )
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -113,13 +129,17 @@ class AdminFermetureControllerTest {
     }
 
     @Test
-    void creerFermeture_shouldReturn401_whenAdminHeaderIsMissing() throws Exception {
+    void shouldReturn401_whenOnlyLegacyAdminHeaderIsProvided() throws Exception {
         org.mockito.Mockito.doThrow(new AuthentificationException(
-                "Administrateur requis pour accéder à cette opération."
+                "Token JWT obligatoire."
         )).when(adminAuthorizationService)
                 .verifierAccesFermeture(null, PorteeFermeture.GLOBALE, null);
 
         mockMvc.perform(post("/api/admin/fermetures")
+                        .header(
+                                "X-Admin-Login",
+                                "admin-global"
+                        )
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -132,7 +152,7 @@ class AdminFermetureControllerTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("AUTHENTIFICATION_INVALIDE"))
                 .andExpect(jsonPath("$.message").value(
-                        "Administrateur requis pour accéder à cette opération."
+                        "Token JWT obligatoire."
                 ));
     }
 }

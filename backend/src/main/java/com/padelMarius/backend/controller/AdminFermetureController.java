@@ -23,32 +23,20 @@ public class AdminFermetureController {
             @RequestHeader(name = "Authorization", required = false)
             String authorization,
 
-            @RequestHeader(name = "X-Admin-Login", required = false)
-            String adminLogin,
-
             @Valid @RequestBody
             CreerFermetureRequest request
     ) {
-        String adminIdentite = choisirIdentiteAdmin(authorization, adminLogin);
-
         adminAuthorizationService.verifierAccesFermeture(
-                adminIdentite,
+                authorization,
                 request.portee(),
                 request.siteId()
         );
 
-        FermetureAdminResponse response = adminFermetureService.creerFermeture(request);
+        FermetureAdminResponse response =
+                adminFermetureService.creerFermeture(request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
-    }
-
-    private String choisirIdentiteAdmin(String authorization, String adminLogin) {
-        if (authorization != null && !authorization.isBlank()) {
-            return authorization;
-        }
-
-        return adminLogin;
     }
 }

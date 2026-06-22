@@ -4,6 +4,7 @@ import com.padelMarius.backend.dto.dette.DetteResponse;
 import com.padelMarius.backend.dto.dette.PaiementDetteResponse;
 import com.padelMarius.backend.dto.dette.PayerDetteRequest;
 import com.padelMarius.backend.service.DetteService;
+import com.padelMarius.backend.service.JoueurAuthorizationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -21,10 +23,26 @@ import java.util.List;
 public class DetteController {
 
     private final DetteService detteService;
+    private final JoueurAuthorizationService joueurAuthorizationService;
 
     @PostMapping("/api/matches/{matchId}/dettes/generer")
-    public ResponseEntity<DetteResponse> genererDettePourMatch(@PathVariable Long matchId) {
-        DetteResponse response = detteService.genererDettePourMatch(matchId);
+    public ResponseEntity<DetteResponse> genererDettePourMatch(
+            @RequestHeader(
+                    name = "Authorization",
+                    required = false
+            )
+            String authorization,
+
+            @PathVariable
+            Long matchId
+    ) {
+        joueurAuthorizationService.verifierOrganisateurDuMatch(
+                authorization,
+                matchId
+        );
+
+        DetteResponse response =
+                detteService.genererDettePourMatch(matchId);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -32,18 +50,49 @@ public class DetteController {
     }
 
     @GetMapping("/api/membres/{matricule}/dettes/ouvertes")
-    public ResponseEntity<List<DetteResponse>> consulterDettesOuvertes(@PathVariable String matricule) {
-        List<DetteResponse> response = detteService.consulterDettesOuvertes(matricule);
+    public ResponseEntity<List<DetteResponse>>
+    consulterDettesOuvertes(
+            @RequestHeader(
+                    name = "Authorization",
+                    required = false
+            )
+            String authorization,
 
-        return ResponseEntity.ok(response);
+            @PathVariable
+            String matricule
+    ) {
+        joueurAuthorizationService.verifierAccesMatricule(
+                authorization,
+                matricule
+        );
+
+        return ResponseEntity.ok(
+                detteService.consulterDettesOuvertes(matricule)
+        );
     }
 
     @PostMapping("/api/dettes/{detteId}/paiements")
     public ResponseEntity<PaiementDetteResponse> payerDette(
-            @PathVariable Long detteId,
-            @Valid @RequestBody PayerDetteRequest request
+            @RequestHeader(
+                    name = "Authorization",
+                    required = false
+            )
+            String authorization,
+
+            @PathVariable
+            Long detteId,
+
+            @Valid
+            @RequestBody
+            PayerDetteRequest request
     ) {
-        PaiementDetteResponse response = detteService.payerDette(detteId, request);
+        joueurAuthorizationService.verifierDetteDuJoueur(
+                authorization,
+                detteId
+        );
+
+        PaiementDetteResponse response =
+                detteService.payerDette(detteId, request);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)

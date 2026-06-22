@@ -539,25 +539,49 @@ Le backend utilise BCrypt via `spring-security-crypto`.
 ### JWT MVP compatible
 
 Le projet utilise un JWT MVP compatible avec l'architecture existante.
+
 Après une connexion réussie, le backend génère un token signé.
 Le token est renvoyé au frontend dans la réponse d'authentification.
 Le frontend le stocke dans le service d'authentification existant.
+
 Un interceptor Angular ajoute ensuite le token aux requêtes HTTP avec :
 
 ```txt
 Authorization: Bearer <token>
+```
 
-```md
-Pour les endpoints `/api/admin/**`, ce header est obligatoire.
+Autorisation administrateur
+
+Pour les endpoints /api/admin/**, ce header est obligatoire.
 
 Le backend :
 
-- valide le JWT ;
-- exige un token de type `ADMIN` ;
-- recharge l’administrateur actif depuis la base ;
-- vérifie son rôle `GLOBAL` ou `SITE`.
+valide le JWT ;
+exige un token de type ADMIN ;
+recharge l'administrateur actif depuis la base ;
+vérifie son rôle GLOBAL ou SITE.
 
-Le header historique `X-Admin-Login` n’est plus accepté. ---
+Le header historique X-Admin-Login n'est plus accepté.
+
+Autorisation joueur
+
+Après la connexion, les endpoints utilisés par l'espace joueur exigent
+un JWT de type JOUEUR.
+
+Le backend :
+
+valide la signature et l'expiration du JWT ;
+exige un token de type JOUEUR ;
+recharge le membre actif depuis la base ;
+compare le sujet du JWT avec le matricule demandé ;
+vérifie la propriété des participations et des dettes ;
+vérifie l'identité de l'organisateur pour les actions organisateur.
+
+Un joueur ne peut donc pas modifier un matricule, un identifiant de
+participation ou un identifiant de dette afin d'agir au nom d'un autre joueur.
+
+Les endpoints d'authentification, d'inscription et de health check restent
+accessibles sans JWT.
 
 ## 9. Base de données
 

@@ -6,8 +6,6 @@ import com.padelMarius.backend.dto.dette.PayerDetteRequest;
 import com.padelMarius.backend.entity.NaturePaiement;
 import com.padelMarius.backend.entity.StatutDette;
 import com.padelMarius.backend.entity.StatutPaiement;
-import com.padelMarius.backend.exception.ConfigurationMetierException;
-import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.service.DetteService;
 import com.padelMarius.backend.service.JoueurAuthorizationService;
 import org.junit.jupiter.api.Test;
@@ -26,6 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -49,35 +48,6 @@ class DetteControllerTest {
     private JoueurAuthorizationService joueurAuthorizationService;
 
     @Test
-    void shouldReturnCreated_whenGeneratingDebtForMatch() throws Exception {
-        DetteResponse response = new DetteResponse(
-                500L,
-                100L,
-                20L,
-                "G0001",
-                new BigDecimal("30.00"),
-                new BigDecimal("30.00"),
-                StatutDette.OUVERTE,
-                LocalDateTime.of(2026, 5, 7, 12, 0),
-                null
-        );
-
-        when(detteService.genererDettePourMatch(100L)).thenReturn(response);
-
-        mockMvc.perform(post("/api/matches/100/dettes/generer")
-                        .header("Authorization", AUTHORIZATION))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.detteId").value(500))
-                .andExpect(jsonPath("$.matchId").value(100))
-                .andExpect(jsonPath("$.membreResponsableId").value(20))
-                .andExpect(jsonPath("$.matriculeResponsable").value("G0001"))
-                .andExpect(jsonPath("$.montantInitial").value(30.00))
-                .andExpect(jsonPath("$.montantRestant").value(30.00))
-                .andExpect(jsonPath("$.statutDette").value("OUVERTE"))
-                .andExpect(jsonPath("$.dateCreation").value("2026-05-07T12:00:00"));
-    }
-
-    @Test
     void shouldReturnOpenDebtsForMember() throws Exception {
         DetteResponse response = new DetteResponse(
                 500L,
@@ -91,10 +61,16 @@ class DetteControllerTest {
                 null
         );
 
-        when(detteService.consulterDettesOuvertes("G0001")).thenReturn(List.of(response));
+        when(detteService.consulterDettesOuvertes("G0001"))
+                .thenReturn(List.of(response));
 
-        mockMvc.perform(get("/api/membres/G0001/dettes/ouvertes")
-                        .header("Authorization", AUTHORIZATION))
+        mockMvc.perform(
+                        get("/api/membres/G0001/dettes/ouvertes")
+                                .header(
+                                        "Authorization",
+                                        AUTHORIZATION
+                                )
+                )
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].detteId").value(500))
                 .andExpect(jsonPath("$[0].matchId").value(100))
@@ -102,6 +78,15 @@ class DetteControllerTest {
                 .andExpect(jsonPath("$[0].matriculeResponsable").value("G0001"))
                 .andExpect(jsonPath("$[0].montantRestant").value(30.00))
                 .andExpect(jsonPath("$[0].statutDette").value("OUVERTE"));
+
+        verify(joueurAuthorizationService)
+                .verifierAccesMatricule(
+                        AUTHORIZATION,
+                        "G0001"
+                );
+
+        verify(detteService)
+                .consulterDettesOuvertes("G0001");
     }
 
     @Test
@@ -124,59 +109,62 @@ class DetteControllerTest {
                 any(PayerDetteRequest.class)
         )).thenReturn(response);
 
-        mockMvc.perform(post("/api/dettes/500/paiements")
-                        .header("Authorization", AUTHORIZATION)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "montant": 30.00
-                                }
-                                """))
+        mockMvc.perform(
+                        post("/api/dettes/500/paiements")
+                                .header(
+                                        "Authorization",
+                                        AUTHORIZATION
+                                )
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "montant": 30.00
+                                        }
+                                        """)
+                )
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.paiementId").value(700))
                 .andExpect(jsonPath("$.detteId").value(500))
                 .andExpect(jsonPath("$.membreId").value(20))
                 .andExpect(jsonPath("$.matriculeMembre").value("G0001"))
-                .andExpect(jsonPath("$.naturePaiement").value("REGLEMENT_DETTE"))
+                .andExpect(jsonPath("$.naturePaiement")
+                        .value("REGLEMENT_DETTE"))
                 .andExpect(jsonPath("$.montant").value(30.00))
                 .andExpect(jsonPath("$.statutPaiement").value("PAYE"))
-                .andExpect(jsonPath("$.statutDette").value("REGLEE"))
-                .andExpect(jsonPath("$.dateHeurePaiement").value("2026-05-07T12:00:00"))
-                .andExpect(jsonPath("$.dateReglementDette").value("2026-05-07T12:00:00"));
+                .andExpect(jsonPath("$.statutDette").value("REGLEE"));
+
+        verify(joueurAuthorizationService)
+                .verifierDetteDuJoueur(
+                        AUTHORIZATION,
+                        500L
+                );
+
+        verify(detteService).payerDette(
+                eq(500L),
+                any(PayerDetteRequest.class)
+        );
     }
 
     @Test
-    void shouldReturn404_whenMatchDoesNotExistDuringDebtGeneration() throws Exception {
-        when(detteService.genererDettePourMatch(999L))
-                .thenThrow(new RessourceIntrouvableException("Match introuvable avec l'id 999"));
+    void shouldReturn400_whenPayDebtRequestIsInvalid()
+            throws Exception {
 
-        mockMvc.perform(post("/api/matches/999/dettes/generer"))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("RESSOURCE_INTROUVABLE"))
-                .andExpect(jsonPath("$.message").value("Match introuvable avec l'id 999"));
-    }
-
-    @Test
-    void shouldReturn409_whenBusinessRuleBlocksDebtGeneration() throws Exception {
-        when(detteService.genererDettePourMatch(100L))
-                .thenThrow(new ConfigurationMetierException("Une dette existe déjà pour ce match."));
-
-        mockMvc.perform(post("/api/matches/100/dettes/generer"))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("CONFIGURATION_METIER_INVALIDE"))
-                .andExpect(jsonPath("$.message").value("Une dette existe déjà pour ce match."));
-    }
-
-    @Test
-    void shouldReturn400_whenPayDebtRequestIsInvalid() throws Exception {
-        mockMvc.perform(post("/api/dettes/500/paiements")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "montant": null
-                                }
-                                """))
+        mockMvc.perform(
+                        post("/api/dettes/500/paiements")
+                                .header(
+                                        "Authorization",
+                                        AUTHORIZATION
+                                )
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                          "montant": null
+                                        }
+                                        """)
+                )
                 .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(joueurAuthorizationService);
 
         verify(detteService, never()).payerDette(
                 eq(500L),

@@ -25,33 +25,8 @@ public class DetteController {
     private final DetteService detteService;
     private final JoueurAuthorizationService joueurAuthorizationService;
 
-    @PostMapping("/api/matches/{matchId}/dettes/generer")
-    public ResponseEntity<DetteResponse> genererDettePourMatch(
-            @RequestHeader(
-                    name = "Authorization",
-                    required = false
-            )
-            String authorization,
-
-            @PathVariable
-            Long matchId
-    ) {
-        joueurAuthorizationService.verifierOrganisateurDuMatch(
-                authorization,
-                matchId
-        );
-
-        DetteResponse response =
-                detteService.genererDettePourMatch(matchId);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
-    }
-
     @GetMapping("/api/membres/{matricule}/dettes/ouvertes")
-    public ResponseEntity<List<DetteResponse>>
-    consulterDettesOuvertes(
+    public ResponseEntity<List<DetteResponse>> consulterDettesOuvertes(
             @RequestHeader(
                     name = "Authorization",
                     required = false

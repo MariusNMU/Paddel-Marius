@@ -409,7 +409,7 @@ admin-auth.interceptor.ts
 Rôle :
 
 - ajouter le header `Authorization: Bearer <token>` aux requêtes API quand un joueur ou un administrateur est connecté ;
-- garder temporairement `X-Admin-Login` pour compatibilité MVP sur les endpoints admin ;
+- ne transmettre aucun login administrateur en dehors du JWT ;
 - permettre au backend de vérifier l'identité et le rôle admin.
 
 ---
@@ -546,7 +546,18 @@ Un interceptor Angular ajoute ensuite le token aux requêtes HTTP avec :
 
 ```txt
 Authorization: Bearer <token>
----
+
+```md
+Pour les endpoints `/api/admin/**`, ce header est obligatoire.
+
+Le backend :
+
+- valide le JWT ;
+- exige un token de type `ADMIN` ;
+- recharge l’administrateur actif depuis la base ;
+- vérifie son rôle `GLOBAL` ou `SITE`.
+
+Le header historique `X-Admin-Login` n’est plus accepté. ---
 
 ## 9. Base de données
 

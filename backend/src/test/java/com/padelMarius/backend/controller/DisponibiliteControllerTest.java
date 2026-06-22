@@ -2,8 +2,10 @@ package com.padelMarius.backend.controller;
 
 import com.padelMarius.backend.dto.disponibilite.CreneauDisponibiliteResponse;
 import com.padelMarius.backend.dto.disponibilite.DisponibilitesResponse;
+import com.padelMarius.backend.exception.AuthentificationException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.service.DisponibiliteService;
+import com.padelMarius.backend.service.JoueurAuthorizationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -15,6 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -24,11 +27,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(ApiExceptionHandler.class)
 class DisponibiliteControllerTest {
 
+    private static final String AUTHORIZATION =
+            "Bearer jwt-joueur";
+
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
     private DisponibiliteService disponibiliteService;
+
+    @MockitoBean
+    private JoueurAuthorizationService joueurAuthorizationService;
 
     @Test
     void shouldReturnDisponibilites() throws Exception {
@@ -53,6 +62,7 @@ class DisponibiliteControllerTest {
                 .thenReturn(response);
 
         mockMvc.perform(get("/api/disponibilites")
+                        .header("Authorization", AUTHORIZATION)
                         .param("siteId", "1")
                         .param("date", "2026-05-08"))
                 .andExpect(status().isOk())
@@ -63,6 +73,27 @@ class DisponibiliteControllerTest {
                 .andExpect(jsonPath("$.creneaux[0].terrainNumero").value("1"))
                 .andExpect(jsonPath("$.creneaux[0].dateHeureDebut").value("2026-05-08T09:00:00"))
                 .andExpect(jsonPath("$.creneaux[0].dateHeureFin").value("2026-05-08T10:30:00"));
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWhenJwtIsMissing()
+            throws Exception {
+
+        doThrow(new AuthentificationException(
+                "Token JWT obligatoire."
+        )).when(joueurAuthorizationService)
+                .verifierJoueurConnecte(null);
+
+        mockMvc.perform(
+                        get("/api/disponibilites")
+                                .param("siteId", "1")
+                                .param("date", "2026-05-08")
+                )
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code")
+                        .value("AUTHENTIFICATION_INVALIDE"))
+                .andExpect(jsonPath("$.message")
+                        .value("Token JWT obligatoire."));
     }
 
     @Test

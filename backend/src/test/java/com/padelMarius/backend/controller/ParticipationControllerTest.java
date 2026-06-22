@@ -8,6 +8,7 @@ import com.padelMarius.backend.entity.RoleParticipation;
 import com.padelMarius.backend.entity.StatutParticipation;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
+import com.padelMarius.backend.service.JoueurAuthorizationService;
 import com.padelMarius.backend.service.ParticipationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,11 +33,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(ApiExceptionHandler.class)
 class ParticipationControllerTest {
 
+    private static final String AUTHORIZATION =
+            "Bearer jwt-joueur";
+
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
     private ParticipationService participationService;
+
+    @MockitoBean
+    private JoueurAuthorizationService joueurAuthorizationService;
 
     @Test
     void shouldReturnCreated_whenAddingPrivateParticipant() throws Exception {
@@ -57,6 +64,7 @@ class ParticipationControllerTest {
         )).thenReturn(response);
 
         mockMvc.perform(post("/api/matches/100/participants/prive")
+                        .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -93,6 +101,7 @@ class ParticipationControllerTest {
         )).thenReturn(response);
 
         mockMvc.perform(post("/api/matches/100/participants/public")
+                        .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {

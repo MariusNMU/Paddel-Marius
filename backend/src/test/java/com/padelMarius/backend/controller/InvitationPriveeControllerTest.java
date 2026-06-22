@@ -6,6 +6,7 @@ import com.padelMarius.backend.dto.invitation.InviterJoueurPriveRequest;
 import com.padelMarius.backend.entity.StatutParticipation;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.service.InvitationPriveeService;
+import com.padelMarius.backend.service.JoueurAuthorizationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -29,11 +30,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(ApiExceptionHandler.class)
 class InvitationPriveeControllerTest {
 
+    private static final String AUTHORIZATION =
+            "Bearer jwt-joueur";
+
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
     private InvitationPriveeService invitationPriveeService;
+
+    @MockitoBean
+    private JoueurAuthorizationService joueurAuthorizationService;
 
     @Test
     void inviterJoueur_shouldReturnCreated() throws Exception {
@@ -43,6 +50,7 @@ class InvitationPriveeControllerTest {
         )).thenReturn(creerInvitationResponse());
 
         mockMvc.perform(post("/api/matches/100/invitations/privees")
+                        .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -63,7 +71,8 @@ class InvitationPriveeControllerTest {
         when(invitationPriveeService.listerInvitationsRecues("G0002"))
                 .thenReturn(List.of(creerInvitationResponse()));
 
-        mockMvc.perform(get("/api/membres/G0002/invitations/recues"))
+        mockMvc.perform(get("/api/membres/G0002/invitations/recues")
+                        .header("Authorization", AUTHORIZATION))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].participationId").value(301))
                 .andExpect(jsonPath("$[0].matchId").value(100))
@@ -76,7 +85,8 @@ class InvitationPriveeControllerTest {
         when(invitationPriveeService.compterInvitationsRecues("G0002"))
                 .thenReturn(2);
 
-        mockMvc.perform(get("/api/membres/G0002/invitations/recues/count"))
+        mockMvc.perform(get("/api/membres/G0002/invitations/recues/count")
+                        .header("Authorization", AUTHORIZATION))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").value(2));
     }
@@ -109,6 +119,7 @@ class InvitationPriveeControllerTest {
         )).thenReturn(response);
 
         mockMvc.perform(post("/api/participations/301/decliner")
+                        .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {

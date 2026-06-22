@@ -4,11 +4,13 @@ import com.padelMarius.backend.dto.membre.InscriptionMembreRequest;
 import com.padelMarius.backend.dto.membre.MembreResponse;
 import com.padelMarius.backend.dto.membre.SoldeJoueurResponse;
 import com.padelMarius.backend.entity.CategorieMembre;
+import com.padelMarius.backend.service.JoueurAuthorizationService;
 import com.padelMarius.backend.service.MembreInscriptionService;
 import com.padelMarius.backend.service.MembreSoldeService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -16,13 +18,18 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(MembreController.class)
+@Import(ApiExceptionHandler.class)
 class MembreControllerTest {
+
+    private static final String AUTHORIZATION =
+            "Bearer jwt-joueur";
 
     @Autowired
     private MockMvc mockMvc;
@@ -32,6 +39,9 @@ class MembreControllerTest {
 
     @MockitoBean
     private MembreSoldeService membreSoldeService;
+
+    @MockitoBean
+    private JoueurAuthorizationService joueurAuthorizationService;
 
     @Test
     void inscrireMembre_shouldReturnCreatedMember() throws Exception {
@@ -113,10 +123,17 @@ class MembreControllerTest {
                         new BigDecimal("85.00")
                 ));
 
-        mockMvc.perform(get("/api/membres/G1001/solde"))
+        mockMvc.perform(get("/api/membres/G1001/solde")
+                        .header("Authorization", AUTHORIZATION))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.membreId").value(10))
                 .andExpect(jsonPath("$.matricule").value("G1001"))
                 .andExpect(jsonPath("$.soldeCredit").value(85.00));
+
+        verify(joueurAuthorizationService)
+                .verifierAccesMatricule(
+                        AUTHORIZATION,
+                        "G1001"
+                );
     }
 }

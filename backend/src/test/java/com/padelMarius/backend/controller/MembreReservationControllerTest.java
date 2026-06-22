@@ -8,6 +8,7 @@ import com.padelMarius.backend.entity.RoleParticipation;
 import com.padelMarius.backend.entity.StatutParticipation;
 import com.padelMarius.backend.entity.VisibiliteMatch;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
+import com.padelMarius.backend.service.JoueurAuthorizationService;
 import com.padelMarius.backend.service.MembreReservationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,11 +29,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(ApiExceptionHandler.class)
 class MembreReservationControllerTest {
 
+    private static final String AUTHORIZATION =
+            "Bearer jwt-joueur";
+
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
     private MembreReservationService membreReservationService;
+
+    @MockitoBean
+    private JoueurAuthorizationService joueurAuthorizationService;
 
     @Test
     void consulterReservations_shouldReturnReservations() throws Exception {
@@ -57,7 +64,8 @@ class MembreReservationControllerTest {
         when(membreReservationService.consulterReservations("G1001"))
                 .thenReturn(List.of(response));
 
-        mockMvc.perform(get("/api/membres/G1001/reservations"))
+        mockMvc.perform(get("/api/membres/G1001/reservations")
+                        .header("Authorization", AUTHORIZATION))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].participationId").value(3101))
                 .andExpect(jsonPath("$[0].matchId").value(3001))

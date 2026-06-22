@@ -5,8 +5,10 @@ import com.padelMarius.backend.dto.paiement.PayerParticipationRequest;
 import com.padelMarius.backend.entity.NaturePaiement;
 import com.padelMarius.backend.entity.StatutPaiement;
 import com.padelMarius.backend.entity.StatutParticipation;
+import com.padelMarius.backend.exception.AutorisationException;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
+import com.padelMarius.backend.service.JoueurAuthorizationService;
 import com.padelMarius.backend.service.PaiementService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,8 +24,10 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -34,11 +38,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(ApiExceptionHandler.class)
 class PaiementControllerTest {
 
+    private static final String AUTHORIZATION =
+            "Bearer jwt-joueur";
+
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
     private PaiementService paiementService;
+
+    @MockitoBean
+    private JoueurAuthorizationService joueurAuthorizationService;
 
     @Test
     void shouldReturnCreated_whenPayingParticipation() throws Exception {
@@ -63,6 +73,7 @@ class PaiementControllerTest {
         )).thenReturn(response);
 
         mockMvc.perform(post("/api/participations/300/paiements")
+                        .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -85,11 +96,47 @@ class PaiementControllerTest {
     }
 
     @Test
+    void shouldReturnForbiddenWhenParticipationBelongsToOtherPlayer()
+            throws Exception {
+
+        doThrow(new AutorisationException(
+                "Cette participation n'appartient pas "
+                        + "au joueur connecté."
+        )).when(joueurAuthorizationService)
+                .verifierParticipationDuJoueur(
+                        AUTHORIZATION,
+                        300L
+                );
+
+        mockMvc.perform(
+                        post("/api/participations/300/paiements")
+                                .header(
+                                        "Authorization",
+                                        AUTHORIZATION
+                                )
+                                .contentType(
+                                        MediaType.APPLICATION_JSON
+                                )
+                                .content("""
+                                        {
+                                          "montant": 15.00
+                                        }
+                                        """)
+                )
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code")
+                        .value("ACCES_REFUSE"));
+
+        verifyNoInteractions(paiementService);
+    }
+
+    @Test
     void shouldReturnPaymentHistoryForMember() throws Exception {
         when(paiementService.consulterHistoriquePaiements("G1001"))
                 .thenReturn(List.of());
 
-        mockMvc.perform(get("/api/membres/G1001/paiements"))
+        mockMvc.perform(get("/api/membres/G1001/paiements")
+                        .header("Authorization", AUTHORIZATION))
                 .andExpect(status().isOk());
     }
 

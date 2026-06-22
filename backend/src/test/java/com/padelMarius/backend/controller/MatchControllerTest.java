@@ -5,8 +5,10 @@ import com.padelMarius.backend.dto.match.MatchResponse;
 import com.padelMarius.backend.entity.EtatCycleMatch;
 import com.padelMarius.backend.entity.ModeCreation;
 import com.padelMarius.backend.entity.VisibiliteMatch;
+import com.padelMarius.backend.exception.AutorisationException;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
+import com.padelMarius.backend.service.JoueurAuthorizationService;
 import com.padelMarius.backend.service.MatchCreationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,11 +31,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(ApiExceptionHandler.class)
 class MatchControllerTest {
 
+    private static final String AUTHORIZATION =
+            "Bearer jwt-joueur";
+
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
     private MatchCreationService matchCreationService;
+
+    @MockitoBean
+    private JoueurAuthorizationService joueurAuthorizationService;
 
     @Test
     void shouldCreateMatch() throws Exception {
@@ -55,6 +63,7 @@ class MatchControllerTest {
                 .thenReturn(response);
 
         mockMvc.perform(post("/api/matches")
+                        .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -76,6 +85,48 @@ class MatchControllerTest {
                 .andExpect(jsonPath("$.prixTotal").value(60.00))
                 .andExpect(jsonPath("$.etatCycle").value("A_VENIR"))
                 .andExpect(jsonPath("$.participationOrganisateurId").value(200));
+    }
+
+    @Test
+    void shouldReturnForbiddenWhenTokenDoesNotMatchOrganizer()
+            throws Exception {
+
+        doThrow(new AutorisationException(
+                "Un joueur ne peut agir que pour son propre compte."
+        )).when(joueurAuthorizationService)
+                .verifierAccesMatricule(
+                        "Bearer jwt-autre-joueur",
+                        "G0001"
+                );
+
+        mockMvc.perform(
+                        post("/api/matches")
+                                .header(
+                                        "Authorization",
+                                        "Bearer jwt-autre-joueur"
+                                )
+                                .contentType(
+                                        MediaType.APPLICATION_JSON
+                                )
+                                .content("""
+                                        {
+                                          "terrainId": 10,
+                                          "matriculeOrganisateur": "G0001",
+                                          "dateHeureDebut": "2026-05-20T09:00:00",
+                                          "modeCreation": "PRIVE"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code")
+                        .value("ACCES_REFUSE"))
+                .andExpect(jsonPath("$.message")
+                        .value(
+                                "Un joueur ne peut agir "
+                                        + "que pour son propre compte."
+                        ));
+
+        verifyNoInteractions(matchCreationService);
     }
 
     @Test

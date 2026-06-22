@@ -9,6 +9,7 @@ import com.padelMarius.backend.entity.StatutPaiement;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.service.DetteService;
+import com.padelMarius.backend.service.JoueurAuthorizationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -35,11 +36,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(ApiExceptionHandler.class)
 class DetteControllerTest {
 
+    private static final String AUTHORIZATION =
+            "Bearer jwt-joueur";
+
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
     private DetteService detteService;
+
+    @MockitoBean
+    private JoueurAuthorizationService joueurAuthorizationService;
 
     @Test
     void shouldReturnCreated_whenGeneratingDebtForMatch() throws Exception {
@@ -57,7 +64,8 @@ class DetteControllerTest {
 
         when(detteService.genererDettePourMatch(100L)).thenReturn(response);
 
-        mockMvc.perform(post("/api/matches/100/dettes/generer"))
+        mockMvc.perform(post("/api/matches/100/dettes/generer")
+                        .header("Authorization", AUTHORIZATION))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.detteId").value(500))
                 .andExpect(jsonPath("$.matchId").value(100))
@@ -85,7 +93,8 @@ class DetteControllerTest {
 
         when(detteService.consulterDettesOuvertes("G0001")).thenReturn(List.of(response));
 
-        mockMvc.perform(get("/api/membres/G0001/dettes/ouvertes"))
+        mockMvc.perform(get("/api/membres/G0001/dettes/ouvertes")
+                        .header("Authorization", AUTHORIZATION))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].detteId").value(500))
                 .andExpect(jsonPath("$[0].matchId").value(100))
@@ -116,6 +125,7 @@ class DetteControllerTest {
         )).thenReturn(response);
 
         mockMvc.perform(post("/api/dettes/500/paiements")
+                        .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {

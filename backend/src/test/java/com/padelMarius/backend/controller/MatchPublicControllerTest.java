@@ -5,6 +5,7 @@ import com.padelMarius.backend.dto.matchpublic.RejoindreMatchPublicRequest;
 import com.padelMarius.backend.dto.matchpublic.RejoindreMatchPublicResponse;
 import com.padelMarius.backend.entity.StatutParticipation;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
+import com.padelMarius.backend.service.JoueurAuthorizationService;
 import com.padelMarius.backend.service.MatchPublicService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,11 +30,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(ApiExceptionHandler.class)
 class MatchPublicControllerTest {
 
+    private static final String AUTHORIZATION =
+            "Bearer jwt-joueur";
+
     @Autowired
     private MockMvc mockMvc;
 
     @MockitoBean
     private MatchPublicService matchPublicService;
+
+    @MockitoBean
+    private JoueurAuthorizationService joueurAuthorizationService;
 
     @Test
     void listerMatchesPublics_shouldReturnPublicMatches() throws Exception {
@@ -57,6 +64,7 @@ class MatchPublicControllerTest {
         )).thenReturn(List.of(response));
 
         mockMvc.perform(get("/api/matches/publics")
+                        .header("Authorization", AUTHORIZATION)
                         .param("siteId", "1001")
                         .param("date", "2026-06-20"))
                 .andExpect(status().isOk())
@@ -85,6 +93,7 @@ class MatchPublicControllerTest {
         )).thenReturn(response);
 
         mockMvc.perform(post("/api/matches/3001/participants/public/payer")
+                        .header("Authorization", AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {

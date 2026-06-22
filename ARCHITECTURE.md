@@ -101,7 +101,8 @@ Exemples :
 
 ```txt
 MatchController
-ParticipationController
+InvitationPriveeController
+MatchPublicController
 PaiementController
 DetteController
 AdminFermetureController
@@ -434,6 +435,29 @@ GET /api/membres/{matricule}/paiements
 POST /api/admin/fermetures
 GET /api/admin/statistiques?dateDebut=2026-05-01&dateFin=2026-06-30
 ```
+
+### 5.1. Opérations de participation exposées
+
+L'API n'expose pas de création générique de participation.
+
+Pour un match privé, l'organisateur utilise uniquement :
+
+```http
+POST /api/matches/{matchId}/invitations/privees
+```
+
+Pour un match public, le joueur utilise uniquement l'opération atomique :
+
+```http
+POST /api/matches/{matchId}/participants/public/payer
+```
+
+Cette opération crée la participation et effectue le paiement dans la même
+transaction métier. Une place publique ne peut donc pas être occupée sans
+paiement.
+
+La génération d'une dette n'est pas exposée aux joueurs. Elle est déclenchée
+par le backend lors du traitement d'échéance des matches.
 
 ---
 

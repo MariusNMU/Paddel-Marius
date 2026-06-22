@@ -48,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -214,6 +215,77 @@ class DetteServiceTest {
         );
 
         verify(detteRepository, never()).save(any());
+    }
+
+    @Test
+    void actualiser_dette_pour_match_doit_ignorer_un_match_futur() {
+        // Arrange
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        PadelMatch match = creerMatchFutur(100L, terrain);
+
+        // Act
+        Optional<DetteResponse> response =
+                detteService.actualiserDettePourMatch(match);
+
+        // Assert
+        assertTrue(response.isEmpty());
+        verifyNoInteractions(
+                detteRepository,
+                participationRepository,
+                paiementRepository
+        );
+    }
+
+    @Test
+    void generer_dette_doit_refuser_un_match_avant_echeance() {
+        // Arrange
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        PadelMatch match = creerMatchFutur(100L, terrain);
+
+        when(padelMatchRepository.findById(100L))
+                .thenReturn(Optional.of(match));
+
+        // Act
+        ConfigurationMetierException exception = assertThrows(
+                ConfigurationMetierException.class,
+                () -> detteService.genererDettePourMatch(100L)
+        );
+
+        // Assert
+        assertTrue(exception.getMessage().contains("heure de début"));
+
+        verifyNoInteractions(
+                detteRepository,
+                participationRepository,
+                paiementRepository
+        );
+    }
+
+    @Test
+    void actualiser_dettes_organisateur_doit_ignorer_les_matches_futurs() {
+        // Arrange
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        PadelMatch match = creerMatchFutur(100L, terrain);
+        Membre organisateur = creerMembre(20L, "G0001");
+
+        Participation participationOrganisateur = creerParticipation(
+                300L,
+                match,
+                organisateur,
+                RoleParticipation.ORGANISATEUR
+        );
+
+        when(participationRepository.findByMembreId(20L))
+                .thenReturn(List.of(participationOrganisateur));
+
+        // Act
+        detteService.actualiserDettesOrganisateur(organisateur);
+
+        // Assert
+        verifyNoInteractions(detteRepository, paiementRepository);
     }
 
     @Test
@@ -384,10 +456,30 @@ class DetteServiceTest {
     }
 
     private PadelMatch creerMatch(Long id, Terrain terrain) {
+        return creerMatch(
+                id,
+                terrain,
+                LocalDateTime.of(2026, 5, 7, 11, 0)
+        );
+    }
+
+    private PadelMatch creerMatchFutur(Long id, Terrain terrain) {
+        return creerMatch(
+                id,
+                terrain,
+                LocalDateTime.of(2026, 5, 8, 9, 0)
+        );
+    }
+
+    private PadelMatch creerMatch(
+            Long id,
+            Terrain terrain,
+            LocalDateTime dateHeureDebut
+    ) {
         PadelMatch match = PadelMatch.builder()
                 .terrain(terrain)
-                .dateHeureDebut(LocalDateTime.of(2026, 5, 20, 9, 0))
-                .dateHeureFin(LocalDateTime.of(2026, 5, 20, 10, 30))
+                .dateHeureDebut(dateHeureDebut)
+                .dateHeureFin(dateHeureDebut.plusMinutes(90))
                 .modeCreation(ModeCreation.PUBLIC)
                 .visibiliteCourante(VisibiliteMatch.PUBLIC)
                 .prixTotal(new BigDecimal("60.00"))

@@ -60,9 +60,6 @@ class MatchCreationServiceTest {
     private ReglesReservationMembreService reglesReservationMembreService;
 
     @Mock
-    private DetteService detteService;
-
-    @Mock
     private Clock clock;
 
     @InjectMocks
@@ -89,11 +86,6 @@ class MatchCreationServiceTest {
 
         MatchResponse response = matchCreationService.creerMatch(request);
 
-        verify(detteService).creerDetteInitialeOrganisateur(
-                any(PadelMatch.class),
-                eq(scenario.organisateur())
-        );
-
         assertEquals(100L, response.matchId());
         assertEquals(10L, response.terrainId());
         assertEquals(1L, response.siteId());
@@ -116,7 +108,8 @@ class MatchCreationServiceTest {
     }
 
     @Test
-    void shouldCreateInitialOrganizerDebtWhenMatchIsCreated() {
+    void creer_match_ne_doit_pas_creer_de_dette_avant_echeance() {
+        // Arrange
         Scenario scenario = configurerCasValide();
 
         CreerMatchRequest request = new CreerMatchRequest(
@@ -126,12 +119,11 @@ class MatchCreationServiceTest {
                 ModeCreation.PUBLIC
         );
 
+        // Act
         matchCreationService.creerMatch(request);
 
-        verify(detteService).creerDetteInitialeOrganisateur(
-                any(PadelMatch.class),
-                eq(scenario.organisateur())
-        );
+        // Assert
+        verify(detteRepository, never()).save(any(Dette.class));
     }
 
     @Test

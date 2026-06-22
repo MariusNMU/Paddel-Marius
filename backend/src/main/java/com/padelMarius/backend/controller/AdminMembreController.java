@@ -22,28 +22,22 @@ public class AdminMembreController {
             @RequestHeader(name = "Authorization", required = false)
             String authorization,
 
-            @RequestHeader(name = "X-Admin-Login", required = false)
-            String adminLogin,
-
             @RequestParam(required = false)
             Long siteId
     ) {
-        String adminIdentite = choisirIdentiteAdmin(authorization, adminLogin);
-
-        adminAuthorizationService.verifierAccesAdminSite(adminIdentite, siteId);
+        adminAuthorizationService.verifierAccesAdminSite(
+                authorization,
+                siteId
+        );
 
         if (siteId == null) {
-            return ResponseEntity.ok(membreAdminService.listerTousLesMembres());
+            return ResponseEntity.ok(
+                    membreAdminService.listerTousLesMembres()
+            );
         }
 
-        return ResponseEntity.ok(membreAdminService.listerMembresParSite(siteId));
-    }
-
-    private String choisirIdentiteAdmin(String authorization, String adminLogin) {
-        if (authorization != null && !authorization.isBlank()) {
-            return authorization;
-        }
-
-        return adminLogin;
+        return ResponseEntity.ok(
+                membreAdminService.listerMembresParSite(siteId)
+        );
     }
 }

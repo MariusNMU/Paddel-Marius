@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -61,10 +62,18 @@ class AdminMembreControllerTest {
                 ));
 
         mockMvc.perform(get("/api/admin/membres")
-                        .header("X-Admin-Login", "admin-global"))
+                        .header(
+                                "Authorization",
+                                "Bearer jwt-admin-global"
+                        ))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].matricule").value("G1001"))
                 .andExpect(jsonPath("$[1].matricule").value("S1001"));
+
+        verify(adminAuthorizationService).verifierAccesAdminSite(
+                "Bearer jwt-admin-global",
+                null
+        );
     }
 
     @Test
@@ -85,7 +94,10 @@ class AdminMembreControllerTest {
                 ));
 
         mockMvc.perform(get("/api/admin/membres")
-                        .header("X-Admin-Login", "admin-global")
+                        .header(
+                                "Authorization",
+                                "Bearer jwt-admin-global"
+                        )
                         .param("siteId", "1001"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].matricule").value("S1001"))
@@ -93,17 +105,21 @@ class AdminMembreControllerTest {
     }
 
     @Test
-    void listerMembres_shouldReturn401_whenAdminHeaderIsMissing() throws Exception {
+    void shouldReturn401_whenOnlyLegacyAdminHeaderIsProvided() throws Exception {
         org.mockito.Mockito.doThrow(new AuthentificationException(
-                "Administrateur requis pour accéder à cette opération."
+                "Token JWT obligatoire."
         )).when(adminAuthorizationService)
                 .verifierAccesAdminSite(null, null);
 
-        mockMvc.perform(get("/api/admin/membres"))
+        mockMvc.perform(get("/api/admin/membres")
+                        .header(
+                                "X-Admin-Login",
+                                "admin-global"
+                        ))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("AUTHENTIFICATION_INVALIDE"))
                 .andExpect(jsonPath("$.message").value(
-                        "Administrateur requis pour accéder à cette opération."
+                        "Token JWT obligatoire."
                 ));
     }
 }

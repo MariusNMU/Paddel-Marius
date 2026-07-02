@@ -143,6 +143,7 @@ public class AdminFermetureService {
                         : BigDecimal.ZERO;
 
                 membre.setSoldeCredit(soldeActuel.add(paiement.getMontant()));
+                paiement.setStatutPaiement(StatutPaiement.ANNULE);
 
                 nombreRemboursements++;
                 montantTotal = montantTotal.add(paiement.getMontant());

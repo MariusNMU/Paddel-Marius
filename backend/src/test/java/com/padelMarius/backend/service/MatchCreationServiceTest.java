@@ -17,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -321,8 +323,17 @@ class MatchCreationServiceTest {
 
         when(detteRepository.existsByMembreResponsableIdAndStatutDette(20L, StatutDette.OUVERTE))
                 .thenReturn(false);
-        when(penaliteRepository.existsByMembreIdAndStatutPenalite(20L, StatutPenalite.ACTIVE))
-                .thenReturn(true);
+        Penalite penaliteActive = Penalite.builder()
+                .membre(scenario.organisateur())
+                .typePenalite("MATCH_INCOMPLET")
+                .motif("Match incomplet")
+                .dateDebut(LocalDateTime.of(2026, 5, 14, 9, 0))
+                .dateFin(LocalDateTime.of(2026, 5, 21, 9, 0))
+                .statutPenalite(StatutPenalite.ACTIVE)
+                .build();
+
+        when(penaliteRepository.findByMembreIdAndStatutPenalite(20L, StatutPenalite.ACTIVE))
+                .thenReturn(List.of(penaliteActive));
 
         assertThrows(
                 ConfigurationMetierException.class,
@@ -331,6 +342,68 @@ class MatchCreationServiceTest {
 
         verify(padelMatchRepository, never()).save(any());
         verify(participationRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldIgnoreExpiredActivePenaltyAndMarkItAsFinished() {
+        Scenario scenario = configurerCasValideSansDetteNiPenalite();
+
+        CreerMatchRequest request = new CreerMatchRequest(
+                scenario.terrain().getId(),
+                scenario.organisateur().getMatricule(),
+                scenario.dateHeureDebut(),
+                ModeCreation.PRIVE
+        );
+
+        Penalite penaliteExpiree = Penalite.builder()
+                .membre(scenario.organisateur())
+                .typePenalite("MATCH_INCOMPLET")
+                .motif("Match incomplet")
+                .dateDebut(LocalDateTime.of(2026, 5, 1, 9, 0))
+                .dateFin(LocalDateTime.of(2026, 5, 10, 9, 0))
+                .statutPenalite(StatutPenalite.ACTIVE)
+                .build();
+
+        when(detteRepository.existsByMembreResponsableIdAndStatutDette(20L, StatutDette.OUVERTE))
+                .thenReturn(false);
+        when(penaliteRepository.findByMembreIdAndStatutPenalite(20L, StatutPenalite.ACTIVE))
+                .thenReturn(List.of(penaliteExpiree));
+        when(disponibiliteService.consulterDisponibilites(1L, scenario.dateHeureDebut().toLocalDate()))
+                .thenReturn(new DisponibilitesResponse(
+                        1L,
+                        scenario.dateHeureDebut().toLocalDate(),
+                        false,
+                        null,
+                        List.of(
+                                new CreneauDisponibiliteResponse(
+                                        scenario.terrain().getId(),
+                                        scenario.terrain().getNumero(),
+                                        scenario.dateHeureDebut(),
+                                        scenario.dateHeureFin()
+                                )
+                        )
+                ));
+        when(participationRepository.findByMembreId(20L)).thenReturn(List.of());
+
+        when(padelMatchRepository.save(any(PadelMatch.class))).thenAnswer(invocation -> {
+            PadelMatch match = invocation.getArgument(0);
+            ReflectionTestUtils.setField(match, "id", 100L);
+            return match;
+        });
+
+        when(participationRepository.save(any(Participation.class))).thenAnswer(invocation -> {
+            Participation participation = invocation.getArgument(0);
+            ReflectionTestUtils.setField(participation, "id", 200L);
+            return participation;
+        });
+
+        MatchResponse response = matchCreationService.creerMatch(request);
+
+        assertEquals(100L, response.matchId());
+        assertEquals(StatutPenalite.TERMINEE, penaliteExpiree.getStatutPenalite());
+
+        verify(padelMatchRepository).save(any(PadelMatch.class));
+        verify(participationRepository).save(any(Participation.class));
     }
 
     @Test
@@ -346,8 +419,8 @@ class MatchCreationServiceTest {
 
         when(detteRepository.existsByMembreResponsableIdAndStatutDette(20L, StatutDette.OUVERTE))
                 .thenReturn(false);
-        when(penaliteRepository.existsByMembreIdAndStatutPenalite(20L, StatutPenalite.ACTIVE))
-                .thenReturn(false);
+        when(penaliteRepository.findByMembreIdAndStatutPenalite(20L, StatutPenalite.ACTIVE))
+                .thenReturn(List.of());
         when(disponibiliteService.consulterDisponibilites(1L, scenario.dateHeureDebut().toLocalDate()))
                 .thenReturn(new DisponibilitesResponse(
                         1L,
@@ -518,8 +591,8 @@ class MatchCreationServiceTest {
 
         when(detteRepository.existsByMembreResponsableIdAndStatutDette(20L, StatutDette.OUVERTE))
                 .thenReturn(false);
-        when(penaliteRepository.existsByMembreIdAndStatutPenalite(20L, StatutPenalite.ACTIVE))
-                .thenReturn(false);
+        when(penaliteRepository.findByMembreIdAndStatutPenalite(20L, StatutPenalite.ACTIVE))
+                .thenReturn(List.of());
         when(disponibiliteService.consulterDisponibilites(1L, scenario.dateHeureDebut().toLocalDate()))
                 .thenReturn(new DisponibilitesResponse(
                         1L,
@@ -568,8 +641,8 @@ class MatchCreationServiceTest {
 
         when(detteRepository.existsByMembreResponsableIdAndStatutDette(20L, StatutDette.OUVERTE))
                 .thenReturn(false);
-        when(penaliteRepository.existsByMembreIdAndStatutPenalite(20L, StatutPenalite.ACTIVE))
-                .thenReturn(false);
+        when(penaliteRepository.findByMembreIdAndStatutPenalite(20L, StatutPenalite.ACTIVE))
+                .thenReturn(List.of());
         when(disponibiliteService.consulterDisponibilites(1L, scenario.dateHeureDebut().toLocalDate()))
                 .thenReturn(new DisponibilitesResponse(
                         1L,

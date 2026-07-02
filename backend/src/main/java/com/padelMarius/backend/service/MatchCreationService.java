@@ -159,14 +159,26 @@ public class MatchCreationService {
     }
 
     private void verifierAbsencePenaliteActive(Membre organisateur) {
-        boolean penaliteActive = penaliteRepository.existsByMembreIdAndStatutPenalite(
+        LocalDateTime maintenant = LocalDateTime.now(clock);
+
+        List<Penalite> penalitesActives = penaliteRepository.findByMembreIdAndStatutPenalite(
                 organisateur.getId(),
                 StatutPenalite.ACTIVE
         );
 
-        if (penaliteActive) {
+        boolean penaliteEncoreBloquante = false;
+
+        for (Penalite penalite : penalitesActives) {
+            if (penalite.getDateFin() != null && !penalite.getDateFin().isAfter(maintenant)) {
+                penalite.setStatutPenalite(StatutPenalite.TERMINEE);
+            } else {
+                penaliteEncoreBloquante = true;
+            }
+        }
+
+        if (penaliteEncoreBloquante) {
             throw new ConfigurationMetierException(
-                    "L'organisateur a une pÃ©nalitÃ© active et ne peut pas crÃ©er un nouveau match."
+                    "L'organisateur a une pénalité active et ne peut pas créer un nouveau match."
             );
         }
     }

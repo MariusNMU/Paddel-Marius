@@ -44,4 +44,9 @@ public interface PadelMatchRepository extends JpaRepository<PadelMatch, Long> {
             LocalDateTime fin,
             EtatCycleMatch etatCycle
     );
+
+    List<PadelMatch> findByEtatCycleAndDateHeureFinLessThanEqual(
+            EtatCycleMatch etatCycle,
+            LocalDateTime dateHeureFin
+    );
 }

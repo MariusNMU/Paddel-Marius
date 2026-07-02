@@ -58,6 +58,7 @@ public class StatistiquesAdminService {
                         finExclusive
                 )
                 .stream()
+                .filter(match -> match.getEtatCycle() != EtatCycleMatch.ANNULE)
                 .filter(match -> matchConcerneSite(match, siteId))
                 .toList();
 
@@ -68,6 +69,7 @@ public class StatistiquesAdminService {
                         StatutPaiement.PAYE
                 )
                 .stream()
+                .filter(this::paiementNonLieAMatchAnnule)
                 .filter(paiement -> paiementConcerneSite(paiement, siteId))
                 .toList();
 
@@ -155,6 +157,10 @@ public class StatistiquesAdminService {
         long compteur = 0;
 
         for (PadelMatch match : matches) {
+            if (match.getEtatCycle() == EtatCycleMatch.ANNULE) {
+                continue;
+            }
+
             List<Participation> participations = participationRepository.findByMatchId(match.getId());
 
             compteur += participations.stream()
@@ -182,6 +188,20 @@ public class StatistiquesAdminService {
                         2,
                         RoundingMode.HALF_UP
                 );
+    }
+
+    private boolean paiementNonLieAMatchAnnule(Paiement paiement) {
+        if (paiement.getParticipation() != null
+                && paiement.getParticipation().getMatch() != null) {
+            return paiement.getParticipation().getMatch().getEtatCycle() != EtatCycleMatch.ANNULE;
+        }
+
+        if (paiement.getDette() != null
+                && paiement.getDette().getMatch() != null) {
+            return paiement.getDette().getMatch().getEtatCycle() != EtatCycleMatch.ANNULE;
+        }
+
+        return true;
     }
 
     private boolean paiementConcerneSite(Paiement paiement, Long siteId) {

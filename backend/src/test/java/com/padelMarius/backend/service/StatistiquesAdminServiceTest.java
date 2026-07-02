@@ -369,6 +369,83 @@ class StatistiquesAdminServiceTest {
     }
 
     @Test
+    void calculerStatistiques_shouldExcludeCancelledMatchesAndPaymentsFromBusinessStats() {
+        Site site = creerSite(1L, "Padel Bruxelles");
+        Terrain terrain = creerTerrain(10L, site);
+
+        PadelMatch matchActif = creerMatch(100L, terrain, EtatCycleMatch.A_VENIR);
+        PadelMatch matchAnnule = creerMatch(101L, terrain, EtatCycleMatch.ANNULE);
+
+        Membre joueurActif = creerMembre(20L, "G0001");
+        Membre joueurRembourse = creerMembre(21L, "G0002");
+
+        Participation participationActive = creerParticipation(
+                300L,
+                matchActif,
+                joueurActif,
+                RoleParticipation.JOUEUR,
+                StatutParticipation.CONFIRMEE
+        );
+
+        Participation participationAnnulee = creerParticipation(
+                301L,
+                matchAnnule,
+                joueurRembourse,
+                RoleParticipation.JOUEUR,
+                StatutParticipation.CONFIRMEE
+        );
+
+        Paiement paiementActif = creerPaiementParticipation(
+                700L,
+                joueurActif,
+                participationActive,
+                new BigDecimal("15.00")
+        );
+
+        Paiement paiementAnnuleEncorePaye = creerPaiementParticipation(
+                701L,
+                joueurRembourse,
+                participationAnnulee,
+                new BigDecimal("15.00")
+        );
+
+        LocalDate dateDebut = LocalDate.of(2026, 5, 1);
+        LocalDate dateFin = LocalDate.of(2026, 5, 31);
+
+        when(padelMatchRepository.findByDateHeureDebutGreaterThanEqualAndDateHeureDebutBefore(
+                LocalDateTime.of(2026, 5, 1, 0, 0),
+                LocalDateTime.of(2026, 6, 1, 0, 0)
+        )).thenReturn(List.of(matchActif, matchAnnule));
+
+        when(paiementRepository.findByDateHeurePaiementGreaterThanEqualAndDateHeurePaiementBeforeAndStatutPaiement(
+                LocalDateTime.of(2026, 5, 1, 0, 0),
+                LocalDateTime.of(2026, 6, 1, 0, 0),
+                StatutPaiement.PAYE
+        )).thenReturn(List.of(paiementActif, paiementAnnuleEncorePaye));
+
+        when(detteRepository.findByStatutDette(StatutDette.OUVERTE))
+                .thenReturn(List.of());
+
+        when(participationRepository.findByMatchId(100L))
+                .thenReturn(List.of(participationActive));
+
+        StatistiquesAdminResponse response = statistiquesAdminService.calculerStatistiques(
+                dateDebut,
+                dateFin,
+                null
+        );
+
+        assertEquals(1, response.nombreMatches());
+        assertEquals(1, response.nombreMatchesAVenir());
+        assertEquals(0, response.nombreMatchesTermines());
+        assertEquals(1, response.nombrePaiements());
+        assertEquals(0, new BigDecimal("15.00").compareTo(response.chiffreAffaires()));
+        assertEquals(1, response.nombreParticipationsActives());
+        assertEquals(4, response.capaciteTheoriqueJoueurs());
+        assertEquals(0, new BigDecimal("25.00").compareTo(response.tauxRemplissage()));
+    }
+
+    @Test
     void calculerStatistiques_shouldRejectUnknownSite() {
         when(siteRepository.findById(999L))
                 .thenReturn(Optional.empty());

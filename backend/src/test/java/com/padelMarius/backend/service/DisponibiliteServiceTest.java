@@ -1,6 +1,7 @@
 package com.padelMarius.backend.service;
 
 import com.padelMarius.backend.dto.disponibilite.DisponibilitesResponse;
+import com.padelMarius.backend.entity.EtatCycleMatch;
 import com.padelMarius.backend.entity.Fermeture;
 import com.padelMarius.backend.entity.HoraireAnnuelSite;
 import com.padelMarius.backend.entity.PadelMatch;
@@ -127,6 +128,40 @@ class DisponibiliteServiceTest {
     }
 
     @Test
+    void shouldIgnoreCancelledMatchWhenCalculatingAvailableSlots() {
+        LocalDate date = LocalDate.of(2026, 5, 8);
+
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site, "1");
+        HoraireAnnuelSite horaire = creerHoraire(site, 2026, LocalTime.of(9, 0), LocalTime.of(13, 0));
+
+        PadelMatch matchAnnule = creerMatch(
+                terrain,
+                LocalDateTime.of(2026, 5, 8, 9, 0)
+        );
+        matchAnnule.setEtatCycle(EtatCycleMatch.ANNULE);
+
+        when(siteRepository.findById(1L)).thenReturn(Optional.of(site));
+        when(fermetureRepository.findFirstByDateFermetureAndPorteeAndSite(date, PorteeFermeture.LOCALE, site))
+                .thenReturn(Optional.empty());
+        when(fermetureRepository.findFirstByDateFermetureAndPortee(date, PorteeFermeture.GLOBALE))
+                .thenReturn(Optional.empty());
+        when(horaireAnnuelSiteRepository.findBySiteAndAnneeCivile(site, 2026))
+                .thenReturn(Optional.of(horaire));
+        when(terrainRepository.findBySiteAndActifTrue(site))
+                .thenReturn(List.of(terrain));
+        when(padelMatchRepository.findByTerrainInAndDateHeureDebutBetween(anyList(), any(), any()))
+                .thenReturn(List.of(matchAnnule));
+
+        DisponibilitesResponse response = disponibiliteService.consulterDisponibilites(1L, date);
+
+        assertFalse(response.ferme());
+        assertEquals(2, response.creneaux().size());
+        assertEquals(LocalDateTime.of(2026, 5, 8, 9, 0), response.creneaux().get(0).dateHeureDebut());
+        assertEquals(LocalDateTime.of(2026, 5, 8, 10, 45), response.creneaux().get(1).dateHeureDebut());
+    }
+
+    @Test
     void shouldReturnClosedResponseWhenLocalClosureExists() {
         LocalDate date = LocalDate.of(2026, 5, 8);
 
@@ -240,6 +275,8 @@ class DisponibiliteServiceTest {
         return PadelMatch.builder()
                 .terrain(terrain)
                 .dateHeureDebut(debut)
+                .dateHeureFin(debut.plusMinutes(90))
+                .etatCycle(EtatCycleMatch.A_VENIR)
                 .build();
     }
 

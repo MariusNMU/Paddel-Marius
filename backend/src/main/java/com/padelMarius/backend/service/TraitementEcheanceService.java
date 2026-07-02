@@ -62,6 +62,7 @@ public class TraitementEcheanceService {
                 );
 
         int matchesDemarres = 0;
+        int matchesTermines = 0;
         int dettesCreees = 0;
 
         for (PadelMatch match : matches) {
@@ -77,9 +78,21 @@ public class TraitementEcheanceService {
             matchesDemarres++;
         }
 
+        List<PadelMatch> matchesDemarresATerminer = padelMatchRepository
+                .findByEtatCycleAndDateHeureFinLessThanEqual(
+                        EtatCycleMatch.DEMARRE,
+                        maintenant
+                );
+
+        for (PadelMatch match : matchesDemarresATerminer) {
+            match.setEtatCycle(EtatCycleMatch.TERMINE);
+            padelMatchRepository.save(match);
+            matchesTermines++;
+        }
+
         return new TraitementEcheanceResponse(
                 maintenant,
-                matches.size(),
+                matches.size() + matchesDemarresATerminer.size(),
                 matchesDemarres,
                 dettesCreees
         );

@@ -107,6 +107,41 @@ class TraitementEcheanceServiceTest {
     }
 
     @Test
+    void traiterMatchesArrivesAEcheance_shouldFinishStartedMatchesWhenEndTimeIsReached() {
+        PadelMatch matchDemarre = PadelMatch.builder()
+                .dateHeureDebut(LocalDateTime.of(2026, 5, 14, 8, 0))
+                .dateHeureFin(LocalDateTime.of(2026, 5, 14, 9, 30))
+                .prixTotal(new BigDecimal("60.00"))
+                .modeCreation(ModeCreation.PUBLIC)
+                .etatCycle(EtatCycleMatch.DEMARRE)
+                .build();
+
+        ReflectionTestUtils.setField(matchDemarre, "id", 200L);
+
+        when(padelMatchRepository.findByEtatCycleAndDateHeureDebutLessThanEqual(
+                eq(EtatCycleMatch.A_VENIR),
+                any(LocalDateTime.class)
+        )).thenReturn(List.of());
+
+        when(padelMatchRepository.findByEtatCycleAndDateHeureFinLessThanEqual(
+                eq(EtatCycleMatch.DEMARRE),
+                any(LocalDateTime.class)
+        )).thenReturn(List.of(matchDemarre));
+
+        TraitementEcheanceResponse response = service.traiterMatchesArrivesAEcheance();
+
+        assertEquals(1, response.matchesAnalyses());
+        assertEquals(0, response.matchesDemarres());
+        assertEquals(0, response.dettesCreees());
+        assertEquals(EtatCycleMatch.TERMINE, matchDemarre.getEtatCycle());
+
+        verify(padelMatchRepository).save(matchDemarre);
+        verifyNoInteractions(detteService);
+        verifyNoInteractions(participationRepository);
+        verifyNoInteractions(penaliteRepository);
+    }
+
+    @Test
     void traiterMatchesArrivesAEcheance_shouldCreatePenaltyForOrganizerWhenPrivateOriginMatchStillIncomplete() {
         PadelMatch match = creerMatch(100L, ModeCreation.PRIVE, BigDecimal.ZERO);
         Membre organisateur = creerMembre(20L, "G0001");
@@ -186,6 +221,11 @@ class TraitementEcheanceServiceTest {
                 eq(EtatCycleMatch.A_VENIR),
                 any(LocalDateTime.class)
         )).thenReturn(List.of(match));
+
+        when(padelMatchRepository.findByEtatCycleAndDateHeureFinLessThanEqual(
+                eq(EtatCycleMatch.DEMARRE),
+                any(LocalDateTime.class)
+        )).thenReturn(List.of());
     }
 
     private void stubDetteNonCreee(Long matchId) {
@@ -200,6 +240,7 @@ class TraitementEcheanceServiceTest {
     private PadelMatch creerMatch(Long id, ModeCreation modeCreation, BigDecimal prixTotal) {
         PadelMatch match = PadelMatch.builder()
                 .dateHeureDebut(LocalDateTime.of(2026, 5, 14, 11, 0))
+                .dateHeureFin(LocalDateTime.of(2026, 5, 14, 12, 30))
                 .prixTotal(prixTotal)
                 .modeCreation(modeCreation)
                 .etatCycle(EtatCycleMatch.A_VENIR)

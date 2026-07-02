@@ -2,6 +2,7 @@ package com.padelMarius.backend.service;
 
 import com.padelMarius.backend.dto.disponibilite.CreneauDisponibiliteResponse;
 import com.padelMarius.backend.dto.disponibilite.DisponibilitesResponse;
+import com.padelMarius.backend.entity.EtatCycleMatch;
 import com.padelMarius.backend.entity.Fermeture;
 import com.padelMarius.backend.entity.HoraireAnnuelSite;
 import com.padelMarius.backend.entity.PadelMatch;
@@ -90,6 +91,7 @@ public class DisponibiliteService {
                 .findByTerrainInAndDateHeureDebutBetween(terrainsActifs, debutJour, finJour);
 
         Map<Long, List<PadelMatch>> matchesParTerrainId = matchesDuJour.stream()
+                .filter(match -> match.getEtatCycle() != EtatCycleMatch.ANNULE)
                 .filter(match -> match.getTerrain() != null)
                 .filter(match -> match.getTerrain().getId() != null)
                 .collect(Collectors.groupingBy(match -> match.getTerrain().getId()));

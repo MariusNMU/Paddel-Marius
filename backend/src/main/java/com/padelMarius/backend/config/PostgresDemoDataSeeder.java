@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -21,25 +22,28 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
+    private final Clock clock;
 
     @Override
     @Transactional
     public void run(String... args) {
+        LocalDate dateReference = LocalDate.now(clock);
+
         String motDePasseJoueur = passwordEncoder.encode("password");
         String motDePasseAdminGlobal = passwordEncoder.encode("secret");
         String motDePasseAdminSite = passwordEncoder.encode("secret-site");
 
         insererSites();
         insererTerrains();
-        insererHorairesAnnuels();
-        insererFermetures();
+        insererHorairesAnnuels(dateReference.getYear());
+        insererFermetures(dateReference);
         insererMembres(motDePasseJoueur);
         insererAdministrateurs(motDePasseAdminGlobal, motDePasseAdminSite);
-        insererMatches();
-        insererParticipations();
-        insererDettes();
-        insererPenalites();
-        insererPaiements();
+        insererMatches(dateReference);
+        insererParticipations(dateReference);
+        insererDettes(dateReference);
+        insererPenalites(dateReference);
+        insererPaiements(dateReference);
 
         synchroniserSequences();
     }
@@ -117,11 +121,11 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
         );
     }
 
-    private void insererHorairesAnnuels() {
+    private void insererHorairesAnnuels(int anneeCivile) {
         insererHoraireAnnuel(
                 1301L,
                 1001L,
-                2026,
+                anneeCivile,
                 LocalTime.of(8, 0),
                 LocalTime.of(22, 0)
         );
@@ -129,7 +133,7 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
         insererHoraireAnnuel(
                 1302L,
                 1002L,
-                2026,
+                anneeCivile,
                 LocalTime.of(9, 0),
                 LocalTime.of(21, 0)
         );
@@ -172,18 +176,18 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
         );
     }
 
-    private void insererFermetures() {
+    private void insererFermetures(LocalDate dateReference) {
         insererFermeture(
                 1401L,
-                LocalDate.of(2026, 7, 21),
+                dateReference.plusDays(10),
                 "GLOBALE",
-                "Fête nationale",
+                "Fermeture globale de démonstration",
                 null
         );
 
         insererFermeture(
                 1402L,
-                LocalDate.of(2026, 8, 15),
+                dateReference.plusDays(15),
                 "LOCALE",
                 "Maintenance annuelle Bruxelles",
                 1001L
@@ -471,16 +475,20 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
         );
     }
 
-    private void insererMatches() {
+    private void insererMatches(LocalDate dateReference) {
+        LocalDate dateMatchPublic = dateReference.plusDays(3);
+        LocalDate dateMatchPrive = dateReference.plusDays(4);
+        LocalDate dateMatchTermine = dateReference.minusDays(7);
+
         insererMatch(
                 3001L,
                 1101L,
-                LocalDateTime.of(2026, 6, 20, 9, 0),
-                LocalDateTime.of(2026, 6, 20, 10, 30),
+                dateMatchPublic.atTime(9, 0),
+                dateMatchPublic.atTime(10, 30),
                 "PUBLIC",
                 "PUBLIC",
                 new BigDecimal("60.00"),
-                LocalDateTime.of(2026, 5, 8, 10, 0),
+                dateReference.minusDays(1).atTime(10, 0),
                 null,
                 "A_VENIR"
         );
@@ -488,12 +496,12 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
         insererMatch(
                 3002L,
                 1102L,
-                LocalDateTime.of(2026, 6, 20, 11, 0),
-                LocalDateTime.of(2026, 6, 20, 12, 30),
+                dateMatchPrive.atTime(11, 0),
+                dateMatchPrive.atTime(12, 30),
                 "PRIVE",
                 "PRIVE",
                 new BigDecimal("60.00"),
-                LocalDateTime.of(2026, 5, 8, 10, 15),
+                dateReference.minusDays(1).atTime(10, 15),
                 null,
                 "A_VENIR"
         );
@@ -501,12 +509,12 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
         insererMatch(
                 3003L,
                 1201L,
-                LocalDateTime.of(2026, 5, 10, 9, 0),
-                LocalDateTime.of(2026, 5, 10, 10, 30),
+                dateMatchTermine.atTime(9, 0),
+                dateMatchTermine.atTime(10, 30),
                 "PUBLIC",
                 "PUBLIC",
                 new BigDecimal("60.00"),
-                LocalDateTime.of(2026, 5, 1, 9, 0),
+                dateReference.minusDays(8).atTime(9, 0),
                 null,
                 "TERMINE"
         );
@@ -574,7 +582,7 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
         );
     }
 
-    private void insererParticipations() {
+    private void insererParticipations(LocalDate dateReference) {
         insererParticipation(
                 3101L,
                 3001L,
@@ -582,8 +590,8 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 "ORGANISATEUR",
                 "CREATION",
                 "CONFIRMEE",
-                LocalDateTime.of(2026, 5, 8, 10, 0),
-                LocalDateTime.of(2026, 5, 8, 10, 2),
+                dateReference.minusDays(1).atTime(10, 0),
+                dateReference.minusDays(1).atTime(10, 2),
                 null
         );
 
@@ -594,8 +602,8 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 "JOUEUR",
                 "INSCRIPTION_PUBLIQUE",
                 "CONFIRMEE",
-                LocalDateTime.of(2026, 5, 8, 10, 10),
-                LocalDateTime.of(2026, 5, 8, 10, 12),
+                dateReference.minusDays(1).atTime(10, 10),
+                dateReference.minusDays(1).atTime(10, 12),
                 null
         );
 
@@ -606,8 +614,8 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 "ORGANISATEUR",
                 "CREATION",
                 "CONFIRMEE",
-                LocalDateTime.of(2026, 5, 8, 10, 15),
-                LocalDateTime.of(2026, 5, 8, 10, 16),
+                dateReference.minusDays(1).atTime(10, 15),
+                dateReference.minusDays(1).atTime(10, 16),
                 null
         );
 
@@ -618,7 +626,7 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 "JOUEUR",
                 "INVITATION_PRIVEE",
                 "EN_ATTENTE_PAIEMENT",
-                LocalDateTime.of(2026, 5, 8, 10, 20),
+                dateReference.minusDays(1).atTime(10, 20),
                 null,
                 null
         );
@@ -630,8 +638,8 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 "ORGANISATEUR",
                 "CREATION",
                 "CONFIRMEE",
-                LocalDateTime.of(2026, 5, 1, 9, 0),
-                LocalDateTime.of(2026, 5, 1, 9, 1),
+                dateReference.minusDays(8).atTime(9, 0),
+                dateReference.minusDays(8).atTime(9, 1),
                 null
         );
 
@@ -642,8 +650,8 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 "JOUEUR",
                 "INSCRIPTION_PUBLIQUE",
                 "CONFIRMEE",
-                LocalDateTime.of(2026, 5, 1, 9, 5),
-                LocalDateTime.of(2026, 5, 1, 9, 6),
+                dateReference.minusDays(8).atTime(9, 5),
+                dateReference.minusDays(8).atTime(9, 6),
                 null
         );
 
@@ -654,8 +662,8 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 "JOUEUR",
                 "INSCRIPTION_PUBLIQUE",
                 "CONFIRMEE",
-                LocalDateTime.of(2026, 5, 1, 9, 10),
-                LocalDateTime.of(2026, 5, 1, 9, 11),
+                dateReference.minusDays(8).atTime(9, 10),
+                dateReference.minusDays(8).atTime(9, 11),
                 null
         );
 
@@ -666,8 +674,8 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 "JOUEUR",
                 "INSCRIPTION_PUBLIQUE",
                 "CONFIRMEE",
-                LocalDateTime.of(2026, 5, 1, 9, 15),
-                LocalDateTime.of(2026, 5, 1, 9, 16),
+                dateReference.minusDays(8).atTime(9, 15),
+                dateReference.minusDays(8).atTime(9, 16),
                 null
         );
     }
@@ -729,14 +737,14 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
         );
     }
 
-    private void insererDettes() {
+    private void insererDettes(LocalDate dateReference) {
         insererDette(
                 4001L,
                 3002L,
                 2002L,
                 new BigDecimal("30.00"),
                 new BigDecimal("30.00"),
-                LocalDateTime.of(2026, 5, 8, 11, 0),
+                dateReference.minusDays(1).atTime(11, 0),
                 null,
                 "OUVERTE"
         );
@@ -773,7 +781,14 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                     :dateReglement,
                     :statutDette
                 )
-                ON CONFLICT (id) DO NOTHING
+                ON CONFLICT (id) DO UPDATE SET
+                    match_id = EXCLUDED.match_id,
+                    membre_responsable_id = EXCLUDED.membre_responsable_id,
+                    montant_initial = EXCLUDED.montant_initial,
+                    montant_restant = EXCLUDED.montant_restant,
+                    date_creation = EXCLUDED.date_creation,
+                    date_reglement = EXCLUDED.date_reglement,
+                    statut_dette = EXCLUDED.statut_dette
                 """,
                 new MapSqlParameterSource()
                         .addValue("id", id)
@@ -787,15 +802,15 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
         );
     }
 
-    private void insererPenalites() {
+    private void insererPenalites(LocalDate dateReference) {
         insererPenalite(
                 5001L,
                 2006L,
                 3002L,
                 "RESERVATION_PRIVEE_INCOMPLETE",
-                "Pénalité de démonstration",
-                LocalDateTime.of(2026, 5, 8, 11, 30),
-                LocalDateTime.of(2026, 5, 15, 11, 30),
+                "Pénalité de démonstration active",
+                dateReference.minusDays(1).atTime(11, 30),
+                dateReference.plusDays(6).atTime(11, 30),
                 "ACTIVE"
         );
     }
@@ -852,13 +867,13 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
         );
     }
 
-    private void insererPaiements() {
+    private void insererPaiements(LocalDate dateReference) {
         insererPaiement(
                 6001L,
                 2001L,
                 "PARTICIPATION",
                 new BigDecimal("15.00"),
-                LocalDateTime.of(2026, 5, 8, 10, 2),
+                dateReference.minusDays(1).atTime(10, 2),
                 "PAYE",
                 3101L,
                 null
@@ -869,7 +884,7 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 2003L,
                 "PARTICIPATION",
                 new BigDecimal("15.00"),
-                LocalDateTime.of(2026, 5, 8, 10, 12),
+                dateReference.minusDays(1).atTime(10, 12),
                 "PAYE",
                 3102L,
                 null
@@ -880,7 +895,7 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 2002L,
                 "PARTICIPATION",
                 new BigDecimal("15.00"),
-                LocalDateTime.of(2026, 5, 8, 10, 16),
+                dateReference.minusDays(1).atTime(10, 16),
                 "PAYE",
                 3201L,
                 null
@@ -891,7 +906,7 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 2001L,
                 "PARTICIPATION",
                 new BigDecimal("15.00"),
-                LocalDateTime.of(2026, 5, 1, 9, 1),
+                dateReference.minusDays(8).atTime(9, 1),
                 "PAYE",
                 3301L,
                 null
@@ -902,7 +917,7 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 2003L,
                 "PARTICIPATION",
                 new BigDecimal("15.00"),
-                LocalDateTime.of(2026, 5, 1, 9, 6),
+                dateReference.minusDays(8).atTime(9, 6),
                 "PAYE",
                 3302L,
                 null
@@ -913,7 +928,7 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 2004L,
                 "PARTICIPATION",
                 new BigDecimal("15.00"),
-                LocalDateTime.of(2026, 5, 1, 9, 11),
+                dateReference.minusDays(8).atTime(9, 11),
                 "PAYE",
                 3303L,
                 null
@@ -924,7 +939,7 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 2006L,
                 "PARTICIPATION",
                 new BigDecimal("15.00"),
-                LocalDateTime.of(2026, 5, 1, 9, 16),
+                dateReference.minusDays(8).atTime(9, 16),
                 "PAYE",
                 3304L,
                 null

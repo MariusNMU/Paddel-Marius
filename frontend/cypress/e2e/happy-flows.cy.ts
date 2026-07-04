@@ -1,3 +1,18 @@
+function dateIsoDansJours(decalageJours: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + decalageJours);
+
+  const annee = date.getFullYear();
+  const mois = String(date.getMonth() + 1).padStart(2, '0');
+  const jour = String(date.getDate()).padStart(2, '0');
+
+  return `${annee}-${mois}-${jour}`;
+}
+
+const dateMatchPublic = dateIsoDansJours(3);
+const dateDebutStats = dateIsoDansJours(-14);
+const dateFinStats = dateIsoDansJours(14);
+
 const joueurG1001 = {
   membreId: 2001,
   matricule: 'G1001',
@@ -29,15 +44,15 @@ const soldeG1001 = {
 const disponibilitesBruxelles = {
   siteId: 1001,
   nomSite: 'Padel Bruxelles',
-  date: '2026-06-20',
+  date: dateMatchPublic,
   ferme: false,
   motifFermeture: null,
   creneaux: [
     {
       terrainId: 1103,
       numeroTerrain: 'T3',
-      dateHeureDebut: '2026-06-20T13:15:00',
-      dateHeureFin: '2026-06-20T14:45:00'
+      dateHeureDebut: `${dateMatchPublic}T13:15:00`,
+      dateHeureFin: `${dateMatchPublic}T14:45:00`
     }
   ]
 };
@@ -48,8 +63,8 @@ const matchPublicDisponible = {
   nomSite: 'Padel Bruxelles',
   terrainId: 1101,
   numeroTerrain: 'T1',
-  dateHeureDebut: '2026-06-20T09:00:00',
-  dateHeureFin: '2026-06-20T10:30:00',
+  dateHeureDebut: `${dateMatchPublic}T09:00:00`,
+  dateHeureFin: `${dateMatchPublic}T10:30:00`,
   nombreParticipantsActifs: 2,
   placesDisponibles: 2,
   prixTotal: 60,
@@ -67,8 +82,8 @@ const paiementMatchPublic = {
 };
 
 const statistiquesGlobales = {
-  dateDebut: '2026-05-01',
-  dateFin: '2026-06-30',
+  dateDebut: dateDebutStats,
+  dateFin: dateFinStats,
   siteId: null,
   nomSite: null,
   nombreMatches: 3,
@@ -189,13 +204,13 @@ describe('Happy flows MVP Padel Marius', () => {
 
     cy.contains('h2', 'Organiser un match').should('be.visible');
 
-    cy.get('input[name="date"]').clear().type('2026-06-20');
+    cy.get('input[name="date"]').clear().type(dateMatchPublic);
 
     cy.contains('button', 'Voir les créneaux disponibles').click();
 
     cy.wait('@consultationDisponibilites');
 
-    cy.contains('Padel Bruxelles (1001) — 2026-06-20').should('be.visible');
+    cy.contains(`Padel Bruxelles (1001) — ${dateMatchPublic}`).should('be.visible');
     cy.contains('Terrain T3 (1103)').should('be.visible');
     cy.contains('13:15').should('be.visible');
     cy.contains('14:45').should('be.visible');
@@ -225,7 +240,7 @@ describe('Happy flows MVP Padel Marius', () => {
 
     cy.contains('h2', 'Rejoindre un match public').should('be.visible');
 
-    cy.get('input[name="date"]').clear().type('2026-06-20');
+    cy.get('input[name="date"]').clear().type(dateMatchPublic);
 
     cy.contains('button', 'Rechercher les matches publics').click();
 

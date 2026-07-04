@@ -6,6 +6,17 @@ import { AuthContextService } from '../../services/auth-context.service';
 import { TraitementVeilleResponse } from '../../models/traitement-veille.model';
 import { extraireMessageErreur } from '../../shared/api-error.util';
 
+function dateIsoDansJours(decalageJours: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + decalageJours);
+
+  const annee = date.getFullYear();
+  const mois = String(date.getMonth() + 1).padStart(2, '0');
+  const jour = String(date.getDate()).padStart(2, '0');
+
+  return `${annee}-${mois}-${jour}`;
+}
+
 @Component({
   selector: 'app-admin-traitement-veille',
   standalone: true,
@@ -44,16 +55,16 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
           <h3>Dates rapides de démonstration</h3>
 
           <div class="actions">
-            <button type="button" (click)="selectionnerDate('2026-05-19')">
-              Démo : 19/05/2026
+            <button type="button" (click)="selectionnerDateRelative(0)">
+              Aujourd'hui
             </button>
 
-            <button type="button" (click)="selectionnerDate('2026-06-19')">
-              Avant matches du 20/06/2026
+            <button type="button" (click)="selectionnerDateRelative(2)">
+              Avant match démo public
             </button>
 
-            <button type="button" (click)="selectionnerDate('2026-06-20')">
-              Test : 20/06/2026
+            <button type="button" (click)="selectionnerDateRelative(3)">
+              Avant match démo privé
             </button>
           </div>
         </div>
@@ -190,7 +201,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
   `]
 })
 export class AdminTraitementVeilleComponent {
-  dateTraitement = '2026-05-19';
+  dateTraitement = dateIsoDansJours(0);
 
   readonly chargement = signal(false);
   readonly messageErreur = signal<string | null>(null);
@@ -206,6 +217,10 @@ export class AdminTraitementVeilleComponent {
     this.dateTraitement = date;
     this.messageErreur.set(null);
     this.resultat.set(null);
+  }
+
+  selectionnerDateRelative(decalageJours: number): void {
+    this.selectionnerDate(dateIsoDansJours(decalageJours));
   }
 
   lancerTraitement(): void {

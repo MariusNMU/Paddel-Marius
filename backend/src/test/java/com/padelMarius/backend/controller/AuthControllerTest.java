@@ -179,7 +179,9 @@ class AuthControllerTest {
                                   "motDePasse": ""
                                 }
                                 """))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_INVALIDE"))
+                .andExpect(jsonPath("$.message").exists());
 
         verify(authService, never())
                 .authentifierJoueur(any(ConnexionJoueurRequest.class));
@@ -195,7 +197,9 @@ class AuthControllerTest {
                                   "motDePasse": ""
                                 }
                                 """))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_INVALIDE"))
+                .andExpect(jsonPath("$.message").exists());
 
         verify(authService, never())
                 .authentifierJoueur(any(ConnexionJoueurRequest.class));
@@ -211,7 +215,9 @@ class AuthControllerTest {
                                   "motDePasse": ""
                                 }
                                 """))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_INVALIDE"))
+                .andExpect(jsonPath("$.message").exists());
 
         verify(authService, never())
                 .authentifierAdmin(any(ConnexionAdminRequest.class));

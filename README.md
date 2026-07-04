@@ -57,7 +57,8 @@ Angular HttpClient
 Angular Guards
 Angular Interceptor
 Vitest / Angular unit tests
-Cypress E2E
+Cypress E2E mocké
+Cypress full stack
 ```
 
 ### Base de données
@@ -65,8 +66,10 @@ Cypress E2E
 ```txt
 SQL relationnel
 H2 en mémoire par défaut
-Seed automatique au démarrage du backend
+Seed H2 automatique au démarrage du backend
+Données de démonstration relatives à la date du jour
 PostgreSQL Docker optionnel
+Seed PostgreSQL Java avec le profil postgres
 Artefacts SQL disponibles dans docs/db
 ```
 
@@ -140,6 +143,11 @@ Paddel-Marius/
 
     cypress/
       e2e/
+      full-stack/
+      support/
+
+    cypress.config.ts
+    cypress.fullstack.config.ts
 
   docs/
     db/
@@ -326,15 +334,15 @@ Le projet contient :
 
 Le backend expose une API REST.
 
-Exemples d'endpoints :
+Exemples d'endpoints principaux :
 
 ```http
 GET /api/health
 POST /api/auth/joueur
 POST /api/auth/admin
-GET /api/disponibilites?siteId=1001&date=2026-06-20
+GET /api/disponibilites?siteId=1001&date=<date-demo>
 POST /api/matches
-GET /api/matches/publics?siteId=1001&date=2026-06-20
+GET /api/matches/publics?siteId=1001&date=<date-demo>
 POST /api/matches/{matchId}/participants/public/payer
 GET /api/membres/{matricule}/solde
 GET /api/membres/{matricule}/reservations
@@ -342,8 +350,25 @@ GET /api/membres/{matricule}/dettes/ouvertes
 GET /api/membres/{matricule}/paiements
 POST /api/dettes/{detteId}/paiements
 POST /api/admin/fermetures
-GET /api/admin/statistiques?dateDebut=2026-05-01&dateFin=2026-06-30
+GET /api/admin/statistiques?dateDebut=<date-debut>&dateFin=<date-fin>
 GET /api/admin/membres
+POST /api/admin/matches/traitement-veille?date=<date-traitement>
+POST /api/admin/matches/traitement-echeance
+```
+
+Les endpoints joueur et administrateur protégés utilisent le header :
+
+```http
+Authorization: Bearer <token>
+```
+
+Le backend renvoie les erreurs API importantes au format standard :
+
+```json
+{
+  "code": "...",
+  "message": "..."
+}
 ```
 
 Swagger est disponible quand le backend est démarré :
@@ -357,6 +382,8 @@ La spécification OpenAPI JSON est disponible ici :
 ```txt
 http://localhost:8080/v3/api-docs
 ```
+
+But : supprimer les dates obsolètes et documenter le contrat d'erreur API.
 
 ---
 
@@ -482,8 +509,10 @@ Puis le backend peut être démarré avec le profil PostgreSQL :
 
 ```powershell
 cd backend
-.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=postgres
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=postgres"
 ```
+
+Les guillemets autour de `-Dspring-boot.run.profiles=postgres` sont recommandés sous PowerShell afin de transmettre correctement l'argument à Maven.
 
 Le seed PostgreSQL de démonstration est exécuté automatiquement avec ce profil.
 
@@ -540,6 +569,7 @@ services
 repositories
 config
 security
+intégration backend avec MockMvc + H2
 ```
 
 ### 11.2. Build frontend
@@ -548,7 +578,7 @@ Depuis la racine du projet :
 
 ```powershell
 cd frontend
-npm run build
+npm.cmd run build
 cd ..
 ```
 
@@ -558,21 +588,61 @@ Depuis la racine du projet :
 
 ```powershell
 cd frontend
-npm run test
+npm.cmd run test -- --watch=false
 cd ..
 ```
 
-### 11.4. Tests Cypress E2E
+### 11.4. Tests Cypress mockés
 
-Depuis la racine du projet :
+Les tests Cypress mockés valident les principaux parcours UI avec des réponses API simulées.
 
 ```powershell
 cd frontend
-npm run cypress:run
+npm.cmd run cypress:run
 cd ..
 ```
 
-Les tests Cypress couvrent les principaux happy flows de l'application.
+### 11.5. Test Cypress full stack
+
+Le test Cypress full stack valide un vrai parcours :
+
+```txt
+Angular réel
+HTTP réel
+Spring Boot réel
+H2 réelle
+```
+
+Terminal 1 — démarrer le backend H2 :
+
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run
+```
+
+Terminal 2 — lancer Cypress full stack :
+
+```powershell
+cd frontend
+npm.cmd run cypress:run:fullstack
+cd ..
+```
+
+### 11.6. GitHub Actions
+
+Le dépôt contient un workflow GitHub Actions qui exécute automatiquement les validations principales sur les Pull Requests :
+
+```txt
+backend tests
+frontend build
+frontend tests
+```
+
+Workflow concerné :
+
+```txt
+.github/workflows/project-quality-gates.yml
+```
 
 ---
 
@@ -642,20 +712,37 @@ Le projet est suivi avec GitHub.
 Méthode utilisée :
 
 ```txt
-issue GitHub par fonctionnalité
-branche par issue
+issue GitHub par fonctionnalité ou correction
+branche dédiée par issue
 commits courts et cohérents
 pull request avant merge
-validation avant merge
+tests et validations avant merge
+suppression des branches après fusion
 ```
 
 Le dépôt contient le frontend et le backend dans un seul repository.
+
+Les dernières PR ont notamment permis de stabiliser :
+
+```txt
+expiration des pénalités
+cycle de vie des matches
+annulations et disponibilités
+remboursements et statistiques
+données de démonstration relatives
+test d'intégration backend
+Cypress full stack
+contrat d'erreur API
+GitHub Actions
+```
+
+La branche main représente l'état stable du projet.
 
 ---
 
 ## 14. Commandes utiles
 
-### Backend
+### Backend H2
 
 ```powershell
 cd backend
@@ -682,7 +769,7 @@ npm start
 
 ```powershell
 cd frontend
-npm run build
+npm.cmd run build
 cd ..
 ```
 
@@ -690,15 +777,32 @@ cd ..
 
 ```powershell
 cd frontend
-npm run test
+npm.cmd run test -- --watch=false
 cd ..
 ```
 
-### Cypress
+### Cypress mocké
 
 ```powershell
 cd frontend
-npm run cypress:run
+npm.cmd run cypress:run
+cd ..
+```
+
+### Cypress full stack
+
+Terminal 1 :
+
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run
+```
+
+Terminal 2 :
+
+```powershell
+cd frontend
+npm.cmd run cypress:run:fullstack
 cd ..
 ```
 
@@ -712,5 +816,25 @@ docker compose up -d postgres
 
 ```powershell
 cd backend
-.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=postgres
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=postgres"
 ```
+
+### Arrêter PostgreSQL sans supprimer les données
+
+```powershell
+docker compose stop postgres
+```
+
+## 15. Points importants 
+
+- Le frontend Angular ne contient aucun SQL.
+- Le frontend ne se connecte jamais directement à la base de données.
+- Le backend Spring Boot expose une API REST.
+- La logique métier principale est dans les services backend.
+- Les repositories isolent l'accès aux données.
+- H2 est utilisé par défaut pour une démonstration rapide.
+- PostgreSQL Docker est disponible en option.
+- Les données de démonstration sont relatives à la date du jour.
+- Les tests backend, frontend, Cypress et la CI GitHub Actions montrent la stabilité du projet.
+
+

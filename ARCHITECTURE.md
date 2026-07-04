@@ -20,38 +20,44 @@ Il répond aux attentes PDW :
 ## 2. Vue d'ensemble
 
 ```txt
-+---------------------------+
-| Frontend Angular          |
-| - pages                   |
-| - services HTTP           |
-| - guards                  |
-| - interceptor admin       |
-+-------------+-------------+
-              |
-              | HTTP REST / JSON
-              v
-+-------------+-------------+
-| Backend Spring Boot       |
-| - controllers             |
-| - services                |
-| - repositories            |
-| - entities                |
-| - DTO                     |
-+-------------+-------------+
-              |
-              | JPA / SQL
-              v
-+-------------+-------------+
-| Base de données H2        |
-| SQL relationnelle         |
-+---------------------------+
++--------------------------------+
+| Frontend Angular               |
+| - pages                        |
+| - services HTTP                |
+| - guards                       |
+| - interceptor JWT              |
+| - models TypeScript            |
++---------------+----------------+
+                |
+                | HTTP REST / JSON via /api/**
+                v
++---------------+----------------+
+| Backend Spring Boot REST API   |
+| - controllers                  |
+| - services métier              |
+| - repositories JPA             |
+| - entities JPA                 |
+| - DTO                          |
+| - sécurité JWT MVP             |
++---------------+----------------+
+                |
+                | JPA / SQL
+                v
++---------------+----------------+
+| Base de données relationnelle  |
+| - H2 en mémoire par défaut     |
+| - PostgreSQL Docker optionnel  |
++--------------------------------+
 ```
 
 Le frontend et le backend sont séparés.
 
-Le frontend Angular ne se connecte jamais directement à la base de données.  
-Le frontend ne contient aucun SQL.  
-Le backend est le seul composant qui accède à la base de données.
+Le frontend Angular ne se connecte jamais directement à la base de données.
+Le frontend ne contient aucun SQL.
+Le frontend appelle uniquement l'API REST du backend.
+Le backend est le seul composant applicatif qui accède à la base de données.
+
+H2 est utilisé par défaut pour une démonstration rapide. PostgreSQL Docker est disponible comme configuration optionnelle plus réaliste.
 
 ---
 
@@ -73,6 +79,7 @@ backend/src/main/java/com/padelMarius/backend/
   entity/
   exception/
   repository/
+  security/
   service/
 ```
 
@@ -220,7 +227,30 @@ Responsabilités :
 
 - représenter les données d'entrée API ;
 - représenter les données de sortie API ;
-- éviter d'exposer directement les entities JPA au frontend.
+- valider certaines données reçues avec Bean Validation ;
+- éviter d'exposer directement les entities JPA au frontend ;
+- garder un contrat JSON clair entre Angular et Spring Boot.
+
+Exemples :
+
+```txt
+CreerMatchRequest
+MatchResponse
+DisponibilitesResponse
+PaiementResponse
+ReservationJoueurResponse
+StatistiquesAdminResponse
+ApiErrorResponse
+```
+
+Le DTO ApiErrorResponse est le format standard utilisé pour les erreurs API importantes :
+
+```json
+{
+  "code": "...",
+  "message": "..."
+}
+```
 
 ---
 
@@ -245,7 +275,40 @@ Le backend utilise aussi un handler global :
 ApiExceptionHandler
 ```
 
-Il permet de retourner des erreurs lisibles au frontend.
+Il transforme les exceptions en réponses HTTP lisibles et homogènes pour le frontend.
+
+Le format standard est :
+
+```json
+{
+  "code": "...",
+  "message": "..."
+}
+```
+
+Exemples d'erreurs gérées :
+
+```txt
+RESSOURCE_INTROUVABLE
+CONFIGURATION_METIER_INVALIDE
+AUTHENTIFICATION_INVALIDE
+ACCES_REFUSE
+VALIDATION_INVALIDE
+REQUETE_INVALIDE
+JSON_INVALIDE
+```
+
+Le handler couvre aussi des erreurs Spring classiques comme :
+
+```txt
+validation @Valid invalide
+paramètre de requête manquant
+paramètre de mauvais type
+JSON mal formé
+contrainte de paramètre non respectée
+```
+
+Cela évite au frontend de recevoir plusieurs formats d'erreur différents.
 
 ---
 
@@ -419,45 +482,78 @@ Rôle :
 
 Le frontend appelle uniquement l'API REST du backend.
 
+Les appels Angular utilisent des URLs relatives du type :
+
+```txt
+/api/...
+```
+
+En développement, le proxy Angular redirige ces appels vers :
+
+```txt
+http://localhost:8080
+```
+
 Exemples d'endpoints :
 
 ```http
 GET /api/health
 POST /api/auth/joueur
 POST /api/auth/admin
-GET /api/disponibilites?siteId=1001&date=2026-06-20
+GET /api/disponibilites?siteId=1001&date=<date-demo>
 POST /api/matches
-GET /api/matches/publics?siteId=1001&date=2026-06-20
+GET /api/matches/publics?siteId=1001&date=<date-demo>
 POST /api/matches/{matchId}/participants/public/payer
 GET /api/membres/{matricule}/solde
 GET /api/membres/{matricule}/reservations
 GET /api/membres/{matricule}/paiements
+GET /api/membres/{matricule}/dettes/ouvertes
+POST /api/dettes/{detteId}/paiements
 POST /api/admin/fermetures
-GET /api/admin/statistiques?dateDebut=2026-05-01&dateFin=2026-06-30
+GET /api/admin/statistiques?dateDebut=<date-debut>&dateFin=<date-fin>
+GET /api/admin/membres
+POST /api/admin/matches/traitement-veille?date=<date-traitement>
+POST /api/admin/matches/traitement-echeance
+```
+
+Les endpoints protégés utilisent :
+
+```txt
+Authorization: Bearer <token>
 ```
 
 ### 5.1. Opérations de participation exposées
 
-L'API n'expose pas de création générique de participation.
+L'API n'expose pas de création générique de participation publique sans paiement.
 
-Pour un match privé, l'organisateur utilise uniquement :
+Pour un match privé, l'organisateur utilise l'invitation privée :
 
 ```http
 POST /api/matches/{matchId}/invitations/privees
 ```
 
-Pour un match public, le joueur utilise uniquement l'opération atomique :
+Pour un match public, le joueur utilise l'opération atomique :
 
 ```http
 POST /api/matches/{matchId}/participants/public/payer
 ```
 
-Cette opération crée la participation et effectue le paiement dans la même
-transaction métier. Une place publique ne peut donc pas être occupée sans
-paiement.
+Cette opération crée la participation et effectue le paiement dans la même transaction métier. Une place publique ne peut donc pas être occupée sans paiement.
 
-La génération d'une dette n'est pas exposée aux joueurs. Elle est déclenchée
-par le backend lors du traitement d'échéance des matches.
+La génération d'une dette n'est pas exposée librement aux joueurs. Elle est déclenchée par le backend lors des traitements métier.
+
+### 5.2. Contrat d'erreur API
+
+Les erreurs API importantes suivent le format :
+
+```json
+{
+  "code": "...",
+  "message": "..."
+}
+```
+
+Ce contrat permet au frontend d'afficher des messages d'erreur lisibles sans dépendre du format technique par défaut de Spring.
 
 ---
 
@@ -607,9 +703,22 @@ participation ou un identifiant de dette afin d'agir au nom d'un autre joueur.
 Les endpoints d'authentification, d'inscription et de health check restent
 accessibles sans JWT.
 
+Cette sécurité reste volontairement adaptée au MVP. Une version production pourrait ajouter une configuration Spring Security complète avec filter chain globale, refresh token, révocation de session et politique de mot de passe renforcée.
+
 ## 9. Base de données
 
-Le MVP utilise H2 en mémoire.
+Le projet utilise une base relationnelle.
+
+Deux configurations existent :
+
+```txt
+H2 en mémoire par défaut
+PostgreSQL Docker optionnel
+```
+
+### 9.1. H2 par défaut
+
+H2 est utilisé pour le démarrage rapide du MVP.
 
 Configuration locale :
 
@@ -619,28 +728,97 @@ User     : sa
 Password : vide
 ```
 
-Le seed est automatique au démarrage backend via :
+Le schéma est créé automatiquement par JPA/Hibernate pour le MVP local.
+
+Le seed H2 est automatique au démarrage backend via :
 
 ```txt
 backend/src/main/resources/data.sql
 ```
 
-Artefacts de remise :
+Les données de démonstration H2 sont calculées relativement à la date du jour afin de rester utilisables pendant la deuxième session.
+
+### 9.2. PostgreSQL Docker optionnel
+
+PostgreSQL Docker peut être lancé pour montrer une base plus réaliste.
+
+Le backend est démarré avec le profil :
+
+```txt
+postgres
+```
+
+Commande PowerShell :
+
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=postgres"
+```
+
+Le profil PostgreSQL utilise :
+
+```txt
+backend/src/main/resources/application-postgres.properties
+```
+
+Dans ce profil :
+
+```properties
+spring.sql.init.mode=never
+```
+
+Donc data.sql n'est pas exécuté sur PostgreSQL.
+
+Les données PostgreSQL de démonstration sont chargées par :
+
+```txt
+PostgresDemoDataSeeder
+```
+
+Ce seeder Java est actif uniquement avec le profil postgres.
+
+### 9.3. Artefacts de remise
+
+Artefacts DB principaux :
 
 ```txt
 docs/db/schema.sql
 docs/db/data-demo.sql
 docs/db/db-users.md
 docs/db/db-users-h2.sql
+docs/db/postgres-demo-seed.md
+docker/postgres/init/01-create-users-and-rights.sql
 ```
 
-Le frontend n'a aucun user DB.
+Le fichier docs/db/schema.sql sert d'artefact de schéma relationnel pour la remise.
+
+Le frontend n'a aucun user DB et ne connaît aucun credential DB.
+
+### 9.4. Users DB
+
+Pour H2 local :
+
+```txt
+sa
+mot de passe vide
+```
+
+Pour PostgreSQL Docker, le projet documente plusieurs users :
+
+```txt
+padel_admin      : initialisation Docker locale
+padel_migration  : création / évolution du schéma en cible
+padel_app        : user applicatif utilisé par le backend
+padel_readonly   : lecture seule
+```
+
+Pour le MVP, Hibernate ddl-auto=update reste utilisé afin de simplifier le démarrage. Une séparation stricte entre migration de schéma et accès applicatif reste une amélioration future.
 
 ---
 
 ## 10. Tests
 
-### Backend
+### 10.1. Tests backend
 
 Tests présents sur les couches attendues :
 
@@ -649,6 +827,8 @@ controller
 service
 repository
 config
+security
+intégration backend
 ```
 
 Commande :
@@ -659,13 +839,32 @@ cd backend
 cd ..
 ```
 
-### Frontend
+Le projet contient notamment :
+
+```txt
+@WebMvcTest pour les controllers
+@DataJpaTest pour les repositories
+Mockito pour les services
+@SpringBootTest + MockMvc pour un happy flow d'intégration backend
+```
+
+Le test d'intégration backend vérifie un parcours complet :
+
+```txt
+connexion joueur
+consultation disponibilités
+création match
+paiement participation organisateur
+consultation réservations
+```
+
+### 10.2. Tests frontend
 
 Tests unitaires Angular :
 
 ```powershell
 cd frontend
-npm run test
+npm.cmd run test -- --watch=false
 cd ..
 ```
 
@@ -673,17 +872,67 @@ Build Angular :
 
 ```powershell
 cd frontend
-npm run build
+npm.cmd run build
 cd ..
 ```
 
-Tests E2E Cypress :
+### 10.3. Cypress mocké
+
+Les tests Cypress mockés valident des parcours UI avec des réponses API simulées :
 
 ```powershell
 cd frontend
-npm run cypress:run
+npm.cmd run cypress:run
 cd ..
 ```
+
+Ces tests sont utiles pour valider l'interface sans dépendre d'un backend lancé.
+
+### 10.4. Cypress full stack
+
+Un test Cypress full stack valide un vrai parcours :
+
+```txt
+Angular réel
+HTTP réel
+Spring Boot réel
+H2 réelle
+```
+
+Terminal 1 :
+
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run
+```
+
+Terminal 2 :
+
+```powershell
+cd frontend
+npm.cmd run cypress:run:fullstack
+cd ..
+```
+
+Ce test vérifie notamment la connexion joueur, la consultation des disponibilités, la création d'un match et la consultation des réservations.
+
+### 10.5. GitHub Actions
+
+Le projet contient une CI GitHub Actions :
+
+```txt
+.github/workflows/project-quality-gates.yml
+```
+
+Elle exécute automatiquement :
+
+```txt
+backend tests
+frontend build
+frontend tests
+```
+
+Cette CI permet de montrer que les Pull Requests sont validées automatiquement avant fusion.
 
 ---
 
@@ -698,10 +947,13 @@ Spring Web MVC
 Spring Data JPA
 Bean Validation
 H2
+PostgreSQL Docker optionnel
 OpenAPI / Springdoc
 Lombok
 BCrypt / spring-security-crypto
+JWT MVP
 Maven Wrapper
+GitHub Actions
 ```
 
 ### Frontend
@@ -711,9 +963,12 @@ Angular
 TypeScript
 Angular Router
 Angular HttpClient
+Angular Guards
+Angular Interceptor
 RxJS
 Vitest
-Cypress
+Cypress mocké
+Cypress full stack
 start-server-and-test
 ```
 

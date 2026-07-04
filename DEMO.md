@@ -1,4 +1,4 @@
-# Démonstration — Padel Marius
+# Démo : Padel Marius
 
 ## 1. Objectif de la démonstration
 
@@ -6,64 +6,113 @@ Cette démonstration présente le MVP de l'application Padel Marius.
 
 L'objectif est de montrer les principales règles métier du projet :
 
-- réservation de terrains de padel ;
-- gestion de plusieurs sites ;
-- horaires propres à chaque site ;
-- matches publics et privés ;
-- paiement des participations ;
-- gestion des dettes ;
-- blocage d'une nouvelle réservation si une dette est ouverte ;
-- blocage d'une nouvelle réservation si une pénalité est active ;
-- statistiques administrateur ;
-- séparation frontend / backend / base de données.
+```txt
+réservation de terrains de padel
+gestion de plusieurs sites
+horaires propres à chaque site
+matches publics et privés
+paiement des participations
+gestion des dettes
+blocage d'une nouvelle réservation si une dette est ouverte
+blocage d'une nouvelle réservation si une pénalité est active
+annulation de matches par fermeture
+remboursement sur le solde crédit
+statistiques administrateur
+séparation frontend / backend / base de données
+tests automatisés
+GitHub Actions
+```
 
-La démonstration dure environ 5 à 10 minutes.
+## 2. Préparation avant l'oral
 
----
+Avant le début de l'examen, préparer :
 
-## 2. Prérequis avant la démonstration
+```txt
+backend démarré
+frontend démarré
+Swagger ouvert
+VS Code ou IntelliJ ouvert
+GitHub ouvert sur le dépôt
+README.md ouvert
+ARCHITECTURE.md ouvert
+EXPLOITATION.md ouvert
+DEMO.md ouvert
+docs/db/schema.sql ouvert
+docs/db/db-users.md ouvert
+```
 
-Avant de commencer la démonstration, les deux applications doivent être démarrées.
+URLs utiles :
 
-### Backend
+```txt
+Frontend : http://localhost:4200
+Backend  : http://localhost:8080
+Health   : http://localhost:8080/api/health
+Swagger  : http://localhost:8080/swagger-ui.html
+OpenAPI  : http://localhost:8080/v3/api-docs
+```
+
+## 3. Démarrage du projet
+
+### 3.1. Terminal 1 — backend H2
 
 Depuis la racine du projet :
-powershell 
-``` 
+
+```powershell
 cd backend
 .\mvnw.cmd spring-boot:run
+```
 
-Le backend démarre sur :
+Résultat attendu :
 
-http://localhost:8080
+```txt
+Tomcat started on port 8080
+Started BackendApplication
+```
 
 Vérification rapide :
 
+```txt
 http://localhost:8080/api/health
+```
 
-Swagger est disponible ici :
+Résultat attendu :
 
-http://localhost:8080/swagger-ui.html
-Frontend
+```json
+{
+  "application": "padel-backend",
+  "status": "OK"
+}
+```
 
-Dans un deuxième terminal :
+### 3.2. Terminal 2 — frontend Angular
 
+Depuis la racine du projet :
+
+```powershell
 cd frontend
-npm install
-npm start
+npm.cmd start
+```
 
-Le frontend démarre sur :
+Ouvrir :
 
+```txt
 http://localhost:4200
 ```
-##3. Comptes de démonstration 
-```
-Joueurs
+
+Le frontend utilise le proxy Angular pour rediriger les appels /api/** vers le backend.
+
+## 4. Comptes de démonstration
+
+### 4.1. Joueurs
+
+```txt
 G1001 / password
 Joueur GLOBAL actif
+Compte conseillé pour le parcours principal
 
 G1002 / password
 Joueur GLOBAL actif avec dette ouverte
+Compte conseillé pour montrer le blocage par dette
 
 S1001 / password
 Joueur SITE Bruxelles
@@ -76,10 +125,16 @@ Joueur LIBRE actif
 
 L1002 / password
 Joueur LIBRE avec pénalité active
+Compte conseillé pour montrer le blocage par pénalité
 
 G9999 / password
 Joueur inactif
-Administrateurs
+Compte conseillé pour montrer un refus de connexion
+```
+
+### 4.2. Administrateurs
+
+```txt
 admin-global / secret
 Administrateur GLOBAL
 
@@ -90,437 +145,677 @@ admin-namur / secret-site
 Administrateur SITE Namur
 
 admin-inactif / secret
-Administrateur inactif 
+Administrateur inactif
 ```
-## 4. Données utiles pour la démonstration
-Sites
+
+## 5. Données utiles pour la démonstration
+
+### 5.1. Sites
+
+```txt
 1001 : Padel Bruxelles
 1002 : Padel Namur
-Terrains
+```
+
+### 5.2. Terrains
+
+```txt
 1101 : Bruxelles T1
 1102 : Bruxelles T2
 1103 : Bruxelles T3
 
 1201 : Namur T1
 1202 : Namur T2
-Dates utiles
-2026-06-20
-Date utile pour consulter les disponibilités et les matches publics.
-
-2026-05-01 à 2026-06-30
-Période utile pour les statistiques administrateur.
-``` ```
-## 5. Scénario de démonstration conseillé 
 ```
-Étape 1 — Montrer que le backend fonctionne
 
-Ouvrir dans le navigateur :
+### 5.3. Dates de démonstration
 
+Les données de démonstration sont relatives à la date du jour.
+
+Cela évite d'avoir des données obsolètes pendant la deuxième session.
+
+Repères utiles :
+
+```txt
+match public de démonstration : aujourd'hui + 3 jours
+match privé de démonstration  : aujourd'hui + 4 jours
+match terminé                 : aujourd'hui - 7 jours
+fermeture globale démo        : aujourd'hui + 10 jours
+fermeture locale démo         : aujourd'hui + 15 jours
+pénalité active démo          : aujourd'hui - 1 jour à aujourd'hui + 6 jours
+```
+
+## 6. Scénario principal : 5 à 10 minutes
+
+### Étape 1 — Montrer que le backend fonctionne
+
+Ouvrir :
+
+```txt
 http://localhost:8080/api/health
+```
 
-Résultat attendu :
+À dire :
 
-{
-  "application": "padel-backend",
-  "status": "OK"
-}
+Le backend Spring Boot est démarré. Il expose une API REST utilisée par le frontend Angular.
 
 Puis ouvrir Swagger :
 
+```txt
 http://localhost:8080/swagger-ui.html
+```
 
+À dire :
 
-Le backend expose une API REST.
-Le frontend Angular consomme uniquement cette API.
-Le frontend ne se connecte jamais directement à la base de données.
-Étape 2 — Connexion joueur
+Swagger permet de visualiser les endpoints REST disponibles. Le frontend ne se connecte jamais directement à la base, il passe uniquement par ces endpoints.
+
+### Étape 2 — Connexion joueur
 
 Ouvrir le frontend :
 
+```txt
 http://localhost:4200
+```
 
 Aller dans l'espace joueur.
 
 Se connecter avec :
 
+```txt
 Matricule : G1001
 Mot de passe : password
+```
 
 À montrer :
 
-connexion réussie ;
-menu joueur visible ;
-accès aux pages joueur ;
-le joueur est identifié par son matricule métier.
+```txt
+connexion réussie
+menu joueur visible
+accès aux pages joueur
+joueur identifié par son matricule métier
+```
 
+À dire :
 
+Le joueur n'a pas de login séparé. Son matricule est son identifiant métier. Le mot de passe sert au mécanisme d'authentification, puis le backend renvoie un JWT.
 
-Le matricule reste l'identifiant métier principal du joueur.
-Le backend stocke uniquement un hash BCrypt du mot de passe.
-Après connexion, le backend renvoie un JWT MVP.
-Étape 3 — Consulter le solde joueur
+### Étape 3 — Consulter le solde joueur
 
 Depuis l'espace joueur, ouvrir :
 
+```txt
 Mon solde
+```
 
 À montrer :
 
-matricule du joueur ;
-solde crédit disponible.
+```txt
+matricule du joueur
+solde crédit disponible
+```
 
+Le solde crédit est géré côté backend. Il est débité lors d'un paiement de participation ou de dette, et il peut être recrédité lors d'un remboursement.
 
-Le paiement d'une participation ou d'une dette débite le solde crédit.
-Le frontend affiche seulement les données reçues par l'API.
-La logique métier reste dans le backend.
-Étape 4 — Consulter les disponibilités
+### Étape 4 — Consulter les disponibilités
 
 Ouvrir :
 
+```txt
 Organiser un match
+```
 
 Utiliser :
 
+```txt
 Site : Padel Bruxelles / 1001
-Date : 2026-06-20
+Date : une date future disponible via les boutons rapides
+```
 
 Cliquer sur :
 
+```txt
 Voir les créneaux disponibles
+```
 
 À montrer :
 
-créneaux disponibles ;
-terrains du site ;
-horaires propres au site ;
-durée de match de 1h30 ;
-pause de 15 minutes entre les matches.
+```txt
+créneaux disponibles
+terrains du site
+horaires propres au site
+durée de match de 1h30
+pause de 15 minutes entre deux matches
+```
 
+Les disponibilités sont calculées par le backend. Le calcul tient compte des horaires annuels du site, des fermetures, des terrains actifs, des matches existants et des matches annulés.
 
-Le backend calcule les disponibilités.
-Il tient compte des horaires annuels du site, des fermetures, des terrains actifs et des matches déjà réservés.
-Étape 5 — Créer un match
+### Étape 5 — Créer un match
 
-Depuis un créneau disponible, créer un match.
+Depuis un créneau disponible, cliquer sur :
 
-Exemple :
+```txt
+Utiliser ce créneau pour créer un match
+```
 
-Terrain : Bruxelles T3
-Date : 2026-06-20
-Créneau : 13:15 - 14:45
-Type : PUBLIC ou PRIVE
+Créer un match avec :
+
+```txt
+Type : PUBLIC
 Organisateur : G1001
+```
 
 À montrer :
 
-création du match ;
-réservation du terrain ;
-participation organisateur créée.
+```txt
+match créé
+réservation du terrain
+participation organisateur créée
+état du match A_VENIR
+```
 
+Un match correspond à une réservation de terrain. Le backend vérifie les règles métier avant d'autoriser la création.
 
+Règles contrôlées côté backend :
 
-Un match correspond à une réservation de terrain.
-Le backend vérifie les règles métier avant d'autoriser la création.
+```txt
+terrain actif
+site actif
+créneau disponible
+match dans le futur
+fenêtre de réservation selon la catégorie du membre
+absence de dette ouverte
+absence de pénalité active réelle
+absence de conflit horaire
+```
 
-Règles contrôlées :
-
-terrain actif ;
-site actif ;
-créneau disponible ;
-match dans le futur ;
-fenêtre de réservation selon la catégorie du membre ;
-pas de dette ouverte ;
-pas de pénalité active ;
-pas de conflit horaire.
-Étape 6 — Rejoindre un match public
-
-Se connecter avec un joueur actif qui n'est pas déjà dans le match public, par exemple :
-
-L1001 / password
+### Étape 6 — Consulter les réservations
 
 Ouvrir :
 
+```txt
+Mes réservations
+```
+
+À montrer :
+
+```txt
+match créé
+site
+terrain
+date et heure
+rôle ORGANISATEUR
+statut de participation
+état du match
+```
+
+La réservation est stockée côté backend et récupérée via l'API. Le frontend affiche les données reçues, mais ne manipule pas directement la base.
+
+### Étape 7 — Rejoindre un match public
+
+Se déconnecter puis se connecter avec un autre joueur actif, par exemple :
+
+```txt
+L1001 / password
+```
+
+Ouvrir :
+
+```txt
 Rejoindre un match public
+```
 
-Utiliser :
+Choisir :
 
+```txt
 Site : Padel Bruxelles / 1001
-Date : 2026-06-20
+Date : date du match public de démonstration
+```
 
 Cliquer sur :
 
+```txt
 Rechercher les matches publics
+```
 
 Puis rejoindre un match public disponible.
 
 À montrer :
 
-liste des matches publics ;
-places disponibles ;
-paiement de 15 euros ;
-validation immédiate après paiement.
+```txt
+liste des matches publics
+places disponibles
+paiement de 15 euros
+participation confirmée après paiement
+```
 
+Dans un match public, le principe est premier payé, premier servi. Le joueur doit rejoindre lui-même le match public. L'organisateur ne réserve pas une place à sa place.
 
-Dans un match public, le principe est : premier payé, premier servi.
-Le joueur doit rejoindre lui-même le match public.
-L'organisateur ne réserve pas à sa place.
-Étape 7 — Montrer le blocage par dette
+### Étape 8 — Montrer le blocage par dette
 
 Se connecter avec :
 
+```txt
 G1002 / password
+```
 
 Essayer d'organiser un nouveau match.
 
 Résultat attendu :
 
-La création est refusée parce que ce joueur a une dette ouverte.
+```txt
+la création est refusée parce que ce joueur a une dette ouverte
+```
 
-Une dette ouverte bloque l'organisation d'un nouveau match.
-Cette règle protège le club contre les réservations non payées.
-Étape 8 — Consulter et payer une dette
+À dire :
+
+Une dette ouverte bloque l'organisation d'un nouveau match. Cette règle protège le club contre les réservations non payées.
+
+### Étape 9 — Consulter et payer une dette
 
 Avec le joueur :
 
+```txt
 G1002 / password
+```
 
 Ouvrir :
 
+```txt
 Mes dettes
+```
 
 À montrer :
 
-dette ouverte ;
-montant restant ;
-possibilité de payer la dette.
+```txt
+dette ouverte
+montant restant
+possibilité de payer la dette
+```
 
 Payer la dette si le solde est suffisant.
 
-Le paiement de dette débite le solde du joueur.
-Une dette réglée ne bloque plus une nouvelle réservation.
-Étape 9 — Montrer le blocage par pénalité
+Le paiement de dette débite le solde du joueur. Une dette réglée ne bloque plus une nouvelle réservation.
+
+### Étape 10 — Montrer le blocage par pénalité
 
 Se connecter avec :
 
+```txt
 L1002 / password
+```
 
 Essayer d'organiser un nouveau match.
 
 Résultat attendu :
 
-La création est refusée parce que ce joueur a une pénalité active.
+```txt
+la création est refusée parce que ce joueur a une pénalité active
+```
 
-Une pénalité active bloque temporairement l'organisation d'un nouveau match.
-Dans le MVP, une pénalité simple dure 7 jours.
-Étape 10 — Connexion administrateur
+Une pénalité active bloque temporairement l'organisation d'un nouveau match. Le backend vérifie aussi la date de fin : une pénalité expirée ne doit plus bloquer le joueur.
+
+### Étape 11 — Connexion administrateur
 
 Aller dans :
 
+```txt
 /admin/login
+```
 
 Se connecter avec :
 
+```txt
 admin-global / secret
+```
 
 À montrer :
 
-dashboard administrateur ;
-rôle GLOBAL ;
-accès aux statistiques ;
-accès à la liste des membres ;
-accès aux fermetures ;
-accès aux traitements.
+```txt
+dashboard administrateur
+rôle GLOBAL
+accès aux statistiques
+accès à la liste des membres
+accès aux fermetures
+accès aux traitements
+```
 
+Il existe deux types d'administrateurs : GLOBAL et SITE. Un administrateur GLOBAL peut voir tous les sites. Un administrateur SITE est limité à son propre site.
 
-Il existe deux types d'administrateurs : GLOBAL et SITE.
-Un administrateur GLOBAL peut voir tous les sites.
-Un administrateur SITE est limité à son site.
-Étape 11 — Statistiques administrateur
+### Étape 12 — Statistiques administrateur
 
 Dans l'espace administrateur, ouvrir :
 
+```txt
 Statistiques
+```
 
 Utiliser :
 
-Date début : 2026-05-01
-Date fin   : 2026-06-30
+```txt
+Période démo complète
+```
 
-Charger les statistiques.
-
-À montrer :
-
-nombre de matches ;
-chiffre d'affaires ;
-dettes ouvertes ;
-taux de remplissage ;
-participations actives.
-
-Les statistiques sont calculées côté backend.
-Elles s'appuient sur les matches, les participations, les paiements et les dettes.
-Étape 12 — Administrateur de site
-
-Se déconnecter de l'administrateur global.
-
-Se connecter avec :
-
-admin-bruxelles / secret-site
+ou une période relative autour de la date du jour.
 
 À montrer :
 
-administrateur SITE ;
-accès limité au site Bruxelles ;
-impossibilité de gérer globalement tous les sites.
+```txt
+nombre de matches
+chiffre d'affaires
+dettes ouvertes
+taux de remplissage
+participations actives
+```
 
-Le backend vérifie les droits administrateur.
-Un administrateur SITE ne peut agir que sur son propre site.
-Étape 13 — Montrer la documentation technique
+Les statistiques sont calculées côté backend à partir des matches, des participations, des paiements et des dettes. Les matches annulés et les paiements annulés ne doivent pas fausser le chiffre d'affaires.
 
-Ouvrir rapidement les fichiers :
+### Étape 13 — Fermeture administrateur
 
+Dans l'espace administrateur, ouvrir :
+
+```txt
+Fermetures
+```
+
+Créer une fermeture locale ou globale sur une date future.
+
+À montrer :
+
+```txt
+création de fermeture
+matches concernés annulés
+remboursements crédités si des paiements existaient
+disponibilités bloquées pour cette date
+```
+
+La fermeture est une règle admin. Elle peut être globale ou locale. Lorsqu'elle annule des matches à venir, les joueurs payés sont remboursés sur leur solde crédit et les paiements concernés sont annulés.
+
+### Étape 14 — Traitements administrateur
+
+Ouvrir :
+
+```txt
+Traitement de veille
+```
+
+À montrer :
+
+```txt
+date de traitement
+matches analysés
+participations libérées
+matches passés publics
+```
+
+Le traitement de veille applique les règles avant les matches, notamment le passage public d'un match privé incomplet et la libération des participations non payées.
+
+Ouvrir aussi, si disponible dans l'interface ou via Swagger :
+
+```http
+POST /api/admin/matches/traitement-echeance
+```
+
+Le traitement d'échéance fait évoluer le cycle des matches : A_VENIR vers DEMARRE, puis DEMARRE vers TERMINE. Il peut aussi déclencher les dettes et les pénalités selon l'état du match.
+
+### Étape 15 — Montrer la documentation technique
+
+Ouvrir rapidement :
+
+```txt
 README.md
 ARCHITECTURE.md
 EXPLOITATION.md
+DEMO.md
 docs/db/README.md
 docs/db/schema.sql
 docs/db/db-users.md
+```
 
-
-
+```txt
 README.md présente le projet.
 ARCHITECTURE.md explique les couches frontend et backend.
 EXPLOITATION.md explique comment démarrer et tester le projet.
+DEMO.md décrit le scénario de démonstration.
 docs/db/schema.sql fournit l'artefact de schéma SQL.
 docs/db/db-users.md explique les utilisateurs DB et leurs droits.
 ```
-Étape 14 — Montrer GitHub
-```
+
+### Étape 16 — Montrer GitHub
 
 Ouvrir le dépôt GitHub.
 
 À montrer :
 
-issues ;
-branches ;
-commits ;
-pull requests ;
-historique de progression.
+```txt
+issues
+branches
+commits
+pull requests
+GitHub Actions
+```
 
+J'ai travaillé par issues, branches et pull requests. La branche main représente l'état stable du projet. Les dernières Pull Requests ont corrigé les règles métier, ajouté des tests d'intégration, ajouté Cypress full stack, uniformisé les erreurs API et ajouté une CI GitHub Actions.
 
-Chaque fonctionnalité importante a été développée via une issue, une branche et une pull request.
-Les commits sont réguliers et découpés par fonctionnalité.
-Étape 15 — Montrer les tests
+### Étape 17 — Montrer les tests
 
 Depuis la racine du projet :
 
-Tests backend
+Tests backend :
+
+```powershell
 cd backend
 .\mvnw.cmd clean test
 cd ..
+```
 
+Les tests backend couvrent les controllers, les services, les repositories, la sécurité, la configuration et un happy flow d'intégration backend.
 
-Les tests backend couvrent les controllers, les services, les repositories, la sécurité et la configuration.
-Build frontend
+Build frontend :
+
+```powershell
 cd frontend
-npm run build
+npm.cmd run build
 cd ..
-Tests unitaires frontend
-cd frontend
-npm run test
-cd ..
-Tests Cypress
-cd frontend
-npm run cypress:run
-cd ..
+```
 
+Tests frontend :
 
-Les tests Cypress valident les principaux happy flows côté frontend.
-6. Points métier à insister pendant l'oral
-Réservation
-Un match est une réservation d'un terrain.
-Un match dure 1h30.
-Il y a 15 minutes entre deux matches.
-Membres
-GLOBAL : réservation jusqu'à 21 jours avant le match, tous sites.
-SITE   : réservation jusqu'à 14 jours avant le match, uniquement son site.
-LIBRE  : réservation jusqu'à 5 jours avant le match, tous sites.
-Paiement
-Un match coûte 60 euros.
-Une participation standard coûte 15 euros.
-Le paiement confirme la participation.
-Dette
-Si le match n'est pas entièrement payé, l'organisateur porte le solde.
-Une dette ouverte bloque une nouvelle réservation.
-Pénalité
-Un match privé incomplet peut entraîner une pénalité.
-Une pénalité active bloque une nouvelle réservation.
-Administration
-Un administrateur GLOBAL gère tous les sites.
-Un administrateur SITE est limité à son site.
-7. Architecture à expliquer simplement
+```powershell
+cd frontend
+npm.cmd run test -- --watch=false
+cd ..
+```
+
+Cypress mocké :
+
+```powershell
+cd frontend
+npm.cmd run cypress:run
+cd ..
+```
+
+Cypress full stack.
+
+Terminal 1 :
+
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run
+```
+
+Terminal 2 :
+
+```powershell
+cd frontend
+npm.cmd run cypress:run:fullstack
+cd ..
+```
+
+Les Cypress mockés valident les principaux parcours UI avec API simulée. Le Cypress full stack valide un vrai parcours Angular vers Spring Boot et H2.
+
+## 7. Points métier à insister pendant l'oral
+
+### Réservation
+
+```txt
+un match est une réservation d'un terrain
+un match dure 1h30
+il y a 15 minutes entre deux matches
+le backend vérifie les conflits horaires
+```
+
+### Membres
+
+```txt
+GLOBAL : réservation jusqu'à 21 jours avant le match, tous sites
+SITE   : réservation jusqu'à 14 jours avant le match, uniquement son site
+LIBRE  : réservation jusqu'à 5 jours avant le match, tous sites
+```
+
+### Paiement
+
+```txt
+un match coûte 60 euros
+une participation standard coûte 15 euros
+le paiement confirme la participation
+le solde crédit est débité côté backend
+```
+
+### Dette
+
+```txt
+si le match n'est pas entièrement payé, l'organisateur porte le solde
+une dette ouverte bloque une nouvelle réservation
+une dette réglée ne bloque plus la création d'un match
+```
+
+### Pénalité
+
+```txt
+un match privé incomplet peut entraîner une pénalité
+une pénalité active bloque une nouvelle réservation
+une pénalité expirée ne doit plus bloquer le joueur
+```
+
+### Fermeture
+
+```txt
+une fermeture peut être globale ou locale
+une fermeture annule les matches à venir concernés
+les joueurs payés sont remboursés sur leur solde crédit
+les matches annulés ne bloquent plus les disponibilités
+```
+
+### Administration
+
+```txt
+un administrateur GLOBAL gère tous les sites
+un administrateur SITE est limité à son site
+les endpoints admin exigent un JWT admin
+```
+
+## 8. Architecture à expliquer simplement
+
+```txt
 Frontend Angular
         |
-        | HTTP REST / JSON
+        | HTTP REST / JSON via /api/**
         v
-Backend Spring Boot
+Backend Spring Boot REST API
         |
         | JPA / Repositories
         v
-Base de données SQL
-
-Le frontend ne contient aucun SQL.
-Le frontend ne possède aucun user DB.
-Le frontend appelle uniquement l'API REST du backend.
-Le backend est le seul composant applicatif qui accède à la base de données.
-8. Sécurité à expliquer simplement
-Les joueurs se connectent avec matricule + mot de passe.
-Les administrateurs se connectent avec login + mot de passe.
-Les mots de passe sont stockés sous forme de hash BCrypt.
-Après connexion, le backend génère un JWT MVP.
-Le frontend ajoute ce JWT dans le header Authorization.
-Les routes Angular sont protégées par des guards.
-Les opérations administrateur vérifient le rôle côté backend.
-
-Header utilisé :
-
-Authorization: Bearer <token>
+Base de données relationnelle
 ```
-9. Base de données 
-``` 
-Base utilisée par défaut :
 
-H2 en mémoire
-Seed automatique au démarrage
-Aucun script SQL manuel à exécuter pour la démo locale
+Le frontend ne contient aucun SQL et ne connaît aucun identifiant de base de données. Il appelle uniquement le backend via l'API REST. Le backend applique les règles métier dans ses services et accède à la base via les repositories JPA.
 
-Artefacts fournis :
+## 9. H2 et PostgreSQL à expliquer
 
-docs/db/schema.sql
-docs/db/data-demo.sql
-docs/db/db-users.md
-docs/db/db-users-h2.sql
-docker/postgres/init/01-create-users-and-rights.sql
+### H2 par défaut
 
-Users DB prévus :
-
-sa              : user H2 local pour la démo
-padel_admin     : initialisation Docker PostgreSQL
-padel_migration : création / évolution du schéma
-padel_app       : user applicatif backend avec droits CRUD
-padel_readonly  : user lecture seule
-
-
-Pour le MVP local, H2 simplifie la démonstration.
-Pour une cible plus réaliste, la documentation prévoit des users DB séparés.
-Le frontend n'a aucun accès direct à la base.
-10. Fin de démonstration
-
-
-Le MVP couvre les règles principales demandées :
-multi-sites, terrains, horaires, fermetures, membres, réservations, paiements, dettes, pénalités, statistiques et séparation frontend/backend.
-
-Le backend respecte une architecture controller / service / repository.
-Le frontend Angular communique uniquement avec l'API REST.
-Les tests backend sont présents sur controllers, services et repositories.
-La base relationnelle est documentée avec un artefact SQL et une explication des users DB.
+```txt
+H2 est utilisé par défaut.
+La base est en mémoire.
+Elle démarre automatiquement avec le backend.
+Le schéma est créé automatiquement.
+Les données sont seedées automatiquement avec data.sql.
+Les données sont relatives à la date du jour.
 ```
+
+### PostgreSQL Docker optionnel
+
+```txt
+PostgreSQL Docker est disponible en option.
+Il montre une base locale plus réaliste.
+Le backend utilise le profil postgres.
+Le fichier data.sql n'est pas exécuté sur PostgreSQL.
+Le seed PostgreSQL est fait par PostgresDemoDataSeeder.
+```
+
+Commande PostgreSQL sous PowerShell :
+
+```powershell
+docker compose up -d postgres
+cd backend
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=postgres"
+```
+
+## 10. Sécurité
+
+```txt
+mots de passe hashés avec BCrypt
+connexion joueur par matricule + mot de passe
+connexion administrateur par login + mot de passe
+JWT renvoyé après connexion
+interceptor Angular ajoute Authorization: Bearer <token>
+guards Angular protègent les routes
+backend vérifie les rôles et l'identité sur les endpoints protégés
+```
+
+Limite assumée :
+
+La sécurité est adaptée au MVP. Une version production devrait ajouter Spring Security complet, refresh token, révocation de session et politique de mot de passe renforcée.
+
+## 11. Contrat d'erreur API
+
+Le backend renvoie les erreurs importantes avec :
+
+```json
+{
+  "code": "...",
+  "message": "..."
+}
+```
+
+Exemples de codes :
+
+```txt
+RESSOURCE_INTROUVABLE
+CONFIGURATION_METIER_INVALIDE
+AUTHENTIFICATION_INVALIDE
+ACCES_REFUSE
+VALIDATION_INVALIDE
+REQUETE_INVALIDE
+JSON_INVALIDE
+```
+
+J'ai uniformisé les erreurs API pour que le frontend reçoive toujours un format simple avec un code et un message. Cela évite d'afficher des erreurs techniques brutes.
+
+## 16. Mini check-list avant l'examen
+
+- [ ] Backend démarré
+- [ ] Frontend démarré
+- [ ] Health check ouvert
+- [ ] Swagger ouvert
+- [ ] GitHub ouvert
+- [ ] README.md ouvert
+- [ ] ARCHITECTURE.md ouvert
+- [ ] EXPLOITATION.md ouvert
+- [ ] DEMO.md ouvert
+- [ ] docs/db/schema.sql ouvert
+- [ ] docs/db/db-users.md ouvert
+- [ ] IntelliJ ou VS Code ouvert
+- [ ] Terminal prêt pour les tests backend
+- [ ] Terminal prêt pour les tests frontend
+- [ ] Navigateur prêt sur http://localhost:4200

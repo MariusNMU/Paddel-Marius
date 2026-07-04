@@ -371,6 +371,7 @@ class MatchCreationServiceTest {
         when(disponibiliteService.consulterDisponibilites(1L, scenario.dateHeureDebut().toLocalDate()))
                 .thenReturn(new DisponibilitesResponse(
                         1L,
+                        "Padel Bruxelles",
                         scenario.dateHeureDebut().toLocalDate(),
                         false,
                         null,
@@ -424,6 +425,7 @@ class MatchCreationServiceTest {
         when(disponibiliteService.consulterDisponibilites(1L, scenario.dateHeureDebut().toLocalDate()))
                 .thenReturn(new DisponibilitesResponse(
                         1L,
+                        "Padel Bruxelles",
                         scenario.dateHeureDebut().toLocalDate(),
                         false,
                         null,
@@ -596,6 +598,7 @@ class MatchCreationServiceTest {
         when(disponibiliteService.consulterDisponibilites(1L, scenario.dateHeureDebut().toLocalDate()))
                 .thenReturn(new DisponibilitesResponse(
                         1L,
+                        "Padel Bruxelles",
                         scenario.dateHeureDebut().toLocalDate(),
                         false,
                         null,
@@ -646,6 +649,7 @@ class MatchCreationServiceTest {
         when(disponibiliteService.consulterDisponibilites(1L, scenario.dateHeureDebut().toLocalDate()))
                 .thenReturn(new DisponibilitesResponse(
                         1L,
+                        "Padel Bruxelles",
                         scenario.dateHeureDebut().toLocalDate(),
                         false,
                         null,

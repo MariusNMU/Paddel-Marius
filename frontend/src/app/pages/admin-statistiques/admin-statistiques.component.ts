@@ -11,6 +11,38 @@ interface SiteOption {
   libelle: string;
 }
 
+function dateIsoDansJours(decalageJours: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + decalageJours);
+
+  const annee = date.getFullYear();
+  const mois = String(date.getMonth() + 1).padStart(2, '0');
+  const jour = String(date.getDate()).padStart(2, '0');
+
+  return `${annee}-${mois}-${jour}`;
+}
+
+function premierJourMoisCourant(): string {
+  const date = new Date();
+  date.setDate(1);
+
+  const annee = date.getFullYear();
+  const mois = String(date.getMonth() + 1).padStart(2, '0');
+
+  return `${annee}-${mois}-01`;
+}
+
+function dernierJourMoisCourant(): string {
+  const date = new Date();
+  date.setMonth(date.getMonth() + 1, 0);
+
+  const annee = date.getFullYear();
+  const mois = String(date.getMonth() + 1).padStart(2, '0');
+  const jour = String(date.getDate()).padStart(2, '0');
+
+  return `${annee}-${mois}-${jour}`;
+}
+
 @Component({
   selector: 'app-admin-statistiques',
   standalone: true,
@@ -37,12 +69,12 @@ interface SiteOption {
           <h3>Périodes rapides</h3>
 
           <div class="actions">
-            <button type="button" (click)="selectionnerPeriode('mai')">
-              Mai 2026
+            <button type="button" (click)="selectionnerPeriode('moisCourant')">
+              Mois courant
             </button>
 
-            <button type="button" (click)="selectionnerPeriode('juin')">
-              Juin 2026
+            <button type="button" (click)="selectionnerPeriode('prochainsJours')">
+              7 prochains jours
             </button>
 
             <button type="button" (click)="selectionnerPeriode('demo')">
@@ -256,8 +288,8 @@ export class AdminStatistiquesComponent {
     { id: 1002, libelle: 'Padel Namur (1002)' }
   ];
 
-  dateDebut = '2026-05-01';
-  dateFin = '2026-06-30';
+  dateDebut = dateIsoDansJours(-14);
+  dateFin = dateIsoDansJours(14);
   siteId: number | null = null;
 
   readonly chargement = signal(false);
@@ -270,20 +302,20 @@ export class AdminStatistiquesComponent {
   ) {
   }
 
-  selectionnerPeriode(periode: 'mai' | 'juin' | 'demo'): void {
-    if (periode === 'mai') {
-      this.dateDebut = '2026-05-01';
-      this.dateFin = '2026-05-31';
+  selectionnerPeriode(periode: 'moisCourant' | 'prochainsJours' | 'demo'): void {
+    if (periode === 'moisCourant') {
+      this.dateDebut = premierJourMoisCourant();
+      this.dateFin = dernierJourMoisCourant();
     }
 
-    if (periode === 'juin') {
-      this.dateDebut = '2026-06-01';
-      this.dateFin = '2026-06-30';
+    if (periode === 'prochainsJours') {
+      this.dateDebut = dateIsoDansJours(0);
+      this.dateFin = dateIsoDansJours(7);
     }
 
     if (periode === 'demo') {
-      this.dateDebut = '2026-05-01';
-      this.dateFin = '2026-06-30';
+      this.dateDebut = dateIsoDansJours(-14);
+      this.dateFin = dateIsoDansJours(14);
     }
 
     this.messageErreur.set(null);

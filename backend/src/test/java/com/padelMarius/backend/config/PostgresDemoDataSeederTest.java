@@ -11,6 +11,9 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,7 +43,12 @@ class PostgresDemoDataSeederTest {
         when(passwordEncoder.encode("secret")).thenReturn("HASH_ADMIN_GLOBAL");
         when(passwordEncoder.encode("secret-site")).thenReturn("HASH_ADMIN_SITE");
 
-        seeder = new PostgresDemoDataSeeder(jdbcTemplate, passwordEncoder);
+        Clock clock = Clock.fixed(
+                Instant.parse("2026-08-20T10:00:00Z"),
+                ZoneId.of("Europe/Brussels")
+        );
+
+        seeder = new PostgresDemoDataSeeder(jdbcTemplate, passwordEncoder, clock);
     }
 
     @Test

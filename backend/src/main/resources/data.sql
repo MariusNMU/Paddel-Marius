@@ -2,6 +2,13 @@
 -- Seed de démonstration automatique - H2 MVP
 -- Projet : Padel Marius
 -- Exécuté automatiquement au démarrage backend.
+--
+-- Les dates métier sont relatives à CURRENT_DATE pour rester
+-- utilisables pendant la session d’août et après.
+--
+-- H2 uniquement :
+-- PostgreSQL n’exécute pas ce fichier car le profil postgres
+-- désactive spring.sql.init.mode.
 -- ============================================================
 
 -- Sites
@@ -25,10 +32,10 @@ INSERT INTO horaire_annuel_site (
     heure_debut_reservation,
     heure_fin_reservation
 ) VALUES
-      (1301, 1001, 2026, TIME '08:00:00', TIME '22:00:00'),
-      (1302, 1002, 2026, TIME '09:00:00', TIME '21:00:00');
+      (1301, 1001, EXTRACT(YEAR FROM CURRENT_DATE), TIME '08:00:00', TIME '22:00:00'),
+      (1302, 1002, EXTRACT(YEAR FROM CURRENT_DATE), TIME '09:00:00', TIME '21:00:00');
 
--- Fermetures
+-- Fermetures futures
 INSERT INTO fermeture (
     id,
     date_fermeture,
@@ -36,8 +43,8 @@ INSERT INTO fermeture (
     motif,
     site_id
 ) VALUES
-      (1401, DATE '2026-07-21', 'GLOBALE', 'Fête nationale', NULL),
-      (1402, DATE '2026-08-15', 'LOCALE', 'Maintenance annuelle Bruxelles', 1001);
+      (1401, DATEADD('DAY', 10, CURRENT_DATE), 'GLOBALE', 'Fermeture globale de démonstration', NULL),
+      (1402, DATEADD('DAY', 15, CURRENT_DATE), 'LOCALE', 'Maintenance annuelle Bruxelles', 1001);
 
 -- Membres
 INSERT INTO membre (
@@ -76,6 +83,9 @@ INSERT INTO administrateur (
       (2104, 'Admin', 'Namur', 'admin-namur', '$2y$10$Pynh4YlaL1ya8I9fq3nvJuX2v7BSjUwbROsKg3iZYn8XYc9DNeACm', 'SITE', 1002, TRUE);
 
 -- Matches
+-- 3001 : match public futur, utilisable pour la démo joueur.
+-- 3002 : match privé futur avec dette de démonstration pour G1002.
+-- 3003 : match terminé, utilisable pour les statistiques.
 INSERT INTO padel_match (
     id,
     terrain_id,
@@ -88,9 +98,42 @@ INSERT INTO padel_match (
     date_passage_public,
     etat_cycle
 ) VALUES
-      (3001, 1101, TIMESTAMP '2026-06-20 09:00:00', TIMESTAMP '2026-06-20 10:30:00', 'PUBLIC', 'PUBLIC', 60.00, TIMESTAMP '2026-05-08 10:00:00', NULL, 'A_VENIR'),
-      (3002, 1102, TIMESTAMP '2026-06-20 11:00:00', TIMESTAMP '2026-06-20 12:30:00', 'PRIVE', 'PRIVE', 60.00, TIMESTAMP '2026-05-08 10:15:00', NULL, 'A_VENIR'),
-      (3003, 1201, TIMESTAMP '2026-05-10 09:00:00', TIMESTAMP '2026-05-10 10:30:00', 'PUBLIC', 'PUBLIC', 60.00, TIMESTAMP '2026-05-01 09:00:00', NULL, 'TERMINE');
+      (
+          3001,
+          1101,
+          DATEADD('MINUTE', 540, CAST(DATEADD('DAY', 3, CURRENT_DATE) AS TIMESTAMP)),
+          DATEADD('MINUTE', 630, CAST(DATEADD('DAY', 3, CURRENT_DATE) AS TIMESTAMP)),
+          'PUBLIC',
+          'PUBLIC',
+          60.00,
+          DATEADD('MINUTE', 600, CAST(DATEADD('DAY', -1, CURRENT_DATE) AS TIMESTAMP)),
+          NULL,
+          'A_VENIR'
+      ),
+      (
+          3002,
+          1102,
+          DATEADD('MINUTE', 660, CAST(DATEADD('DAY', 4, CURRENT_DATE) AS TIMESTAMP)),
+          DATEADD('MINUTE', 750, CAST(DATEADD('DAY', 4, CURRENT_DATE) AS TIMESTAMP)),
+          'PRIVE',
+          'PRIVE',
+          60.00,
+          DATEADD('MINUTE', 615, CAST(DATEADD('DAY', -1, CURRENT_DATE) AS TIMESTAMP)),
+          NULL,
+          'A_VENIR'
+      ),
+      (
+          3003,
+          1201,
+          DATEADD('MINUTE', 540, CAST(DATEADD('DAY', -7, CURRENT_DATE) AS TIMESTAMP)),
+          DATEADD('MINUTE', 630, CAST(DATEADD('DAY', -7, CURRENT_DATE) AS TIMESTAMP)),
+          'PUBLIC',
+          'PUBLIC',
+          60.00,
+          DATEADD('MINUTE', 540, CAST(DATEADD('DAY', -8, CURRENT_DATE) AS TIMESTAMP)),
+          NULL,
+          'TERMINE'
+      );
 
 -- Participations
 INSERT INTO participation (
@@ -104,16 +147,94 @@ INSERT INTO participation (
     date_confirmation,
     date_liberation
 ) VALUES
-      (3101, 3001, 2001, 'ORGANISATEUR', 'CREATION', 'CONFIRMEE', TIMESTAMP '2026-05-08 10:00:00', TIMESTAMP '2026-05-08 10:02:00', NULL),
-      (3102, 3001, 2003, 'JOUEUR', 'INSCRIPTION_PUBLIQUE', 'CONFIRMEE', TIMESTAMP '2026-05-08 10:10:00', TIMESTAMP '2026-05-08 10:12:00', NULL),
-
-      (3201, 3002, 2002, 'ORGANISATEUR', 'CREATION', 'CONFIRMEE', TIMESTAMP '2026-05-08 10:15:00', TIMESTAMP '2026-05-08 10:16:00', NULL),
-      (3202, 3002, 2005, 'JOUEUR', 'INVITATION_PRIVEE', 'EN_ATTENTE_PAIEMENT', TIMESTAMP '2026-05-08 10:20:00', NULL, NULL),
-
-      (3301, 3003, 2001, 'ORGANISATEUR', 'CREATION', 'CONFIRMEE', TIMESTAMP '2026-05-01 09:00:00', TIMESTAMP '2026-05-01 09:01:00', NULL),
-      (3302, 3003, 2003, 'JOUEUR', 'INSCRIPTION_PUBLIQUE', 'CONFIRMEE', TIMESTAMP '2026-05-01 09:05:00', TIMESTAMP '2026-05-01 09:06:00', NULL),
-      (3303, 3003, 2004, 'JOUEUR', 'INSCRIPTION_PUBLIQUE', 'CONFIRMEE', TIMESTAMP '2026-05-01 09:10:00', TIMESTAMP '2026-05-01 09:11:00', NULL),
-      (3304, 3003, 2006, 'JOUEUR', 'INSCRIPTION_PUBLIQUE', 'CONFIRMEE', TIMESTAMP '2026-05-01 09:15:00', TIMESTAMP '2026-05-01 09:16:00', NULL);
+      (
+          3101,
+          3001,
+          2001,
+          'ORGANISATEUR',
+          'CREATION',
+          'CONFIRMEE',
+          DATEADD('MINUTE', 600, CAST(DATEADD('DAY', -1, CURRENT_DATE) AS TIMESTAMP)),
+          DATEADD('MINUTE', 602, CAST(DATEADD('DAY', -1, CURRENT_DATE) AS TIMESTAMP)),
+          NULL
+      ),
+      (
+          3102,
+          3001,
+          2003,
+          'JOUEUR',
+          'INSCRIPTION_PUBLIQUE',
+          'CONFIRMEE',
+          DATEADD('MINUTE', 610, CAST(DATEADD('DAY', -1, CURRENT_DATE) AS TIMESTAMP)),
+          DATEADD('MINUTE', 612, CAST(DATEADD('DAY', -1, CURRENT_DATE) AS TIMESTAMP)),
+          NULL
+      ),
+      (
+          3201,
+          3002,
+          2002,
+          'ORGANISATEUR',
+          'CREATION',
+          'CONFIRMEE',
+          DATEADD('MINUTE', 615, CAST(DATEADD('DAY', -1, CURRENT_DATE) AS TIMESTAMP)),
+          DATEADD('MINUTE', 616, CAST(DATEADD('DAY', -1, CURRENT_DATE) AS TIMESTAMP)),
+          NULL
+      ),
+      (
+          3202,
+          3002,
+          2005,
+          'JOUEUR',
+          'INVITATION_PRIVEE',
+          'EN_ATTENTE_PAIEMENT',
+          DATEADD('MINUTE', 620, CAST(DATEADD('DAY', -1, CURRENT_DATE) AS TIMESTAMP)),
+          NULL,
+          NULL
+      ),
+      (
+          3301,
+          3003,
+          2001,
+          'ORGANISATEUR',
+          'CREATION',
+          'CONFIRMEE',
+          DATEADD('MINUTE', 540, CAST(DATEADD('DAY', -8, CURRENT_DATE) AS TIMESTAMP)),
+          DATEADD('MINUTE', 541, CAST(DATEADD('DAY', -8, CURRENT_DATE) AS TIMESTAMP)),
+          NULL
+      ),
+      (
+          3302,
+          3003,
+          2003,
+          'JOUEUR',
+          'INSCRIPTION_PUBLIQUE',
+          'CONFIRMEE',
+          DATEADD('MINUTE', 545, CAST(DATEADD('DAY', -8, CURRENT_DATE) AS TIMESTAMP)),
+          DATEADD('MINUTE', 546, CAST(DATEADD('DAY', -8, CURRENT_DATE) AS TIMESTAMP)),
+          NULL
+      ),
+      (
+          3303,
+          3003,
+          2004,
+          'JOUEUR',
+          'INSCRIPTION_PUBLIQUE',
+          'CONFIRMEE',
+          DATEADD('MINUTE', 550, CAST(DATEADD('DAY', -8, CURRENT_DATE) AS TIMESTAMP)),
+          DATEADD('MINUTE', 551, CAST(DATEADD('DAY', -8, CURRENT_DATE) AS TIMESTAMP)),
+          NULL
+      ),
+      (
+          3304,
+          3003,
+          2006,
+          'JOUEUR',
+          'INSCRIPTION_PUBLIQUE',
+          'CONFIRMEE',
+          DATEADD('MINUTE', 555, CAST(DATEADD('DAY', -8, CURRENT_DATE) AS TIMESTAMP)),
+          DATEADD('MINUTE', 556, CAST(DATEADD('DAY', -8, CURRENT_DATE) AS TIMESTAMP)),
+          NULL
+      );
 
 -- Dette ouverte de démonstration
 INSERT INTO dette (
@@ -126,7 +247,16 @@ INSERT INTO dette (
     date_reglement,
     statut_dette
 ) VALUES
-    (4001, 3002, 2002, 30.00, 30.00, TIMESTAMP '2026-05-08 11:00:00', NULL, 'OUVERTE');
+    (
+        4001,
+        3002,
+        2002,
+        30.00,
+        30.00,
+        DATEADD('MINUTE', 660, CAST(DATEADD('DAY', -1, CURRENT_DATE) AS TIMESTAMP)),
+        NULL,
+        'OUVERTE'
+    );
 
 -- Pénalité active de démonstration
 INSERT INTO penalite (
@@ -139,7 +269,16 @@ INSERT INTO penalite (
     date_fin,
     statut_penalite
 ) VALUES
-    (5001, 2006, 3002, 'RESERVATION_PRIVEE_INCOMPLETE', 'Pénalité de démonstration', TIMESTAMP '2026-05-08 11:30:00', TIMESTAMP '2026-05-15 11:30:00', 'ACTIVE');
+    (
+        5001,
+        2006,
+        3002,
+        'RESERVATION_PRIVEE_INCOMPLETE',
+        'Pénalité de démonstration active',
+        DATEADD('MINUTE', 690, CAST(DATEADD('DAY', -1, CURRENT_DATE) AS TIMESTAMP)),
+        DATEADD('MINUTE', 690, CAST(DATEADD('DAY', 6, CURRENT_DATE) AS TIMESTAMP)),
+        'ACTIVE'
+    );
 
 -- Paiements
 INSERT INTO paiement (
@@ -152,10 +291,73 @@ INSERT INTO paiement (
     participation_id,
     dette_id
 ) VALUES
-      (6001, 2001, 'PARTICIPATION', 15.00, TIMESTAMP '2026-05-08 10:02:00', 'PAYE', 3101, NULL),
-      (6002, 2003, 'PARTICIPATION', 15.00, TIMESTAMP '2026-05-08 10:12:00', 'PAYE', 3102, NULL),
-      (6003, 2002, 'PARTICIPATION', 15.00, TIMESTAMP '2026-05-08 10:16:00', 'PAYE', 3201, NULL),
-      (6004, 2001, 'PARTICIPATION', 15.00, TIMESTAMP '2026-05-01 09:01:00', 'PAYE', 3301, NULL),
-      (6005, 2003, 'PARTICIPATION', 15.00, TIMESTAMP '2026-05-01 09:06:00', 'PAYE', 3302, NULL),
-      (6006, 2004, 'PARTICIPATION', 15.00, TIMESTAMP '2026-05-01 09:11:00', 'PAYE', 3303, NULL),
-      (6007, 2006, 'PARTICIPATION', 15.00, TIMESTAMP '2026-05-01 09:16:00', 'PAYE', 3304, NULL);
+      (
+          6001,
+          2001,
+          'PARTICIPATION',
+          15.00,
+          DATEADD('MINUTE', 602, CAST(DATEADD('DAY', -1, CURRENT_DATE) AS TIMESTAMP)),
+          'PAYE',
+          3101,
+          NULL
+      ),
+      (
+          6002,
+          2003,
+          'PARTICIPATION',
+          15.00,
+          DATEADD('MINUTE', 612, CAST(DATEADD('DAY', -1, CURRENT_DATE) AS TIMESTAMP)),
+          'PAYE',
+          3102,
+          NULL
+      ),
+      (
+          6003,
+          2002,
+          'PARTICIPATION',
+          15.00,
+          DATEADD('MINUTE', 616, CAST(DATEADD('DAY', -1, CURRENT_DATE) AS TIMESTAMP)),
+          'PAYE',
+          3201,
+          NULL
+      ),
+      (
+          6004,
+          2001,
+          'PARTICIPATION',
+          15.00,
+          DATEADD('MINUTE', 541, CAST(DATEADD('DAY', -8, CURRENT_DATE) AS TIMESTAMP)),
+          'PAYE',
+          3301,
+          NULL
+      ),
+      (
+          6005,
+          2003,
+          'PARTICIPATION',
+          15.00,
+          DATEADD('MINUTE', 546, CAST(DATEADD('DAY', -8, CURRENT_DATE) AS TIMESTAMP)),
+          'PAYE',
+          3302,
+          NULL
+      ),
+      (
+          6006,
+          2004,
+          'PARTICIPATION',
+          15.00,
+          DATEADD('MINUTE', 551, CAST(DATEADD('DAY', -8, CURRENT_DATE) AS TIMESTAMP)),
+          'PAYE',
+          3303,
+          NULL
+      ),
+      (
+          6007,
+          2006,
+          'PARTICIPATION',
+          15.00,
+          DATEADD('MINUTE', 556, CAST(DATEADD('DAY', -8, CURRENT_DATE) AS TIMESTAMP)),
+          'PAYE',
+          3304,
+          NULL
+      );

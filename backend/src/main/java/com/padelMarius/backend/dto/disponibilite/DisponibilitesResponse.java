@@ -5,6 +5,7 @@ import java.util.List;
 
 public record DisponibilitesResponse(
         Long siteId,
+        String nomSite,
         LocalDate date,
         boolean ferme,
         String motifFermeture,

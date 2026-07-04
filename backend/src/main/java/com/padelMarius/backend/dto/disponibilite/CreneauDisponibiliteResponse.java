@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 public record CreneauDisponibiliteResponse(
         Long terrainId,
-        String terrainNumero,
+        String numeroTerrain,
         LocalDateTime dateHeureDebut,
         LocalDateTime dateHeureFin
 ) {

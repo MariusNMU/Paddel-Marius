@@ -54,6 +54,7 @@ public class DisponibiliteService {
         if (fermeture.isPresent()) {
             return new DisponibilitesResponse(
                     site.getId(),
+                    site.getNom(),
                     date,
                     true,
                     fermeture.get().getMotif(),
@@ -77,6 +78,7 @@ public class DisponibiliteService {
         if (terrainsActifs.isEmpty()) {
             return new DisponibilitesResponse(
                     site.getId(),
+                    site.getNom(),
                     date,
                     false,
                     null,
@@ -108,11 +110,12 @@ public class DisponibiliteService {
 
         creneauxDisponibles.sort(
                 Comparator.comparing(CreneauDisponibiliteResponse::dateHeureDebut)
-                        .thenComparing(CreneauDisponibiliteResponse::terrainNumero)
+                        .thenComparing(CreneauDisponibiliteResponse::numeroTerrain)
         );
 
         return new DisponibilitesResponse(
                 site.getId(),
+                site.getNom(),
                 date,
                 false,
                 null,

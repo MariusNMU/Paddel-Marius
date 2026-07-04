@@ -45,6 +45,7 @@ class DisponibiliteControllerTest {
 
         DisponibilitesResponse response = new DisponibilitesResponse(
                 1L,
+                "Padel Bruxelles",
                 date,
                 false,
                 null,
@@ -67,10 +68,11 @@ class DisponibiliteControllerTest {
                         .param("date", "2026-05-08"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.siteId").value(1))
+                .andExpect(jsonPath("$.nomSite").value("Padel Bruxelles"))
                 .andExpect(jsonPath("$.date").value("2026-05-08"))
                 .andExpect(jsonPath("$.ferme").value(false))
                 .andExpect(jsonPath("$.creneaux[0].terrainId").value(10))
-                .andExpect(jsonPath("$.creneaux[0].terrainNumero").value("1"))
+                .andExpect(jsonPath("$.creneaux[0].numeroTerrain").value("1"))
                 .andExpect(jsonPath("$.creneaux[0].dateHeureDebut").value("2026-05-08T09:00:00"))
                 .andExpect(jsonPath("$.creneaux[0].dateHeureFin").value("2026-05-08T10:30:00"));
     }

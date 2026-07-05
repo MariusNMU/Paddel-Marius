@@ -1,21 +1,16 @@
 ﻿import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { InvitationPriveeResponse } from '../../models/invitation.model';
 import { CreerMatchRequest, MatchResponse, ModeCreation } from '../../models/match.model';
+import { TerrainResponse } from '../../models/terrain.model';
 import { AuthContextService } from '../../services/auth-context.service';
 import { InvitationApiService } from '../../services/invitation-api.service';
 import { MatchApiService } from '../../services/match-api.service';
+import { TerrainApiService } from '../../services/terrain-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
 import { dateHeureDuJourPourInput } from '../../shared/date-ui.util';
-
-interface TerrainDemo {
-  id: number;
-  numero: string;
-  siteId: number;
-  nomSite: string;
-}
 
 @Component({
   selector: 'app-creer-match',
@@ -63,16 +58,25 @@ interface TerrainDemo {
           [(ngModel)]="terrainId"
           required
         >
-          <option *ngFor="let terrain of terrains" [ngValue]="terrain.id">
-            {{ terrain.nomSite }} ({{ terrain.siteId }}) — Terrain {{ terrain.numero }} ({{ terrain.id }})
+          <option [ngValue]="null" disabled>Choisir un terrain</option>
+          <option *ngFor="let terrain of terrains" [ngValue]="terrain.terrainId">
+            {{ terrain.nomSite }} ({{ terrain.siteId }}) — Terrain {{ terrain.numeroTerrain }} ({{ terrain.terrainId }})
           </option>
         </select>
+
+        <p *ngIf="chargementTerrains" class="aide">
+          Chargement des terrains depuis le backend...
+        </p>
+
+        <p *ngIf="!chargementTerrains && terrains.length === 0" class="erreur">
+          Aucun terrain actif disponible. Vérifie les données de démonstration en base.
+        </p>
 
         <div class="bloc-info" *ngIf="terrainSelectionne() as terrain">
           <h3>Terrain sélectionné</h3>
           <p>
             <strong>{{ terrain.nomSite }} ({{ terrain.siteId }})</strong>
-            — Terrain {{ terrain.numero }} ({{ terrain.id }})
+            — Terrain {{ terrain.numeroTerrain }} ({{ terrain.terrainId }})
           </p>
         </div>
 
@@ -103,7 +107,9 @@ interface TerrainDemo {
           id="modeCreation"
           name="modeCreation"
           [(ngModel)]="modeCreation"
+          required
         >
+          <option value="" disabled>Choisir un type de match</option>
           <option value="PUBLIC">Public</option>
           <option value="PRIVE">Privé</option>
         </select>
@@ -113,11 +119,11 @@ interface TerrainDemo {
 
           <p><strong>Prix total :</strong> 60 €</p>
           <p><strong>Part par joueur :</strong> 15 €</p>
-          <p><strong>Mode sélectionné :</strong> {{ modeCreation }}</p>
+          <p><strong>Mode sélectionné :</strong> {{ modeCreation || 'Non choisi' }}</p>
           <p><strong>Début demandé :</strong> {{ dateHeureDebut }}</p>
         </div>
 
-        <button type="submit" [disabled]="chargement">
+        <button type="submit" [disabled]="chargement || chargementTerrains || terrains.length === 0">
           {{ chargement ? 'Création...' : 'Créer le match' }}
         </button>
       </form>
@@ -205,45 +211,15 @@ interface TerrainDemo {
     }
   `]
 })
-export class CreerMatchComponent {
-  terrains: TerrainDemo[] = [
-    {
-      id: 1101,
-      numero: 'T1',
-      siteId: 1001,
-      nomSite: 'Padel Bruxelles'
-    },
-    {
-      id: 1102,
-      numero: 'T2',
-      siteId: 1001,
-      nomSite: 'Padel Bruxelles'
-    },
-    {
-      id: 1103,
-      numero: 'T3',
-      siteId: 1001,
-      nomSite: 'Padel Bruxelles'
-    },
-    {
-      id: 1201,
-      numero: 'T1',
-      siteId: 1002,
-      nomSite: 'Padel Namur'
-    },
-    {
-      id: 1202,
-      numero: 'T2',
-      siteId: 1002,
-      nomSite: 'Padel Namur'
-    }
-  ];
+export class CreerMatchComponent implements OnInit {
+  terrains: TerrainResponse[] = [];
 
-  terrainId = 1101;
-  matriculeOrganisateur = 'G1001';
+  terrainId: number | null = null;
+  matriculeOrganisateur = '';
   dateHeureDebut = dateHeureDuJourPourInput('13:00');
-  modeCreation: ModeCreation = 'PUBLIC';
+  modeCreation: ModeCreation | '' = '';
 
+  chargementTerrains = false;
   chargement = false;
   messageErreur = '';
   matchCree: MatchResponse | null = null;
@@ -254,17 +230,22 @@ export class CreerMatchComponent {
   constructor(
     private readonly matchApiService: MatchApiService,
     private readonly invitationApiService: InvitationApiService,
+    private readonly terrainApiService: TerrainApiService,
     private readonly authContext: AuthContextService,
     private readonly changeDetectorRef: ChangeDetectorRef,
     private readonly route: ActivatedRoute
   ) {
-    this.matriculeOrganisateur = this.authContext.joueur()?.matricule ?? 'G1001';
+    this.matriculeOrganisateur = this.authContext.joueur()?.matricule ?? '';
 
     const terrainIdParam = this.route.snapshot.queryParamMap.get('terrainId');
     const dateHeureDebutParam = this.route.snapshot.queryParamMap.get('dateHeureDebut');
 
     if (terrainIdParam) {
-      this.terrainId = Number(terrainIdParam);
+      const terrainIdDepuisUrl = Number(terrainIdParam);
+
+      if (!Number.isNaN(terrainIdDepuisUrl)) {
+        this.terrainId = terrainIdDepuisUrl;
+      }
     }
 
     if (dateHeureDebutParam) {
@@ -272,15 +253,49 @@ export class CreerMatchComponent {
     }
   }
 
-  terrainSelectionne(): TerrainDemo | undefined {
-    return this.terrains.find(terrain => terrain.id === Number(this.terrainId));
+  ngOnInit(): void {
+    this.chargerTerrains();
+  }
+
+  private chargerTerrains(): void {
+    this.messageErreur = '';
+    this.chargementTerrains = true;
+
+    this.terrainApiService.listerTerrainsActifs().subscribe({
+      next: (terrains) => {
+        this.terrains = terrains;
+
+        const terrainSelectionExiste = this.terrainId !== null
+          && this.terrains.some(terrain => terrain.terrainId === this.terrainId);
+
+        if (!terrainSelectionExiste) {
+          this.terrainId = this.terrains.length > 0
+            ? this.terrains[0].terrainId
+            : null;
+        }
+
+        this.chargementTerrains = false;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        this.messageErreur = extraireMessageErreur(error);
+        this.terrains = [];
+        this.terrainId = null;
+        this.chargementTerrains = false;
+        this.changeDetectorRef.detectChanges();
+      }
+    });
+  }
+
+  terrainSelectionne(): TerrainResponse | undefined {
+    return this.terrains.find(terrain => terrain.terrainId === Number(this.terrainId));
   }
 
   creerMatch(): void {
     this.messageErreur = '';
     this.matchCree = null;
 
-    if (!this.terrainId || !this.matriculeOrganisateur.trim() || !this.dateHeureDebut) {
+    if (!this.terrainId || !this.matriculeOrganisateur.trim() || !this.dateHeureDebut || !this.modeCreation) {
       this.messageErreur = 'Tous les champs sont obligatoires.';
       this.changeDetectorRef.detectChanges();
       return;
@@ -290,7 +305,7 @@ export class CreerMatchComponent {
       terrainId: this.terrainId,
       matriculeOrganisateur: this.matriculeOrganisateur.trim(),
       dateHeureDebut: this.dateHeureDebut,
-      modeCreation: this.modeCreation
+      modeCreation: this.modeCreation as ModeCreation
     };
 
     this.chargement = true;

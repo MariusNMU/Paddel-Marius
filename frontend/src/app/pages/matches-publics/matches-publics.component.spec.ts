@@ -6,8 +6,10 @@ import {
   MatchPublicResponse,
   RejoindreMatchPublicResponse
 } from '../../models/match-public.model';
+import { SiteResponse } from '../../models/site.model';
 import { AuthContextService } from '../../services/auth-context.service';
 import { MatchPublicApiService } from '../../services/match-public-api.service';
+import { SiteApiService } from '../../services/site-api.service';
 import { MatchesPublicsComponent } from './matches-publics.component';
 
 describe('MatchesPublicsComponent', () => {
@@ -23,22 +25,41 @@ describe('MatchesPublicsComponent', () => {
     joueur: ReturnType<typeof vi.fn>;
   };
 
+  let siteApiService: {
+    listerSitesActifs: ReturnType<typeof vi.fn>;
+  };
+
   const joueur: AuthJoueurResponse = {
-    membreId: 2001,
-    matricule: 'G1001',
-    nom: 'Dupont',
-    prenom: 'Marie',
+    membreId: 1,
+    matricule: 'TEST001',
+    nom: 'Test',
+    prenom: 'Joueur',
     categorieMembre: 'GLOBAL',
     siteRattachementId: null,
     nomSiteRattachement: null,
     actif: true
   };
 
+  const sites: SiteResponse[] = [
+    {
+      siteId: 1,
+      code: 'ALP',
+      nom: 'Site Alpha',
+      adresse: 'Rue du Test 1'
+    },
+    {
+      siteId: 2,
+      code: 'BET',
+      nom: 'Site Beta',
+      adresse: 'Rue du Test 2'
+    }
+  ];
+
   const matchPublic: MatchPublicResponse = {
-    matchId: 3001,
-    siteId: 1001,
-    nomSite: 'Padel Bruxelles',
-    terrainId: 1101,
+    matchId: 10,
+    siteId: 1,
+    nomSite: 'Site Alpha',
+    terrainId: 20,
     numeroTerrain: 'T1',
     dateHeureDebut: '2026-06-20T09:00:00',
     dateHeureFin: '2026-06-20T10:30:00',
@@ -58,10 +79,15 @@ describe('MatchesPublicsComponent', () => {
       joueur: vi.fn(() => joueur)
     };
 
+    siteApiService = {
+      listerSitesActifs: vi.fn(() => of(sites))
+    };
+
     await TestBed.configureTestingModule({
       imports: [MatchesPublicsComponent],
       providers: [
         { provide: MatchPublicApiService, useValue: matchPublicApiService },
+        { provide: SiteApiService, useValue: siteApiService },
         { provide: AuthContextService, useValue: authContextService }
       ]
     }).compileComponents();
@@ -75,22 +101,28 @@ describe('MatchesPublicsComponent', () => {
     expect(component).toBeTruthy();
   });
 
+  it('doit charger les sites depuis l API backend', () => {
+    expect(siteApiService.listerSitesActifs).toHaveBeenCalled();
+    expect(component.sites).toEqual(sites);
+    expect(component.siteId).toBe(1);
+  });
+
   it('doit lister les matches publics pour un site et une date', () => {
     matchPublicApiService.listerMatchesPublics.mockReturnValue(of([matchPublic]));
 
-    component.siteId = 1001;
+    component.siteId = 1;
     component.date = '2026-06-20';
 
     component.rechercherMatchesPublics();
 
-    expect(matchPublicApiService.listerMatchesPublics).toHaveBeenCalledWith(1001, '2026-06-20');
+    expect(matchPublicApiService.listerMatchesPublics).toHaveBeenCalledWith(1, '2026-06-20');
     expect(component.matches).toEqual([matchPublic]);
     expect(component.rechercheEffectuee).toBe(true);
     expect(component.chargement).toBe(false);
   });
 
   it('doit afficher une erreur si le site ou la date est manquant', () => {
-    component.siteId = 0;
+    component.siteId = null;
     component.date = '';
 
     component.rechercherMatchesPublics();
@@ -108,6 +140,9 @@ describe('MatchesPublicsComponent', () => {
         }
       }))
     );
+
+    component.siteId = 1;
+    component.date = '2026-06-20';
 
     component.rechercherMatchesPublics();
 
@@ -127,10 +162,10 @@ describe('MatchesPublicsComponent', () => {
 
   it('doit appeler l API pour rejoindre et payer un match public', () => {
     const paiement: RejoindreMatchPublicResponse = {
-      matchId: 3001,
-      participationId: 3103,
-      paiementId: 6008,
-      matriculeJoueur: 'G1001',
+      matchId: 10,
+      participationId: 30,
+      paiementId: 40,
+      matriculeJoueur: 'TEST001',
       montantPaye: 15,
       statutParticipation: 'CONFIRMEE',
       soldeRestant: 85
@@ -140,13 +175,16 @@ describe('MatchesPublicsComponent', () => {
     matchPublicApiService.rejoindreEtPayer.mockReturnValue(of(paiement));
     matchPublicApiService.listerMatchesPublics.mockReturnValue(of([]));
 
+    component.siteId = 1;
+    component.date = '2026-06-20';
+
     component.rejoindreEtPayer(matchPublic);
 
-    expect(matchPublicApiService.rejoindreEtPayer).toHaveBeenCalledWith(3001, {
-      matriculeJoueur: 'G1001'
+    expect(matchPublicApiService.rejoindreEtPayer).toHaveBeenCalledWith(10, {
+      matriculeJoueur: 'TEST001'
     });
 
-    expect(matchPublicApiService.listerMatchesPublics).toHaveBeenCalled();
+    expect(matchPublicApiService.listerMatchesPublics).toHaveBeenCalledWith(1, '2026-06-20');
     expect(component.chargementPaiement).toBe(false);
   });
 

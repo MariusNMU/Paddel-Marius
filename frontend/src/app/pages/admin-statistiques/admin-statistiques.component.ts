@@ -1,15 +1,12 @@
-﻿import { Component, signal } from '@angular/core';
+﻿import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AdminStatsApiService } from '../../services/admin-stats-api.service';
 import { AuthContextService } from '../../services/auth-context.service';
+import { SiteApiService } from '../../services/site-api.service';
+import { SiteResponse } from '../../models/site.model';
 import { StatistiquesAdminResponse } from '../../models/statistique.model';
 import { extraireMessageErreur } from '../../shared/api-error.util';
-
-interface SiteOption {
-  id: number | null;
-  libelle: string;
-}
 
 function dateIsoDansJours(decalageJours: number): string {
   const date = new Date();
@@ -107,15 +104,18 @@ function dernierJourMoisCourant(): string {
             id="siteId"
             name="siteId"
             [(ngModel)]="siteId"
+            [disabled]="chargementSites()"
           >
-            @for (site of sites; track site.libelle) {
-              <option [ngValue]="site.id">
-                {{ site.libelle }}
+            <option [ngValue]="null">Tous les sites</option>
+
+            @for (site of sites; track site.siteId) {
+              <option [ngValue]="site.siteId">
+                {{ site.nom }} ({{ site.siteId }})
               </option>
             }
           </select>
 
-          <button type="submit" [disabled]="chargement()">
+          <button type="submit" [disabled]="chargement() || chargementSites()">
             {{ chargement() ? 'Chargement...' : 'Charger les statistiques' }}
           </button>
         </form>
@@ -281,25 +281,52 @@ function dernierJourMoisCourant(): string {
     }
   `]
 })
-export class AdminStatistiquesComponent {
-  sites: SiteOption[] = [
-    { id: null, libelle: 'Tous les sites' },
-    { id: 1001, libelle: 'Padel Bruxelles (1001)' },
-    { id: 1002, libelle: 'Padel Namur (1002)' }
-  ];
+export class AdminStatistiquesComponent implements OnInit {
+  sites: SiteResponse[] = [];
 
   dateDebut = dateIsoDansJours(-14);
   dateFin = dateIsoDansJours(14);
   siteId: number | null = null;
 
+  readonly chargementSites = signal(false);
   readonly chargement = signal(false);
   readonly messageErreur = signal<string | null>(null);
   readonly statistiques = signal<StatistiquesAdminResponse | null>(null);
 
   constructor(
     private readonly adminStatsApiService: AdminStatsApiService,
+    private readonly siteApiService: SiteApiService,
     readonly authContextService: AuthContextService
   ) {
+  }
+
+  ngOnInit(): void {
+    this.chargerSites();
+  }
+
+  private chargerSites(): void {
+    this.chargementSites.set(true);
+
+    this.siteApiService.listerSitesActifs().subscribe({
+      next: sites => {
+        this.sites = sites;
+
+        const siteSelectionExiste = this.siteId === null
+          || this.sites.some(site => site.siteId === this.siteId);
+
+        if (!siteSelectionExiste) {
+          this.siteId = null;
+        }
+
+        this.chargementSites.set(false);
+      },
+      error: error => {
+        this.messageErreur.set(extraireMessageErreur(error));
+        this.sites = [];
+        this.siteId = null;
+        this.chargementSites.set(false);
+      }
+    });
   }
 
   selectionnerPeriode(periode: 'moisCourant' | 'prochainsJours' | 'demo'): void {

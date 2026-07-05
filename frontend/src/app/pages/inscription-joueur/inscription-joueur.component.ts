@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
@@ -7,13 +7,10 @@ import {
   InscriptionMembreRequest,
   MembreResponse
 } from '../../models/membre.model';
+import { SiteResponse } from '../../models/site.model';
 import { MembreApiService } from '../../services/membre-api.service';
+import { SiteApiService } from '../../services/site-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
-
-interface SiteDemo {
-  id: number;
-  nom: string;
-}
 
 @Component({
   selector: 'app-inscription-joueur',
@@ -62,6 +59,7 @@ interface SiteDemo {
           id="categorieMembre"
           name="categorieMembre"
           [(ngModel)]="categorieMembre"
+          (ngModelChange)="mettreAJourSiteRattachement()"
         >
           <option value="GLOBAL">GLOBAL</option>
           <option value="SITE">SITE</option>
@@ -74,9 +72,11 @@ interface SiteDemo {
             id="siteRattachementId"
             name="siteRattachementId"
             [(ngModel)]="siteRattachementId"
+            [disabled]="chargementSites || sites.length === 0"
           >
-            <option [ngValue]="1001">Padel Bruxelles (1001)</option>
-            <option [ngValue]="1002">Padel Namur (1002)</option>
+            <option *ngFor="let site of sites" [ngValue]="site.siteId">
+              {{ site.nom }} ({{ site.siteId }})
+            </option>
           </select>
         }
 
@@ -92,7 +92,7 @@ interface SiteDemo {
           }
         </div>
 
-        <button type="submit" [disabled]="chargement">
+        <button type="submit" [disabled]="chargement || (categorieMembre === 'SITE' && chargementSites)">
           {{ chargement ? 'Envoi...' : 'Envoyer la demande' }}
         </button>
       </form>
@@ -150,25 +150,64 @@ interface SiteDemo {
     }
   `]
 })
-export class InscriptionJoueurComponent {
-  sites: SiteDemo[] = [
-    { id: 1001, nom: 'Padel Bruxelles' },
-    { id: 1002, nom: 'Padel Namur' }
-  ];
+export class InscriptionJoueurComponent implements OnInit {
+  sites: SiteResponse[] = [];
 
   nom = '';
   prenom = '';
   categorieMembre: CategorieMembre = 'GLOBAL';
-  siteRattachementId = 1001;
+  siteRattachementId: number | null = null;
 
+  chargementSites = false;
   chargement = false;
   messageErreur = '';
   membreCree: MembreResponse | null = null;
 
   constructor(
     private readonly membreApiService: MembreApiService,
+    private readonly siteApiService: SiteApiService,
     private readonly changeDetectorRef: ChangeDetectorRef
   ) {
+  }
+
+  ngOnInit(): void {
+    this.chargerSites();
+  }
+
+  private chargerSites(): void {
+    this.chargementSites = true;
+
+    this.siteApiService.listerSitesActifs().subscribe({
+      next: (sites) => {
+        this.sites = sites;
+        this.mettreAJourSiteRattachement();
+        this.chargementSites = false;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        this.messageErreur = extraireMessageErreur(error);
+        this.sites = [];
+        this.siteRattachementId = null;
+        this.chargementSites = false;
+        this.changeDetectorRef.detectChanges();
+      }
+    });
+  }
+
+  mettreAJourSiteRattachement(): void {
+    if (this.categorieMembre !== 'SITE') {
+      this.siteRattachementId = null;
+      return;
+    }
+
+    const siteSelectionExiste = this.siteRattachementId !== null
+      && this.sites.some(site => site.siteId === this.siteRattachementId);
+
+    if (!siteSelectionExiste) {
+      this.siteRattachementId = this.sites.length > 0
+        ? this.sites[0].siteId
+        : null;
+    }
   }
 
   envoyerDemande(): void {
@@ -181,13 +220,25 @@ export class InscriptionJoueurComponent {
       return;
     }
 
+    const siteRattachement = this.categorieMembre === 'SITE'
+      ? this.sites.find(site => site.siteId === Number(this.siteRattachementId))
+      : undefined;
+
+    if (this.categorieMembre === 'SITE' && !siteRattachement) {
+      this.messageErreur = 'Sélectionne un site valide pour une inscription SITE.';
+      this.changeDetectorRef.detectChanges();
+      return;
+    }
+
+    const siteRattachementId = this.categorieMembre === 'SITE'
+      ? siteRattachement!.siteId
+      : null;
+
     const request: InscriptionMembreRequest = {
       nom: this.nom.trim(),
       prenom: this.prenom.trim(),
       categorieMembre: this.categorieMembre,
-      siteRattachementId: this.categorieMembre === 'SITE'
-        ? Number(this.siteRattachementId)
-        : null
+      siteRattachementId
     };
 
     this.chargement = true;
@@ -208,12 +259,12 @@ export class InscriptionJoueurComponent {
   }
 
   nomSiteSelectionne(): string {
-    const site = this.sites.find(siteDemo => siteDemo.id === Number(this.siteRattachementId));
+    const site = this.sites.find(site => site.siteId === Number(this.siteRattachementId));
 
     if (!site) {
       return 'Site inconnu';
     }
 
-    return `${site.nom} (${site.id})`;
+    return `${site.nom} (${site.siteId})`;
   }
 }

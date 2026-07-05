@@ -1,18 +1,13 @@
 ﻿import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CreneauDisponibiliteResponse, DisponibilitesResponse } from '../../models/disponibilite.model';
+import { SiteResponse } from '../../models/site.model';
 import { DisponibiliteApiService } from '../../services/disponibilite-api.service';
+import { SiteApiService } from '../../services/site-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
 import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shared/date-ui.util';
-
-interface SiteDemo {
-  id: number;
-  nom: string;
-  code: string;
-  description: string;
-}
 
 @Component({
   selector: 'app-disponibilites',
@@ -26,26 +21,27 @@ interface SiteDemo {
         Choisis un site et une date pour trouver un créneau disponible, puis utilise ce créneau pour créer un match public ou privé.
       </p>
       <div class="bloc-info">
-        <h3>Horaires d'ouverture des sites</h3>
+        <h3>Sites disponibles</h3>
 
-        <div class="horaires-sites">
-          <article class="horaire-site-card">
-            <h4>Padel Bruxelles</h4>
-            <p><strong>Code :</strong> BRU</p>
-            <p><strong>Horaires :</strong> 08:00 - 22:00</p>
-            <p><strong>Terrains :</strong> T1, T2 et T3</p>
-          </article>
+        <p *ngIf="chargementSites" class="aide">
+          Chargement des sites...
+        </p>
 
-          <article class="horaire-site-card">
-            <h4>Padel Namur</h4>
-            <p><strong>Code :</strong> NAM</p>
-            <p><strong>Horaires :</strong> 09:00 - 21:00</p>
-            <p><strong>Terrains :</strong> T1 et T2</p>
+        <p *ngIf="!chargementSites && sites.length === 0" class="aide">
+          Aucun site actif disponible.
+        </p>
+
+        <div *ngIf="!chargementSites && sites.length > 0" class="sites-api">
+          <article *ngFor="let site of sites" class="site-api-card">
+            <h4>{{ site.nom }}</h4>
+            <p><strong>Code :</strong> {{ site.code }}</p>
+            <p><strong>Adresse :</strong> {{ site.adresse }}</p>
+            <p><strong>ID :</strong> {{ site.siteId }}</p>
           </article>
         </div>
 
         <p class="aide">
-          Ces horaires sont affichés pour la démo. Les règles de disponibilité sont toujours vérifiées par le backend.
+          Les sites actifs sont chargés depuis le backend.
         </p>
       </div>
       <div class="bloc-info">
@@ -71,16 +67,17 @@ interface SiteDemo {
           name="siteId"
           [(ngModel)]="siteId"
           required
+          [disabled]="chargementSites || sites.length === 0"
         >
-          <option *ngFor="let site of sites" [ngValue]="site.id">
-            {{ site.nom }} ({{ site.id }})
+          <option *ngFor="let site of sites" [ngValue]="site.siteId">
+            {{ site.nom }} ({{ site.siteId }})
           </option>
         </select>
 
         <div class="bloc-info" *ngIf="siteSelectionne() as site">
           <h3>Site sélectionné</h3>
-          <p><strong>{{ site.nom }}</strong> — code {{ site.code }} — ID {{ site.id }}</p>
-          <p>{{ site.description }}</p>
+          <p><strong>{{ site.nom }}</strong> — code {{ site.code }} — ID {{ site.siteId }}</p>
+          <p>{{ site.adresse }}</p>
         </div>
 
         <label for="date">Date</label>
@@ -92,7 +89,7 @@ interface SiteDemo {
           required
         />
 
-        <button type="submit" [disabled]="chargement">
+        <button type="submit" [disabled]="chargement || chargementSites || sites.length === 0">
           {{ chargement ? 'Recherche...' : 'Voir les créneaux disponibles' }}
         </button>
       </form>
@@ -151,26 +148,26 @@ interface SiteDemo {
   `,
   styles: [`
 
-    .horaires-sites {
+    .sites-api {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 12px;
       margin-top: 12px;
     }
 
-    .horaire-site-card {
+    .site-api-card {
       border: 1px solid #bfdbfe;
       border-radius: 10px;
       background: #ffffff;
       padding: 14px;
     }
 
-    .horaire-site-card h4 {
+    .site-api-card h4 {
       margin: 0 0 10px;
       color: #003b95;
     }
 
-    .horaire-site-card p {
+    .site-api-card p {
       margin: 6px 0;
     }
 
@@ -233,40 +230,62 @@ interface SiteDemo {
     }
   `]
 })
-export class DisponibilitesComponent {
-  sites: SiteDemo[] = [
-    {
-      id: 1001,
-      nom: 'Padel Bruxelles',
-      code: 'BRU',
-      description: 'Site de démonstration avec les terrains T1, T2 et T3.'
-    },
-    {
-      id: 1002,
-      nom: 'Padel Namur',
-      code: 'NAM',
-      description: 'Site de démonstration avec les terrains T1 et T2.'
-    }
-  ];
-
+export class DisponibilitesComponent implements OnInit {
+  sites: SiteResponse[] = [];
   joursRapides: JourRapide[] = genererJoursRapides(7);
 
-  siteId = 1001;
+  siteId: number | null = null;
   date = dateDuJourPourInput();
 
+  chargementSites = false;
   chargement = false;
   messageErreur = '';
   disponibilites: DisponibilitesResponse | null = null;
 
   constructor(
     private readonly disponibiliteApiService: DisponibiliteApiService,
+    private readonly siteApiService: SiteApiService,
     private readonly router: Router,
     private readonly changeDetectorRef: ChangeDetectorRef
   ) {
   }
 
-  siteSelectionne(): SiteDemo | undefined {
-    return this.sites.find(site => site.id === Number(this.siteId));
+  ngOnInit(): void {
+    this.chargerSites();
+  }
+
+  private chargerSites(): void {
+    this.messageErreur = '';
+    this.chargementSites = true;
+
+    this.siteApiService.listerSitesActifs().subscribe({
+      next: (sites) => {
+        this.sites = sites;
+
+        const siteSelectionExiste = this.siteId !== null
+          && this.sites.some(site => site.siteId === this.siteId);
+
+        if (!siteSelectionExiste) {
+          this.siteId = this.sites.length > 0
+            ? this.sites[0].siteId
+            : null;
+        }
+
+        this.chargementSites = false;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        this.messageErreur = extraireMessageErreur(error);
+        this.sites = [];
+        this.siteId = null;
+        this.chargementSites = false;
+        this.changeDetectorRef.detectChanges();
+      }
+    });
+  }
+
+  siteSelectionne(): SiteResponse | undefined {
+    return this.sites.find(site => site.siteId === Number(this.siteId));
   }
 
   selectionnerJour(date: string): void {
@@ -289,7 +308,7 @@ export class DisponibilitesComponent {
     this.chargement = true;
     this.changeDetectorRef.detectChanges();
 
-    this.disponibiliteApiService.consulterDisponibilites(this.siteId, this.date).subscribe({
+    this.disponibiliteApiService.consulterDisponibilites(Number(this.siteId), this.date).subscribe({
       next: (response) => {
         this.disponibilites = response;
         this.chargement = false;

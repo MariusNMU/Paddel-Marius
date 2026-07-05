@@ -1,19 +1,16 @@
 ﻿import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   MatchPublicResponse,
   RejoindreMatchPublicResponse
 } from '../../models/match-public.model';
+import { SiteResponse } from '../../models/site.model';
 import { AuthContextService } from '../../services/auth-context.service';
 import { MatchPublicApiService } from '../../services/match-public-api.service';
+import { SiteApiService } from '../../services/site-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
 import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shared/date-ui.util';
-
-interface SiteDemo {
-  id: number;
-  nom: string;
-}
 
 @Component({
   selector: 'app-matches-publics',
@@ -71,9 +68,14 @@ interface SiteDemo {
 
       <form (ngSubmit)="rechercherMatchesPublics()">
         <label for="siteId">Site</label>
-        <select id="siteId" name="siteId" [(ngModel)]="siteId">
-          <option *ngFor="let site of sites" [ngValue]="site.id">
-            {{ site.nom }} ({{ site.id }})
+        <select
+          id="siteId"
+          name="siteId"
+          [(ngModel)]="siteId"
+          [disabled]="chargementSites || sites.length === 0"
+        >
+          <option *ngFor="let site of sites" [ngValue]="site.siteId">
+            {{ site.nom }} ({{ site.siteId }})
           </option>
         </select>
 
@@ -86,7 +88,7 @@ interface SiteDemo {
           required
         />
 
-        <button type="submit" [disabled]="chargement">
+        <button type="submit" [disabled]="chargement || chargementSites || sites.length === 0">
           {{ chargement ? 'Recherche...' : 'Rechercher les matches publics' }}
         </button>
       </form>
@@ -217,20 +219,17 @@ interface SiteDemo {
     }
   `]
 })
-export class MatchesPublicsComponent {
-  sites: SiteDemo[] = [
-    { id: 1001, nom: 'Padel Bruxelles' },
-    { id: 1002, nom: 'Padel Namur' }
-  ];
-
+export class MatchesPublicsComponent implements OnInit {
+  sites: SiteResponse[] = [];
   joursRapides: JourRapide[] = genererJoursRapides(7);
 
-  siteId = 1001;
+  siteId: number | null = null;
   date = dateDuJourPourInput();
 
   matches: MatchPublicResponse[] = [];
   dernierPaiement: RejoindreMatchPublicResponse | null = null;
 
+  chargementSites = false;
   chargement = false;
   chargementPaiement = false;
   rechercheEffectuee = false;
@@ -239,9 +238,44 @@ export class MatchesPublicsComponent {
 
   constructor(
     private readonly matchPublicApiService: MatchPublicApiService,
+    private readonly siteApiService: SiteApiService,
     private readonly authContextService: AuthContextService,
     private readonly changeDetectorRef: ChangeDetectorRef
   ) {
+  }
+
+  ngOnInit(): void {
+    this.chargerSites();
+  }
+
+  private chargerSites(): void {
+    this.messageErreur = '';
+    this.chargementSites = true;
+
+    this.siteApiService.listerSitesActifs().subscribe({
+      next: (sites) => {
+        this.sites = sites;
+
+        const siteSelectionExiste = this.siteId !== null
+          && this.sites.some(site => site.siteId === this.siteId);
+
+        if (!siteSelectionExiste) {
+          this.siteId = this.sites.length > 0
+            ? this.sites[0].siteId
+            : null;
+        }
+
+        this.chargementSites = false;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        this.messageErreur = extraireMessageErreur(error);
+        this.sites = [];
+        this.siteId = null;
+        this.chargementSites = false;
+        this.changeDetectorRef.detectChanges();
+      }
+    });
   }
 
   joueurConnecte() {
@@ -273,7 +307,7 @@ export class MatchesPublicsComponent {
     this.chargement = true;
     this.changeDetectorRef.detectChanges();
 
-    this.matchPublicApiService.listerMatchesPublics(this.siteId, this.date).subscribe({
+    this.matchPublicApiService.listerMatchesPublics(Number(this.siteId), this.date).subscribe({
       next: (response) => {
         this.matches = response;
         this.chargement = false;

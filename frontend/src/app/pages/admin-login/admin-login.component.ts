@@ -14,7 +14,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
       <h2>Connexion admin</h2>
 
       <p>
-        Connecte-toi avec un administrateur de démonstration pour accéder au dashboard,
+        Connecte-toi avec un compte administrateur valide pour accéder au dashboard,
         aux statistiques et au traitement de veille.
       </p>
 
@@ -48,49 +48,16 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
         }
 
         <div class="bloc-info">
-          <h3>Comptes de démonstration</h3>
+          <h3>Compte de test</h3>
 
-          <div class="admin-demo-grid">
-            <article class="admin-demo-card">
-              <h4>Admin global</h4>
-              <p>
-                Accès de démonstration à tous les sites.
-              </p>
-              <p><strong>Login :</strong> admin-global</p>
-              <p><strong>Mot de passe :</strong> secret</p>
+          <p>
+            Les comptes administrateurs de démonstration restent temporairement indiqués sur la homepage.
+            Cette page de connexion ne préremplit plus d'identifiants.
+          </p>
 
-              <button type="button" (click)="utiliserAdminGlobal()">
-                Utiliser ce compte
-              </button>
-            </article>
-
-            <article class="admin-demo-card">
-              <h4>Admin site Bruxelles</h4>
-              <p>
-                Accès de démonstration limité au site Padel Bruxelles (1001).
-              </p>
-              <p><strong>Login :</strong> admin-bruxelles</p>
-              <p><strong>Mot de passe :</strong> secret-site</p>
-
-              <button type="button" (click)="utiliserAdminBruxelles()">
-                Utiliser ce compte
-              </button>
-            </article>
-
-            <article class="admin-demo-card">
-              <h4>Admin site Namur</h4>
-              <p>
-                Accès de démonstration limité au site Padel Namur (1002).
-              </p>
-              <p><strong>Login :</strong> admin-namur</p>
-              <p><strong>Mot de passe :</strong> secret-site</p>
-
-              <button type="button" (click)="utiliserAdminNamur()">
-                Utiliser ce compte
-              </button>
-            </article>
-
-          </div>
+          <a routerLink="/accueil" class="lien-action">
+            Voir les informations de démonstration
+          </a>
         </div>
 
         <form (ngSubmit)="connecter()" class="formulaire">
@@ -100,7 +67,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
             name="login"
             type="text"
             [(ngModel)]="login"
-            placeholder="admin-global"
+            placeholder="Votre login admin"
             required
           >
 
@@ -110,7 +77,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
             name="motDePasse"
             type="password"
             [(ngModel)]="motDePasse"
-            placeholder="secret"
+            placeholder="Votre mot de passe"
             required
           >
 
@@ -130,44 +97,22 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
     </section>
   `,
   styles: [`
-    .admin-demo-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-      margin-top: 14px;
-    }
-
-    .admin-demo-card {
-      padding: 16px;
-      border: 1px solid #bfdbfe;
-      border-radius: 12px;
-      background: #ffffff;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
-    }
-
-    .admin-demo-card h4 {
-      margin: 0 0 10px;
-      color: #003b95;
-    }
-
-    .admin-demo-card p {
-      margin: 8px 0;
-    }
-
-    .admin-demo-card button {
-      margin-top: 12px;
-    }
-
     .succes {
       margin-top: 16px;
       color: #047857;
       font-weight: 700;
     }
+
+    .lien-action {
+      display: inline-block;
+      margin-top: 12px;
+      font-weight: 600;
+    }
   `]
 })
 export class AdminLoginComponent {
-  login = 'admin-global';
-  motDePasse = 'secret';
+  login = '';
+  motDePasse = '';
 
   readonly chargement = signal(false);
   readonly messageErreur = signal<string | null>(null);
@@ -178,27 +123,6 @@ export class AdminLoginComponent {
     readonly authContextService: AuthContextService,
     private readonly router: Router
   ) {
-  }
-
-  utiliserAdminGlobal(): void {
-    this.login = 'admin-global';
-    this.motDePasse = 'secret';
-    this.messageErreur.set(null);
-    this.messageSucces.set(null);
-  }
-
-  utiliserAdminBruxelles(): void {
-    this.login = 'admin-bruxelles';
-    this.motDePasse = 'secret-site';
-    this.messageErreur.set(null);
-    this.messageSucces.set(null);
-  }
-
-  utiliserAdminNamur(): void {
-    this.login = 'admin-namur';
-    this.motDePasse = 'secret-site';
-    this.messageErreur.set(null);
-    this.messageSucces.set(null);
   }
 
   deconnecterAdmin(): void {

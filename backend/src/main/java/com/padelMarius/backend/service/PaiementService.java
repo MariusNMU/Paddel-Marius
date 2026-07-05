@@ -1,5 +1,7 @@
 package com.padelMarius.backend.service;
 
+import static com.padelMarius.backend.config.ReglesMetier.MONTANT_PARTICIPATION_STANDARD;
+
 import com.padelMarius.backend.dto.paiement.HistoriquePaiementResponse;
 import com.padelMarius.backend.dto.paiement.PaiementResponse;
 import com.padelMarius.backend.dto.paiement.PayerParticipationRequest;
@@ -32,7 +34,6 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class PaiementService {
 
-    private static final BigDecimal MONTANT_PARTICIPATION_STANDARD = new BigDecimal("15.00");
     private static final BigDecimal ZERO = new BigDecimal("0.00");
 
     private final ParticipationRepository participationRepository;
@@ -41,6 +42,14 @@ public class PaiementService {
     private final MembreRepository membreRepository;
     private final DetteService detteService;
     private final Clock clock;
+
+    @Transactional
+    public PaiementResponse payerParticipationStandard(Long participationId) {
+        return payerParticipation(
+                participationId,
+                new PayerParticipationRequest(MONTANT_PARTICIPATION_STANDARD)
+        );
+    }
 
     @Transactional
     public PaiementResponse payerParticipation(Long participationId, PayerParticipationRequest request) {

@@ -5,9 +5,11 @@ import {
   MatchPublicResponse,
   RejoindreMatchPublicResponse
 } from '../../models/match-public.model';
+import { ParametresMetierResponse } from '../../models/parametres-metier.model';
 import { SiteResponse } from '../../models/site.model';
 import { AuthContextService } from '../../services/auth-context.service';
 import { MatchPublicApiService } from '../../services/match-public-api.service';
+import { ParametresMetierApiService } from '../../services/parametres-metier-api.service';
 import { SiteApiService } from '../../services/site-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
 import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shared/date-ui.util';
@@ -21,7 +23,7 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
       <h2>Rejoindre un match public</h2>
 
       <p>
-        Retrouve les matches publics disponibles et rejoins une place en payant directement 15 €.
+        Retrouve les matches publics disponibles et rejoins une place en payant la participation calculée par le backend.
         Premier payé = premier servi.
       </p>
 
@@ -30,9 +32,9 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
 
         <ul>
           <li>Un match public peut être rejoint par les joueurs disponibles.</li>
-          <li>Un match contient maximum 4 joueurs.</li>
+          <li>Un match contient maximum {{ parametresMetier?.nombreJoueursMaximum }} joueurs.</li>
           <li>La place est validée uniquement après paiement.</li>
-          <li>Le paiement débite ton solde crédit de 15 €.</li>
+          <li>Le paiement débite ton solde crédit du montant de participation retourné par le backend.</li>
         </ul>
       </div>
 
@@ -127,7 +129,10 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
 
             <p><strong>Début :</strong> {{ match.dateHeureDebut }}</p>
             <p><strong>Fin :</strong> {{ match.dateHeureFin }}</p>
-            <p><strong>Participants :</strong> {{ match.nombreParticipantsActifs }} / 4</p>
+            <p>
+              <strong>Participants :</strong>
+              {{ match.nombreParticipantsActifs }} / {{ parametresMetier?.nombreJoueursMaximum }}
+            </p>
             <p><strong>Places disponibles :</strong> {{ match.placesDisponibles }}</p>
             <p><strong>Prix total :</strong> {{ match.prixTotal | number:'1.2-2' }} €</p>
             <p><strong>Ta place :</strong> {{ match.montantParticipation | number:'1.2-2' }} €</p>
@@ -137,7 +142,7 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
               [disabled]="chargementPaiement || !joueurConnecte()"
               (click)="rejoindreEtPayer(match)"
             >
-              {{ chargementPaiement ? 'Paiement...' : 'Rejoindre et payer 15 €' }}
+              {{ chargementPaiement ? 'Paiement...' : ('Rejoindre et payer ' + (match.montantParticipation | number:'1.2-2') + ' €') }}
             </button>
           </article>
         </div>
@@ -221,6 +226,7 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
 })
 export class MatchesPublicsComponent implements OnInit {
   sites: SiteResponse[] = [];
+  parametresMetier: ParametresMetierResponse | null = null;
   joursRapides: JourRapide[] = genererJoursRapides(7);
 
   siteId: number | null = null;
@@ -230,6 +236,7 @@ export class MatchesPublicsComponent implements OnInit {
   dernierPaiement: RejoindreMatchPublicResponse | null = null;
 
   chargementSites = false;
+  chargementParametresMetier = false;
   chargement = false;
   chargementPaiement = false;
   rechercheEffectuee = false;
@@ -239,13 +246,33 @@ export class MatchesPublicsComponent implements OnInit {
   constructor(
     private readonly matchPublicApiService: MatchPublicApiService,
     private readonly siteApiService: SiteApiService,
+    private readonly parametresMetierApiService: ParametresMetierApiService,
     private readonly authContextService: AuthContextService,
     private readonly changeDetectorRef: ChangeDetectorRef
   ) {
   }
 
   ngOnInit(): void {
+    this.chargerParametresMetier();
     this.chargerSites();
+  }
+
+  private chargerParametresMetier(): void {
+    this.chargementParametresMetier = true;
+
+    this.parametresMetierApiService.consulterParametresMetier().subscribe({
+      next: parametres => {
+        this.parametresMetier = parametres;
+        this.chargementParametresMetier = false;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: error => {
+        this.messageErreur = extraireMessageErreur(error);
+        this.parametresMetier = null;
+        this.chargementParametresMetier = false;
+        this.changeDetectorRef.detectChanges();
+      }
+    });
   }
 
   private chargerSites(): void {

@@ -27,6 +27,13 @@ export class PaiementApiService {
     );
   }
 
+  payerParticipationStandard(participationId: number): Observable<PaiementResponse> {
+    return this.http.post<PaiementResponse>(
+      `${this.apiUrl}/api/participations/${participationId}/paiements/standard`,
+      {}
+    );
+  }
+
   consulterHistoriquePaiements(matricule: string): Observable<HistoriquePaiementResponse[]> {
     return this.http.get<HistoriquePaiementResponse[]>(
       `${this.apiUrl}/api/membres/${matricule}/paiements`

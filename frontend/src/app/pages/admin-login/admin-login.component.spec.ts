@@ -22,10 +22,10 @@ describe('AdminLoginComponent', () => {
   };
 
   const admin: AuthAdminResponse = {
-    administrateurId: 2101,
-    login: 'admin-global',
+    administrateurId: 1,
+    login: 'admin-test',
     nom: 'Admin',
-    prenom: 'Global',
+    prenom: 'Test',
     roleAdministrateur: 'GLOBAL',
     siteId: null,
     nomSite: null,
@@ -61,33 +61,14 @@ describe('AdminLoginComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('doit préremplir le formulaire avec l admin global', () => {
-    expect(component.login).toBe('admin-global');
-    expect(component.motDePasse).toBe('secret');
-  });
-
-  it('doit remplir le formulaire avec l admin Bruxelles', () => {
-    component.messageErreur.set('ancienne erreur');
-    component.messageSucces.set('ancien succès');
-
-    component.utiliserAdminBruxelles();
-
-    expect(component.login).toBe('admin-bruxelles');
-    expect(component.motDePasse).toBe('secret-site');
-    expect(component.messageErreur()).toBeNull();
-    expect(component.messageSucces()).toBeNull();
-  });
-
-  it('doit remplir le formulaire avec l admin Namur', () => {
-    component.utiliserAdminNamur();
-
-    expect(component.login).toBe('admin-namur');
-    expect(component.motDePasse).toBe('secret-site');
+  it('ne doit pas préremplir le formulaire avec un compte administrateur de démonstration', () => {
+    expect(component.login).toBe('');
+    expect(component.motDePasse).toBe('');
   });
 
   it('doit refuser la connexion si le login est vide', () => {
     component.login = '   ';
-    component.motDePasse = 'secret';
+    component.motDePasse = 'motdepasse-test';
 
     component.connecter();
 
@@ -101,14 +82,14 @@ describe('AdminLoginComponent', () => {
     const router = TestBed.inject(Router);
     const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
-    component.login = ' admin-global ';
-    component.motDePasse = 'secret';
+    component.login = ' admin-test ';
+    component.motDePasse = 'motdepasse-test';
 
     component.connecter();
 
     expect(authApiService.connecterAdmin).toHaveBeenCalledWith({
-      login: 'admin-global',
-      motDePasse: 'secret'
+      login: 'admin-test',
+      motDePasse: 'motdepasse-test'
     });
 
     expect(authContextService.definirAdmin).toHaveBeenCalledWith(admin);
@@ -125,6 +106,9 @@ describe('AdminLoginComponent', () => {
         }
       }))
     );
+
+    component.login = 'admin-test';
+    component.motDePasse = 'motdepasse-test';
 
     component.connecter();
 

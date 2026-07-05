@@ -3,10 +3,12 @@ import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
 import { AuthJoueurResponse } from '../../models/auth.model';
 import { MatchResponse } from '../../models/match.model';
+import { ParametresMetierResponse } from '../../models/parametres-metier.model';
 import { TerrainResponse } from '../../models/terrain.model';
 import { AuthContextService } from '../../services/auth-context.service';
 import { InvitationApiService } from '../../services/invitation-api.service';
 import { MatchApiService } from '../../services/match-api.service';
+import { ParametresMetierApiService } from '../../services/parametres-metier-api.service';
 import { TerrainApiService } from '../../services/terrain-api.service';
 import { CreerMatchComponent } from './creer-match.component';
 
@@ -26,13 +28,17 @@ describe('CreerMatchComponent', () => {
     listerTerrainsActifs: ReturnType<typeof vi.fn>;
   };
 
+  let parametresMetierApiService: {
+    consulterParametresMetier: ReturnType<typeof vi.fn>;
+  };
+
   let authContextService: {
     joueur: ReturnType<typeof vi.fn>;
   };
 
   const joueur: AuthJoueurResponse = {
     membreId: 2001,
-    matricule: 'G1001',
+    matricule: 'TEST001',
     nom: 'Dupont',
     prenom: 'Marie',
     categorieMembre: 'GLOBAL',
@@ -43,18 +49,27 @@ describe('CreerMatchComponent', () => {
 
   const terrains: TerrainResponse[] = [
     {
-      terrainId: 1101,
+      terrainId: 10,
       numeroTerrain: 'T1',
-      siteId: 1001,
-      nomSite: 'Padel Bruxelles'
+      siteId: 1,
+      nomSite: 'Site Alpha'
     },
     {
-      terrainId: 1201,
+      terrainId: 20,
       numeroTerrain: 'T1',
-      siteId: 1002,
-      nomSite: 'Padel Namur'
+      siteId: 2,
+      nomSite: 'Site Beta'
     }
   ];
+
+  const parametresMetier: ParametresMetierResponse = {
+    dureeMatchMinutes: 90,
+    pauseEntreMatchesMinutes: 15,
+    nombreJoueursMaximum: 4,
+    prixTotalMatch: 60,
+    montantParticipationStandard: 15,
+    soldeInitialJoueur: 100
+  };
 
   beforeEach(async () => {
     matchApiService = {
@@ -69,6 +84,10 @@ describe('CreerMatchComponent', () => {
       listerTerrainsActifs: vi.fn(() => of(terrains))
     };
 
+    parametresMetierApiService = {
+      consulterParametresMetier: vi.fn(() => of(parametresMetier))
+    };
+
     authContextService = {
       joueur: vi.fn(() => joueur)
     };
@@ -79,6 +98,7 @@ describe('CreerMatchComponent', () => {
         { provide: MatchApiService, useValue: matchApiService },
         { provide: InvitationApiService, useValue: invitationApiService },
         { provide: TerrainApiService, useValue: terrainApiService },
+        { provide: ParametresMetierApiService, useValue: parametresMetierApiService },
         { provide: AuthContextService, useValue: authContextService },
         {
           provide: ActivatedRoute,
@@ -99,7 +119,13 @@ describe('CreerMatchComponent', () => {
   it('doit charger les terrains depuis l API backend', () => {
     expect(terrainApiService.listerTerrainsActifs).toHaveBeenCalled();
     expect(component.terrains).toEqual(terrains);
-    expect(component.terrainId).toBe(1101);
+    expect(component.terrainId).toBe(10);
+  });
+
+  it('doit charger les paramètres métier depuis le backend', () => {
+    expect(parametresMetierApiService.consulterParametresMetier).toHaveBeenCalled();
+    expect(component.parametresMetier).toEqual(parametresMetier);
+    expect(component.dureeMatchLibelle()).toBe('1h30');
   });
 
   it('ne doit pas choisir un mode de creation par defaut', () => {
@@ -107,16 +133,16 @@ describe('CreerMatchComponent', () => {
   });
 
   it('doit pre remplir le matricule depuis le joueur connecte', () => {
-    expect(component.matriculeOrganisateur).toBe('G1001');
+    expect(component.matriculeOrganisateur).toBe('TEST001');
   });
 
   it('doit appeler l API de creation avec le terrain charge par API', () => {
     const response: MatchResponse = {
       matchId: 3001,
-      terrainId: 1101,
+      terrainId: 10,
       numeroTerrain: 'T1',
-      siteId: 1001,
-      nomSite: 'Padel Bruxelles',
+      siteId: 1,
+      nomSite: 'Site Alpha',
       dateHeureDebut: '2026-06-20T09:00:00',
       dateHeureFin: '2026-06-20T10:30:00',
       modeCreation: 'PUBLIC',
@@ -133,8 +159,8 @@ describe('CreerMatchComponent', () => {
     component.creerMatch();
 
     expect(matchApiService.creerMatch).toHaveBeenCalledWith({
-      terrainId: 1101,
-      matriculeOrganisateur: 'G1001',
+      terrainId: 10,
+      matriculeOrganisateur: 'TEST001',
       dateHeureDebut: '2026-06-20T09:00',
       modeCreation: 'PUBLIC'
     });

@@ -143,6 +143,45 @@ class PaiementServiceTest {
     }
 
     @Test
+    void payerParticipationStandard_shouldCreatePaymentWithoutClientAmount() {
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        PadelMatch match = creerMatch(100L, terrain);
+        Membre membre = creerMembre(21L, "G0002");
+
+        Participation participation = creerParticipation(
+                300L,
+                match,
+                membre,
+                StatutParticipation.EN_ATTENTE_PAIEMENT
+        );
+
+        when(participationRepository.findById(300L)).thenReturn(Optional.of(participation));
+        when(paiementRepository.existsByParticipationId(300L)).thenReturn(false);
+        when(detteRepository.findByMembreResponsableIdAndStatutDette(
+                membre.getId(),
+                StatutDette.OUVERTE
+        )).thenReturn(List.of());
+        when(paiementRepository.save(any(Paiement.class))).thenAnswer(invocation -> {
+            Paiement paiement = invocation.getArgument(0);
+            ReflectionTestUtils.setField(paiement, "id", 400L);
+            return paiement;
+        });
+        when(participationRepository.save(any(Participation.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PaiementResponse response = paiementService.payerParticipationStandard(300L);
+
+        assertEquals(400L, response.paiementId());
+        assertEquals(300L, response.participationId());
+        assertEquals(0, new BigDecimal("15.00").compareTo(response.montant()));
+        assertEquals(0, new BigDecimal("15.00").compareTo(response.montantTotalDebite()));
+        assertEquals(StatutParticipation.CONFIRMEE, response.statutParticipation());
+
+        verify(paiementRepository).save(any(Paiement.class));
+        verify(participationRepository).save(participation);
+    }
+
+    @Test
     void payerParticipation_shouldDebitMemberBalance() {
         Site site = creerSite(1L);
         Terrain terrain = creerTerrain(10L, site);

@@ -6,9 +6,11 @@ import {
   MatchPublicResponse,
   RejoindreMatchPublicResponse
 } from '../../models/match-public.model';
+import { ParametresMetierResponse } from '../../models/parametres-metier.model';
 import { SiteResponse } from '../../models/site.model';
 import { AuthContextService } from '../../services/auth-context.service';
 import { MatchPublicApiService } from '../../services/match-public-api.service';
+import { ParametresMetierApiService } from '../../services/parametres-metier-api.service';
 import { SiteApiService } from '../../services/site-api.service';
 import { MatchesPublicsComponent } from './matches-publics.component';
 
@@ -27,6 +29,10 @@ describe('MatchesPublicsComponent', () => {
 
   let siteApiService: {
     listerSitesActifs: ReturnType<typeof vi.fn>;
+  };
+
+  let parametresMetierApiService: {
+    consulterParametresMetier: ReturnType<typeof vi.fn>;
   };
 
   const joueur: AuthJoueurResponse = {
@@ -69,6 +75,15 @@ describe('MatchesPublicsComponent', () => {
     montantParticipation: 15
   };
 
+  const parametresMetier: ParametresMetierResponse = {
+    dureeMatchMinutes: 90,
+    pauseEntreMatchesMinutes: 15,
+    nombreJoueursMaximum: 4,
+    prixTotalMatch: 60,
+    montantParticipationStandard: 15,
+    soldeInitialJoueur: 100
+  };
+
   beforeEach(async () => {
     matchPublicApiService = {
       listerMatchesPublics: vi.fn(),
@@ -83,11 +98,16 @@ describe('MatchesPublicsComponent', () => {
       listerSitesActifs: vi.fn(() => of(sites))
     };
 
+    parametresMetierApiService = {
+      consulterParametresMetier: vi.fn(() => of(parametresMetier))
+    };
+
     await TestBed.configureTestingModule({
       imports: [MatchesPublicsComponent],
       providers: [
         { provide: MatchPublicApiService, useValue: matchPublicApiService },
         { provide: SiteApiService, useValue: siteApiService },
+        { provide: ParametresMetierApiService, useValue: parametresMetierApiService },
         { provide: AuthContextService, useValue: authContextService }
       ]
     }).compileComponents();
@@ -105,6 +125,11 @@ describe('MatchesPublicsComponent', () => {
     expect(siteApiService.listerSitesActifs).toHaveBeenCalled();
     expect(component.sites).toEqual(sites);
     expect(component.siteId).toBe(1);
+  });
+
+  it('doit charger les paramètres métier depuis l API backend', () => {
+    expect(parametresMetierApiService.consulterParametresMetier).toHaveBeenCalled();
+    expect(component.parametresMetier).toEqual(parametresMetier);
   });
 
   it('doit lister les matches publics pour un site et une date', () => {

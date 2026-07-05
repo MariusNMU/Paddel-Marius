@@ -2,8 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { finalize, timeout } from 'rxjs';
+import { ParametresMetierResponse } from '../../models/parametres-metier.model';
 import { SoldeJoueurResponse } from '../../models/solde-joueur.model';
 import { AuthContextService } from '../../services/auth-context.service';
+import { ParametresMetierApiService } from '../../services/parametres-metier-api.service';
 import { SoldeJoueurApiService } from '../../services/solde-joueur-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
 
@@ -24,8 +26,8 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
         <h3>Règles du solde crédit</h3>
 
         <ul>
-          <li>Chaque nouveau joueur reçoit <strong>100 €</strong> au départ.</li>
-          <li>Une participation coûte <strong>15 €</strong>.</li>
+          <li>Chaque nouveau joueur reçoit <strong>{{ parametresMetier?.soldeInitialJoueur | number:'1.2-2' }} €</strong> au départ.</li>
+          <li>Une participation coûte <strong>{{ parametresMetier?.montantParticipationStandard | number:'1.2-2' }} €</strong>.</li>
           <li>Le paiement d'une dette débite le solde du montant restant dû.</li>
           <li>Une annulation de match par fermeture rembourse les joueurs ayant payé.</li>
         </ul>
@@ -117,20 +119,37 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
   `]
 })
 export class MonSoldeComponent implements OnInit {
+  parametresMetier: ParametresMetierResponse | null = null;
+
   readonly solde = signal<SoldeJoueurResponse | null>(null);
   readonly messageErreur = signal('');
   readonly chargement = signal(false);
 
   constructor(
     private readonly authContextService: AuthContextService,
-    private readonly soldeJoueurApiService: SoldeJoueurApiService
+    private readonly soldeJoueurApiService: SoldeJoueurApiService,
+    private readonly parametresMetierApiService: ParametresMetierApiService
   ) {
   }
 
   ngOnInit(): void {
+    this.chargerParametresMetier();
+
     if (this.joueurConnecte()) {
       this.chargerSolde();
     }
+  }
+
+  private chargerParametresMetier(): void {
+    this.parametresMetierApiService.consulterParametresMetier().subscribe({
+      next: parametres => {
+        this.parametresMetier = parametres;
+      },
+      error: error => {
+        this.messageErreur.set(extraireMessageErreur(error));
+        this.parametresMetier = null;
+      }
+    });
   }
 
   joueurConnecte() {

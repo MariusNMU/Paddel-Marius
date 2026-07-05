@@ -22,10 +22,10 @@ describe('JoueurAuthComponent', () => {
   };
 
   const joueur: AuthJoueurResponse = {
-    membreId: 2001,
-    matricule: 'G1001',
-    nom: 'Dupont',
-    prenom: 'Marie',
+    membreId: 1,
+    matricule: 'TEST001',
+    nom: 'Test',
+    prenom: 'Joueur',
     categorieMembre: 'GLOBAL',
     siteRattachementId: null,
     nomSiteRattachement: null,
@@ -61,26 +61,14 @@ describe('JoueurAuthComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('doit préremplir le formulaire avec le joueur de démonstration G1001', () => {
-    expect(component.matricule).toBe('G1001');
-    expect(component.motDePasse).toBe('password');
-  });
-
-  it('doit remplir le formulaire avec G1002 via le bouton de démonstration', () => {
-    component.messageErreur = 'ancienne erreur';
-    component.messageSucces = 'ancien succès';
-
-    component.utiliserG1002();
-
-    expect(component.matricule).toBe('G1002');
-    expect(component.motDePasse).toBe('password');
-    expect(component.messageErreur).toBe('');
-    expect(component.messageSucces).toBe('');
+  it('ne doit pas préremplir le formulaire avec un compte de démonstration', () => {
+    expect(component.matricule).toBe('');
+    expect(component.motDePasse).toBe('');
   });
 
   it('doit refuser la connexion si le matricule est vide', () => {
     component.matricule = '   ';
-    component.motDePasse = 'password';
+    component.motDePasse = 'motdepasse-test';
 
     component.connecterJoueur();
 
@@ -91,14 +79,14 @@ describe('JoueurAuthComponent', () => {
   it('doit connecter un joueur valide', () => {
     authApiService.connecterJoueur.mockReturnValue(of(joueur));
 
-    component.matricule = ' G1001 ';
-    component.motDePasse = ' password ';
+    component.matricule = ' TEST001 ';
+    component.motDePasse = ' motdepasse-test ';
 
     component.connecterJoueur();
 
     expect(authApiService.connecterJoueur).toHaveBeenCalledWith({
-      matricule: 'G1001',
-      motDePasse: 'password'
+      matricule: 'TEST001',
+      motDePasse: 'motdepasse-test'
     });
 
     expect(authContextService.definirJoueur).toHaveBeenCalledWith(joueur);
@@ -115,6 +103,9 @@ describe('JoueurAuthComponent', () => {
         }
       }))
     );
+
+    component.matricule = 'TEST001';
+    component.motDePasse = 'motdepasse-test';
 
     component.connecterJoueur();
 

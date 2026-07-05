@@ -15,7 +15,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
       <h2>Connexion joueur</h2>
 
       <p>
-        Connexion joueur avec le matricule et le mot de passe de démonstration.
+        Connexion joueur avec un matricule et un mot de passe valides.
       </p>
 
       <p>
@@ -57,51 +57,16 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
 
       <ng-template #formulaireConnexion>
         <div class="bloc-info">
-          <h3>Joueurs de démonstration</h3>
+          <h3>Compte de test</h3>
 
-          <div class="joueurs-demo-grid">
-            <article class="joueur-demo-card">
-              <h4>Joueur global</h4>
-              <p>
-                Peut réserver sur tous les sites selon les règles métier.
-              </p>
-              <p><strong>Matricule :</strong> G1001</p>
-              <p><strong>Mot de passe :</strong> password</p>
-              <p><strong>Statut :</strong> actif</p>
+          <p>
+            Les comptes de démonstration restent temporairement indiqués sur la homepage.
+            Cette page de connexion ne préremplit plus d'identifiants.
+          </p>
 
-              <button type="button" (click)="utiliserG1001()">
-                Utiliser G1001
-              </button>
-            </article>
-
-            <article class="joueur-demo-card">
-              <h4>Joueur avec dette</h4>
-              <p>
-                Permet de tester l'écran Mes dettes et le paiement d'une dette.
-              </p>
-              <p><strong>Matricule :</strong> G1002</p>
-              <p><strong>Mot de passe :</strong> password</p>
-              <p><strong>Statut :</strong> actif avec dette ouverte</p>
-
-              <button type="button" (click)="utiliserG1002()">
-                Utiliser G1002
-              </button>
-            </article>
-
-            <article class="joueur-demo-card warning-card">
-              <h4>Joueur inactif</h4>
-              <p>
-                Permet de tester le refus backend lors de la connexion joueur.
-              </p>
-              <p><strong>Matricule :</strong> G9999</p>
-              <p><strong>Mot de passe :</strong> password</p>
-              <p><strong>Statut :</strong> inactif</p>
-
-              <button type="button" (click)="utiliserG9999()">
-                Utiliser G9999
-              </button>
-            </article>
-          </div>
+          <a routerLink="/accueil" class="lien-action">
+            Voir les informations de démonstration
+          </a>
         </div>
 
         <form (ngSubmit)="connecterJoueur()">
@@ -111,7 +76,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
             name="matricule"
             type="text"
             [(ngModel)]="matricule"
-            placeholder="Exemple : G1001"
+            placeholder="Votre matricule"
             required
           />
 
@@ -121,7 +86,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
             name="motDePasse"
             type="password"
             [(ngModel)]="motDePasse"
-            placeholder="password"
+            placeholder="Votre mot de passe"
             required
           />
 
@@ -133,53 +98,22 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
     </section>
   `,
   styles: [`
-    .joueurs-demo-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-      margin-top: 14px;
-    }
-
-    .joueur-demo-card {
-      padding: 16px;
-      border: 1px solid #bfdbfe;
-      border-radius: 12px;
-      background: #ffffff;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
-    }
-
-    .joueur-demo-card h4 {
-      margin: 0 0 10px;
-      color: #003b95;
-    }
-
-    .joueur-demo-card p {
-      margin: 8px 0;
-    }
-
-    .joueur-demo-card button {
-      margin-top: 12px;
-    }
-
-    .warning-card {
-      border-color: #fecaca;
-      background: #fff7f7;
-    }
-
-    .warning-card h4 {
-      color: #991b1b;
-    }
-
     .succes {
       margin-top: 16px;
       color: #047857;
       font-weight: 700;
     }
+
+    .lien-action {
+      display: inline-block;
+      margin-top: 12px;
+      font-weight: 600;
+    }
   `]
 })
 export class JoueurAuthComponent {
-  matricule = 'G1001';
-  motDePasse = 'password';
+  matricule = '';
+  motDePasse = '';
   chargement = false;
   messageErreur = '';
   messageSucces = '';
@@ -190,27 +124,6 @@ export class JoueurAuthComponent {
     private readonly changeDetectorRef: ChangeDetectorRef,
     private readonly router: Router
   ) {
-  }
-
-  utiliserG1001(): void {
-    this.matricule = 'G1001';
-    this.motDePasse = 'password';
-    this.messageErreur = '';
-    this.messageSucces = '';
-  }
-
-  utiliserG1002(): void {
-    this.matricule = 'G1002';
-    this.motDePasse = 'password';
-    this.messageErreur = '';
-    this.messageSucces = '';
-  }
-
-  utiliserG9999(): void {
-    this.matricule = 'G9999';
-    this.motDePasse = 'password';
-    this.messageErreur = '';
-    this.messageSucces = '';
   }
 
   connecterJoueur(): void {

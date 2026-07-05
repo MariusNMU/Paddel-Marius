@@ -25,6 +25,31 @@ public class PaiementController {
     private final PaiementService paiementService;
     private final JoueurAuthorizationService joueurAuthorizationService;
 
+    @PostMapping("/api/participations/{participationId}/paiements/standard")
+    public ResponseEntity<PaiementResponse> payerParticipationStandard(
+            @RequestHeader(
+                    name = "Authorization",
+                    required = false
+            )
+            String authorization,
+
+            @PathVariable
+            Long participationId
+    ) {
+        joueurAuthorizationService
+                .verifierParticipationDuJoueur(
+                        authorization,
+                        participationId
+                );
+
+        PaiementResponse response =
+                paiementService.payerParticipationStandard(participationId);
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(response);
+    }
+
     @PostMapping("/api/participations/{participationId}/paiements")
     public ResponseEntity<PaiementResponse> payerParticipation(
             @RequestHeader(

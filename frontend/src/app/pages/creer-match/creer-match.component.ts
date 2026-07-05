@@ -4,10 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { InvitationPriveeResponse } from '../../models/invitation.model';
 import { CreerMatchRequest, MatchResponse, ModeCreation } from '../../models/match.model';
+import { ParametresMetierResponse } from '../../models/parametres-metier.model';
 import { TerrainResponse } from '../../models/terrain.model';
 import { AuthContextService } from '../../services/auth-context.service';
 import { InvitationApiService } from '../../services/invitation-api.service';
 import { MatchApiService } from '../../services/match-api.service';
+import { ParametresMetierApiService } from '../../services/parametres-metier-api.service';
 import { TerrainApiService } from '../../services/terrain-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
 import { dateHeureDuJourPourInput } from '../../shared/date-ui.util';
@@ -30,10 +32,10 @@ import { dateHeureDuJourPourInput } from '../../shared/date-ui.util';
         <h3>Rappel métier</h3>
 
         <ul>
-          <li>Un match dure <strong>1h30</strong>.</li>
-          <li>Un match coûte <strong>60 €</strong>.</li>
-          <li>La part théorique est de <strong>15 € par joueur</strong>.</li>
-          <li>Un match contient maximum <strong>4 joueurs</strong>.</li>
+          <li>Un match dure <strong>{{ dureeMatchLibelle() }}</strong>.</li>
+          <li>Un match coûte <strong>{{ parametresMetier?.prixTotalMatch | number:'1.2-2' }} €</strong>.</li>
+          <li>La part théorique est de <strong>{{ parametresMetier?.montantParticipationStandard | number:'1.2-2' }} € par joueur</strong>.</li>
+          <li>Un match contient maximum <strong>{{ parametresMetier?.nombreJoueursMaximum }} joueurs</strong>.</li>
           <li>Un organisateur avec dette active ne peut pas créer de nouveau match.</li>
         </ul>
       </div>
@@ -69,7 +71,7 @@ import { dateHeureDuJourPourInput } from '../../shared/date-ui.util';
         </p>
 
         <p *ngIf="!chargementTerrains && terrains.length === 0" class="erreur">
-          Aucun terrain actif disponible. Vérifie les données de démonstration en base.
+          Aucun terrain actif disponible. Vérifie les sites et terrains actifs en base.
         </p>
 
         <div class="bloc-info" *ngIf="terrainSelectionne() as terrain">
@@ -117,8 +119,8 @@ import { dateHeureDuJourPourInput } from '../../shared/date-ui.util';
         <div class="bloc-info">
           <h3>Résumé avant création</h3>
 
-          <p><strong>Prix total :</strong> 60 €</p>
-          <p><strong>Part par joueur :</strong> 15 €</p>
+          <p><strong>Prix total :</strong> {{ parametresMetier?.prixTotalMatch | number:'1.2-2' }} €</p>
+          <p><strong>Part par joueur :</strong> {{ parametresMetier?.montantParticipationStandard | number:'1.2-2' }} €</p>
           <p><strong>Mode sélectionné :</strong> {{ modeCreation || 'Non choisi' }}</p>
           <p><strong>Début demandé :</strong> {{ dateHeureDebut }}</p>
         </div>
@@ -149,10 +151,12 @@ import { dateHeureDuJourPourInput } from '../../shared/date-ui.util';
       </div>
 
       <div *ngIf="matchCree && matchCree.modeCreation === 'PRIVE'" class="bloc-info">
-        <h3>Inviter les 3 autres joueurs</h3>
+        <h3>Inviter les autres joueurs</h3>
 
         <p>
-          Le match privé doit atteindre 4 joueurs. Ajoute les matricules un par un.
+          Le match privé doit atteindre
+          {{ parametresMetier?.nombreJoueursMaximum ?? 'le nombre maximum de' }}
+          joueurs. Ajoute les matricules un par un.
         </p>
 
         <label for="matriculeInvite">Matricule du joueur à inviter</label>
@@ -213,6 +217,7 @@ import { dateHeureDuJourPourInput } from '../../shared/date-ui.util';
 })
 export class CreerMatchComponent implements OnInit {
   terrains: TerrainResponse[] = [];
+  parametresMetier: ParametresMetierResponse | null = null;
 
   terrainId: number | null = null;
   matriculeOrganisateur = '';
@@ -220,6 +225,7 @@ export class CreerMatchComponent implements OnInit {
   modeCreation: ModeCreation | '' = '';
 
   chargementTerrains = false;
+  chargementParametresMetier = false;
   chargement = false;
   messageErreur = '';
   matchCree: MatchResponse | null = null;
@@ -231,6 +237,7 @@ export class CreerMatchComponent implements OnInit {
     private readonly matchApiService: MatchApiService,
     private readonly invitationApiService: InvitationApiService,
     private readonly terrainApiService: TerrainApiService,
+    private readonly parametresMetierApiService: ParametresMetierApiService,
     private readonly authContext: AuthContextService,
     private readonly changeDetectorRef: ChangeDetectorRef,
     private readonly route: ActivatedRoute
@@ -254,7 +261,42 @@ export class CreerMatchComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.chargerParametresMetier();
     this.chargerTerrains();
+  }
+
+  private chargerParametresMetier(): void {
+    this.chargementParametresMetier = true;
+
+    this.parametresMetierApiService.consulterParametresMetier().subscribe({
+      next: parametres => {
+        this.parametresMetier = parametres;
+        this.chargementParametresMetier = false;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: error => {
+        this.messageErreur = extraireMessageErreur(error);
+        this.parametresMetier = null;
+        this.chargementParametresMetier = false;
+        this.changeDetectorRef.detectChanges();
+      }
+    });
+  }
+
+  dureeMatchLibelle(): string {
+    if (!this.parametresMetier) {
+      return 'Non chargé';
+    }
+
+    const minutes = this.parametresMetier.dureeMatchMinutes;
+    const heures = Math.floor(minutes / 60);
+    const minutesRestantes = minutes % 60;
+
+    if (minutesRestantes === 0) {
+      return `${heures}h`;
+    }
+
+    return `${heures}h${String(minutesRestantes).padStart(2, '0')}`;
   }
 
   private chargerTerrains(): void {

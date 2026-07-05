@@ -4,7 +4,6 @@ import { RouterLink } from '@angular/router';
 import { finalize, timeout } from 'rxjs';
 import { AuthJoueurResponse } from '../../models/auth.model';
 import { InvitationPriveeResponse } from '../../models/invitation.model';
-import { PayerParticipationRequest } from '../../models/paiement.model';
 import { AuthContextService } from '../../services/auth-context.service';
 import { InvitationApiService } from '../../services/invitation-api.service';
 import { PaiementApiService } from '../../services/paiement-api.service';
@@ -93,7 +92,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
                 {{
                   actionEnCoursParticipationId === invitation.participationId
                     ? 'Paiement...'
-                    : 'Confirmer et payer 15 €'
+                    : 'Confirmer et payer la participation'
                 }}
               </button>
 
@@ -264,11 +263,7 @@ export class InvitationsRecuesComponent implements OnInit {
     this.messageSucces = '';
     this.actionEnCoursParticipationId = invitation.participationId;
 
-    const request: PayerParticipationRequest = {
-      montant: 15.00
-    };
-
-    this.paiementApiService.payerParticipation(invitation.participationId, request)
+    this.paiementApiService.payerParticipationStandard(invitation.participationId)
       .pipe(
         timeout(10000),
         finalize(() => {

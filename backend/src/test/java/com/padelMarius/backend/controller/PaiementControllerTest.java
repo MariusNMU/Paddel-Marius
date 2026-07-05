@@ -96,6 +96,40 @@ class PaiementControllerTest {
     }
 
     @Test
+    void shouldReturnCreated_whenPayingStandardParticipationWithoutRequestBody() throws Exception {
+        PaiementResponse response = new PaiementResponse(
+                400L,
+                300L,
+                21L,
+                "G0002",
+                NaturePaiement.PARTICIPATION,
+                new BigDecimal("15.00"),
+                new BigDecimal("0.00"),
+                new BigDecimal("15.00"),
+                StatutPaiement.PAYE,
+                StatutParticipation.CONFIRMEE,
+                LocalDateTime.of(2026, 5, 7, 12, 0),
+                LocalDateTime.of(2026, 5, 7, 12, 0)
+        );
+
+        when(paiementService.payerParticipationStandard(300L))
+                .thenReturn(response);
+
+        mockMvc.perform(post("/api/participations/300/paiements/standard")
+                        .header("Authorization", AUTHORIZATION))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.paiementId").value(400))
+                .andExpect(jsonPath("$.participationId").value(300))
+                .andExpect(jsonPath("$.membreId").value(21))
+                .andExpect(jsonPath("$.matriculeMembre").value("G0002"))
+                .andExpect(jsonPath("$.naturePaiement").value("PARTICIPATION"))
+                .andExpect(jsonPath("$.montant").value(15.00))
+                .andExpect(jsonPath("$.montantTotalDebite").value(15.00))
+                .andExpect(jsonPath("$.statutPaiement").value("PAYE"))
+                .andExpect(jsonPath("$.statutParticipation").value("CONFIRMEE"));
+    }
+
+    @Test
     void shouldReturnForbiddenWhenParticipationBelongsToOtherPlayer()
             throws Exception {
 

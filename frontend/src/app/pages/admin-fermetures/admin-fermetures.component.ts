@@ -1,18 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import {
   CreerFermetureRequest,
   FermetureAdminResponse,
   PorteeFermeture
 } from '../../models/fermeture.model';
+import { SiteResponse } from '../../models/site.model';
 import { AdminFermetureApiService } from '../../services/admin-fermeture-api.service';
+import { SiteApiService } from '../../services/site-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
-
-interface SiteDemo {
-  id: number;
-  nom: string;
-}
 
 @Component({
   selector: 'app-admin-fermetures',
@@ -64,9 +61,11 @@ interface SiteDemo {
             id="siteId"
             name="siteId"
             [(ngModel)]="siteId"
+            [disabled]="chargementSites || sites.length === 0"
           >
-            <option [ngValue]="1001">Padel Bruxelles (1001)</option>
-            <option [ngValue]="1002">Padel Namur (1002)</option>
+            <option *ngFor="let site of sites" [ngValue]="site.siteId">
+              {{ site.nom }} ({{ site.siteId }})
+            </option>
           </select>
         }
 
@@ -92,7 +91,7 @@ interface SiteDemo {
           <p><strong>Motif :</strong> {{ motif || 'Aucun motif renseigné' }}</p>
         </div>
 
-        <button type="submit" [disabled]="chargement">
+        <button type="submit" [disabled]="chargement || chargementSites">
           {{ chargement ? 'Création...' : 'Créer la fermeture' }}
         </button>
       </form>
@@ -135,25 +134,58 @@ interface SiteDemo {
     }
   `]
 })
-export class AdminFermeturesComponent {
-  sites: SiteDemo[] = [
-    { id: 1001, nom: 'Padel Bruxelles' },
-    { id: 1002, nom: 'Padel Namur' }
-  ];
+export class AdminFermeturesComponent implements OnInit {
+  sites: SiteResponse[] = [];
 
-  dateFermeture = '2026-08-15';
-  portee: PorteeFermeture = 'LOCALE';
-  siteId = 1001;
-  motif = 'Fermeture exceptionnelle';
+  dateFermeture = '';
+  portee: PorteeFermeture | '' = '';
+  siteId: number | null = null;
+  motif = '';
 
+  chargementSites = false;
   chargement = false;
   messageErreur = '';
   fermetureCreee: FermetureAdminResponse | null = null;
 
   constructor(
     private readonly adminFermetureApiService: AdminFermetureApiService,
+    private readonly siteApiService: SiteApiService,
     private readonly changeDetectorRef: ChangeDetectorRef
   ) {
+  }
+
+  ngOnInit(): void {
+    this.chargerSites();
+  }
+
+  private chargerSites(): void {
+    this.messageErreur = '';
+    this.chargementSites = true;
+
+    this.siteApiService.listerSitesActifs().subscribe({
+      next: (sites) => {
+        this.sites = sites;
+
+        const siteSelectionExiste = this.siteId !== null
+          && this.sites.some(site => site.siteId === this.siteId);
+
+        if (!siteSelectionExiste) {
+          this.siteId = this.sites.length > 0
+            ? this.sites[0].siteId
+            : null;
+        }
+
+        this.chargementSites = false;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        this.messageErreur = extraireMessageErreur(error);
+        this.sites = [];
+        this.siteId = null;
+        this.chargementSites = false;
+        this.changeDetectorRef.detectChanges();
+      }
+    });
   }
 
   creerFermeture(): void {
@@ -162,6 +194,18 @@ export class AdminFermeturesComponent {
 
     if (!this.dateFermeture) {
       this.messageErreur = 'La date de fermeture est obligatoire.';
+      this.changeDetectorRef.detectChanges();
+      return;
+    }
+
+    if (!this.portee) {
+      this.messageErreur = 'La portée de fermeture est obligatoire.';
+      this.changeDetectorRef.detectChanges();
+      return;
+    }
+
+    if (this.portee === 'LOCALE' && !this.siteId) {
+      this.messageErreur = 'Le site est obligatoire pour une fermeture locale.';
       this.changeDetectorRef.detectChanges();
       return;
     }
@@ -191,12 +235,12 @@ export class AdminFermeturesComponent {
   }
 
   nomSiteSelectionne(): string {
-    const site = this.sites.find(siteDemo => siteDemo.id === Number(this.siteId));
+    const site = this.sites.find(site => site.siteId === Number(this.siteId));
 
     if (!site) {
       return 'Site inconnu';
     }
 
-    return `${site.nom} (${site.id})`;
+    return `${site.nom} (${site.siteId})`;
   }
 }

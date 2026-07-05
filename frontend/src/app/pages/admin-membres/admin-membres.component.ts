@@ -2,13 +2,10 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MembreResponse } from '../../models/membre.model';
+import { SiteResponse } from '../../models/site.model';
 import { AdminMembreApiService } from '../../services/admin-membre-api.service';
+import { SiteApiService } from '../../services/site-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
-
-interface SiteOption {
-  id: number;
-  nom: string;
-}
 
 @Component({
   selector: 'app-admin-membres',
@@ -31,7 +28,7 @@ interface SiteOption {
             Afficher tous les membres
           </button>
 
-          <button type="button" (click)="afficherMembresDuSiteSelectionne()" [disabled]="chargement">
+          <button type="button" (click)="afficherMembresDuSiteSelectionne()" [disabled]="chargement || chargementSites || siteId === null">
             Filtrer par site sélectionné
           </button>
         </div>
@@ -41,9 +38,11 @@ interface SiteOption {
           id="siteId"
           name="siteId"
           [(ngModel)]="siteId"
+          [disabled]="chargementSites || sites.length === 0"
         >
-          <option *ngFor="let site of sites" [ngValue]="site.id">
-            {{ site.nom }} ({{ site.id }})
+          <option [ngValue]="null">Sélectionner un site</option>
+          <option *ngFor="let site of sites" [ngValue]="site.siteId">
+            {{ site.nom }} ({{ site.siteId }})
           </option>
         </select>
 
@@ -156,31 +155,51 @@ interface SiteOption {
   `]
 })
 export class AdminMembresComponent implements OnInit {
-  sites: SiteOption[] = [
-    {
-      id: 1001,
-      nom: 'Padel Bruxelles'
-    },
-    {
-      id: 1002,
-      nom: 'Padel Namur'
-    }
-  ];
-
-  siteId = 1001;
+  sites: SiteResponse[] = [];
+  siteId: number | null = null;
   membres: MembreResponse[] = [];
+  chargementSites = false;
   chargement = false;
   messageErreur = '';
   titreResultat = 'Tous les membres';
 
   constructor(
     private readonly adminMembreApiService: AdminMembreApiService,
+    private readonly siteApiService: SiteApiService,
     private readonly changeDetectorRef: ChangeDetectorRef
   ) {
   }
 
   ngOnInit(): void {
+    this.chargerSites();
     this.afficherTousLesMembres();
+  }
+
+  private chargerSites(): void {
+    this.chargementSites = true;
+
+    this.siteApiService.listerSitesActifs().subscribe({
+      next: (sites) => {
+        this.sites = sites;
+
+        const siteSelectionExiste = this.siteId !== null
+          && this.sites.some(site => site.siteId === this.siteId);
+
+        if (!siteSelectionExiste) {
+          this.siteId = null;
+        }
+
+        this.chargementSites = false;
+        this.changeDetectorRef.detectChanges();
+      },
+      error: (error) => {
+        this.messageErreur = extraireMessageErreur(error);
+        this.sites = [];
+        this.siteId = null;
+        this.chargementSites = false;
+        this.changeDetectorRef.detectChanges();
+      }
+    });
   }
 
   afficherTousLesMembres(): void {
@@ -209,9 +228,23 @@ export class AdminMembresComponent implements OnInit {
   afficherMembresDuSiteSelectionne(): void {
     this.messageErreur = '';
     this.membres = [];
+
+    if (this.siteId === null) {
+      this.messageErreur = 'Sélectionne un site avant de filtrer les membres.';
+      this.changeDetectorRef.detectChanges();
+      return;
+    }
+
     this.chargement = true;
 
-    const siteSelectionne = this.sites.find(site => site.id === Number(this.siteId));
+    const siteSelectionne = this.sites.find(site => site.siteId === Number(this.siteId));
+
+    if (!siteSelectionne) {
+      this.messageErreur = 'Sélectionne un site valide avant de filtrer les membres.';
+      this.chargement = false;
+      this.changeDetectorRef.detectChanges();
+      return;
+    }
 
     this.titreResultat = siteSelectionne
       ? `Membres rattachés au site ${siteSelectionne.nom}`

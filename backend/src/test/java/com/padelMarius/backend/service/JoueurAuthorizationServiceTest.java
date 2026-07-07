@@ -7,8 +7,6 @@ import com.padelMarius.backend.entity.Participation;
 import com.padelMarius.backend.entity.RoleParticipation;
 import com.padelMarius.backend.entity.StatutDette;
 import com.padelMarius.backend.entity.StatutParticipation;
-import com.padelMarius.backend.exception.AuthentificationException;
-import com.padelMarius.backend.exception.AutorisationException;
 import com.padelMarius.backend.repository.DetteRepository;
 import com.padelMarius.backend.repository.MembreRepository;
 import com.padelMarius.backend.repository.PadelMatchRepository;
@@ -20,24 +18,21 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.verify;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class JoueurAuthorizationServiceTest {
-
-    private static final String AUTHORIZATION =
-            "Bearer jwt-joueur";
 
     @Mock
     private MembreRepository membreRepository;
@@ -51,150 +46,70 @@ class JoueurAuthorizationServiceTest {
     @Mock
     private PadelMatchRepository padelMatchRepository;
 
-    @Mock
-    private JwtService jwtService;
-
     @InjectMocks
     private JoueurAuthorizationService service;
 
     @Test
-    void verifierJoueurConnecte_shouldAcceptActivePlayerToken() {
+    void estJoueurActif_shouldReturnTrueForActivePlayerPrincipal() {
         Membre joueur = creerMembre(
                 20L,
                 "G1001",
                 true
         );
 
-        simulerJoueurConnecte(joueur);
+        when(membreRepository.findByMatricule("G1001"))
+                .thenReturn(Optional.of(joueur));
 
-        assertDoesNotThrow(() ->
-                service.verifierJoueurConnecte(AUTHORIZATION)
-        );
-
-        verify(membreRepository)
-                .findByMatricule("G1001");
+        assertThat(service.estJoueurActif(
+                authenticationJoueur("G1001")
+        )).isTrue();
     }
 
     @Test
-    void verifierJoueurConnecte_shouldRejectAdminToken() {
-        when(jwtService.extraireUtilisateurDepuisAuthorization(
-                AUTHORIZATION
-        )).thenReturn(new JwtUtilisateur(
-                "admin-global",
-                JwtService.TYPE_UTILISATEUR_ADMIN,
-                "GLOBAL",
-                null
-        ));
-
-        AuthentificationException exception = assertThrows(
-                AuthentificationException.class,
-                () -> service.verifierJoueurConnecte(
-                        AUTHORIZATION
-                )
-        );
-
-        assertEquals(
-                "Token joueur requis.",
-                exception.getMessage()
-        );
+    void estJoueurActif_shouldReturnFalseForAdminPrincipal() {
+        assertThat(service.estJoueurActif(
+                authenticationAdmin()
+        )).isFalse();
 
         verifyNoInteractions(membreRepository);
     }
 
     @Test
-    void verifierJoueurConnecte_shouldRejectUnknownPlayer() {
-        when(jwtService.extraireUtilisateurDepuisAuthorization(
-                AUTHORIZATION
-        )).thenReturn(new JwtUtilisateur(
-                "G9999",
-                JwtService.TYPE_UTILISATEUR_JOUEUR,
-                "GLOBAL",
-                null
-        ));
-
-        when(membreRepository.findByMatricule("G9999"))
-                .thenReturn(Optional.empty());
-
-        AuthentificationException exception = assertThrows(
-                AuthentificationException.class,
-                () -> service.verifierJoueurConnecte(
-                        AUTHORIZATION
-                )
-        );
-
-        assertEquals(
-                "Joueur introuvable ou non authentifié.",
-                exception.getMessage()
-        );
-    }
-
-    @Test
-    void verifierJoueurConnecte_shouldRejectInactivePlayer() {
-        Membre joueur = creerMembre(
-                20L,
-                "G1001",
-                false
-        );
-
-        simulerJoueurConnecte(joueur);
-
-        AuthentificationException exception = assertThrows(
-                AuthentificationException.class,
-                () -> service.verifierJoueurConnecte(
-                        AUTHORIZATION
-                )
-        );
-
-        assertEquals(
-                "Joueur introuvable ou non authentifié.",
-                exception.getMessage()
-        );
-    }
-
-    @Test
-    void verifierAccesMatricule_shouldAcceptOwnMatricule() {
+    void peutAgirPourMatricule_shouldReturnTrueForOwnMatricule() {
         Membre joueur = creerMembre(
                 20L,
                 "G1001",
                 true
         );
 
-        simulerJoueurConnecte(joueur);
+        when(membreRepository.findByMatricule("G1001"))
+                .thenReturn(Optional.of(joueur));
 
-        assertDoesNotThrow(() ->
-                service.verifierAccesMatricule(
-                        AUTHORIZATION,
-                        "G1001"
-                )
-        );
+        assertThat(service.peutAgirPourMatricule(
+                authenticationJoueur("G1001"),
+                "G1001"
+        )).isTrue();
     }
 
     @Test
-    void verifierAccesMatricule_shouldRejectOtherMatricule() {
+    void peutAgirPourMatricule_shouldReturnFalseForOtherMatricule() {
         Membre joueur = creerMembre(
                 20L,
                 "G1001",
                 true
         );
 
-        simulerJoueurConnecte(joueur);
+        when(membreRepository.findByMatricule("G1001"))
+                .thenReturn(Optional.of(joueur));
 
-        AutorisationException exception = assertThrows(
-                AutorisationException.class,
-                () -> service.verifierAccesMatricule(
-                        AUTHORIZATION,
-                        "G1002"
-                )
-        );
-
-        assertEquals(
-                "Un joueur ne peut agir que pour son propre compte.",
-                exception.getMessage()
-        );
+        assertThat(service.peutAgirPourMatricule(
+                authenticationJoueur("G1001"),
+                "G1002"
+        )).isFalse();
     }
 
     @Test
-    void verifierParticipationDuJoueur_shouldAcceptOwner() {
+    void peutAccederParticipation_shouldReturnTrueForParticipationOwner() {
         Membre joueur = creerMembre(
                 20L,
                 "G1001",
@@ -207,21 +122,20 @@ class JoueurAuthorizationServiceTest {
                 RoleParticipation.JOUEUR
         );
 
-        simulerJoueurConnecte(joueur);
+        when(membreRepository.findByMatricule("G1001"))
+                .thenReturn(Optional.of(joueur));
 
         when(participationRepository.findById(300L))
                 .thenReturn(Optional.of(participation));
 
-        assertDoesNotThrow(() ->
-                service.verifierParticipationDuJoueur(
-                        AUTHORIZATION,
-                        300L
-                )
-        );
+        assertThat(service.peutAccederParticipation(
+                authenticationJoueur("G1001"),
+                300L
+        )).isTrue();
     }
 
     @Test
-    void verifierParticipationDuJoueur_shouldRejectOtherPlayer() {
+    void peutAccederParticipation_shouldReturnFalseForOtherPlayer() {
         Membre joueurConnecte = creerMembre(
                 20L,
                 "G1001",
@@ -240,28 +154,20 @@ class JoueurAuthorizationServiceTest {
                 RoleParticipation.JOUEUR
         );
 
-        simulerJoueurConnecte(joueurConnecte);
+        when(membreRepository.findByMatricule("G1001"))
+                .thenReturn(Optional.of(joueurConnecte));
 
         when(participationRepository.findById(300L))
                 .thenReturn(Optional.of(participation));
 
-        AutorisationException exception = assertThrows(
-                AutorisationException.class,
-                () -> service.verifierParticipationDuJoueur(
-                        AUTHORIZATION,
-                        300L
-                )
-        );
-
-        assertEquals(
-                "Cette participation n'appartient pas "
-                        + "au joueur connecté.",
-                exception.getMessage()
-        );
+        assertThat(service.peutAccederParticipation(
+                authenticationJoueur("G1001"),
+                300L
+        )).isFalse();
     }
 
     @Test
-    void verifierDetteDuJoueur_shouldAcceptResponsiblePlayer() {
+    void peutAccederDette_shouldReturnTrueForDebtOwner() {
         Membre joueur = creerMembre(
                 20L,
                 "G1001",
@@ -270,21 +176,20 @@ class JoueurAuthorizationServiceTest {
 
         Dette dette = creerDette(500L, joueur);
 
-        simulerJoueurConnecte(joueur);
+        when(membreRepository.findByMatricule("G1001"))
+                .thenReturn(Optional.of(joueur));
 
         when(detteRepository.findById(500L))
                 .thenReturn(Optional.of(dette));
 
-        assertDoesNotThrow(() ->
-                service.verifierDetteDuJoueur(
-                        AUTHORIZATION,
-                        500L
-                )
-        );
+        assertThat(service.peutAccederDette(
+                authenticationJoueur("G1001"),
+                500L
+        )).isTrue();
     }
 
     @Test
-    void verifierDetteDuJoueur_shouldRejectOtherPlayer() {
+    void peutAccederDette_shouldReturnFalseForOtherPlayer() {
         Membre joueurConnecte = creerMembre(
                 20L,
                 "G1001",
@@ -299,27 +204,20 @@ class JoueurAuthorizationServiceTest {
 
         Dette dette = creerDette(500L, responsable);
 
-        simulerJoueurConnecte(joueurConnecte);
+        when(membreRepository.findByMatricule("G1001"))
+                .thenReturn(Optional.of(joueurConnecte));
 
         when(detteRepository.findById(500L))
                 .thenReturn(Optional.of(dette));
 
-        AutorisationException exception = assertThrows(
-                AutorisationException.class,
-                () -> service.verifierDetteDuJoueur(
-                        AUTHORIZATION,
-                        500L
-                )
-        );
-
-        assertEquals(
-                "Cette dette n'appartient pas au joueur connecté.",
-                exception.getMessage()
-        );
+        assertThat(service.peutAccederDette(
+                authenticationJoueur("G1001"),
+                500L
+        )).isFalse();
     }
 
     @Test
-    void verifierOrganisateurDuMatch_shouldAcceptOrganizer() {
+    void estOrganisateurDuMatch_shouldReturnTrueForOrganizer() {
         Membre joueur = creerMembre(
                 20L,
                 "G1001",
@@ -332,24 +230,23 @@ class JoueurAuthorizationServiceTest {
                 RoleParticipation.ORGANISATEUR
         );
 
-        simulerJoueurConnecte(joueur);
-
         when(padelMatchRepository.existsById(100L))
                 .thenReturn(true);
+
+        when(membreRepository.findByMatricule("G1001"))
+                .thenReturn(Optional.of(joueur));
 
         when(participationRepository.findByMatchId(100L))
                 .thenReturn(List.of(organisateur));
 
-        assertDoesNotThrow(() ->
-                service.verifierOrganisateurDuMatch(
-                        AUTHORIZATION,
-                        100L
-                )
-        );
+        assertThat(service.estOrganisateurDuMatch(
+                authenticationJoueur("G1001"),
+                100L
+        )).isTrue();
     }
 
     @Test
-    void verifierOrganisateurDuMatch_shouldRejectNonOrganizer() {
+    void estOrganisateurDuMatch_shouldReturnFalseForNonOrganizer() {
         Membre joueurConnecte = creerMembre(
                 20L,
                 "G1001",
@@ -368,42 +265,49 @@ class JoueurAuthorizationServiceTest {
                 RoleParticipation.ORGANISATEUR
         );
 
-        simulerJoueurConnecte(joueurConnecte);
-
         when(padelMatchRepository.existsById(100L))
                 .thenReturn(true);
+
+        when(membreRepository.findByMatricule("G1001"))
+                .thenReturn(Optional.of(joueurConnecte));
 
         when(participationRepository.findByMatchId(100L))
                 .thenReturn(List.of(organisateur));
 
-        AutorisationException exception = assertThrows(
-                AutorisationException.class,
-                () -> service.verifierOrganisateurDuMatch(
-                        AUTHORIZATION,
-                        100L
-                )
+        assertThat(service.estOrganisateurDuMatch(
+                authenticationJoueur("G1001"),
+                100L
+        )).isFalse();
+    }
+
+    private Authentication authenticationJoueur(String matricule) {
+        JwtUtilisateur utilisateur = new JwtUtilisateur(
+                matricule,
+                JwtService.TYPE_UTILISATEUR_JOUEUR,
+                CategorieMembre.GLOBAL.name(),
+                null
         );
 
-        assertEquals(
-                "Seul l'organisateur du match "
-                        + "peut réaliser cette opération.",
-                exception.getMessage()
+        return new UsernamePasswordAuthenticationToken(
+                utilisateur,
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_JOUEUR"))
         );
     }
 
-    private void simulerJoueurConnecte(Membre joueur) {
-        when(jwtService.extraireUtilisateurDepuisAuthorization(
-                AUTHORIZATION
-        )).thenReturn(new JwtUtilisateur(
-                joueur.getMatricule(),
-                JwtService.TYPE_UTILISATEUR_JOUEUR,
-                joueur.getCategorieMembre().name(),
+    private Authentication authenticationAdmin() {
+        JwtUtilisateur utilisateur = new JwtUtilisateur(
+                "admin-global",
+                JwtService.TYPE_UTILISATEUR_ADMIN,
+                CategorieMembre.GLOBAL.name(),
                 null
-        ));
+        );
 
-        when(membreRepository.findByMatricule(
-                joueur.getMatricule()
-        )).thenReturn(Optional.of(joueur));
+        return new UsernamePasswordAuthenticationToken(
+                utilisateur,
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
+        );
     }
 
     private Membre creerMembre(

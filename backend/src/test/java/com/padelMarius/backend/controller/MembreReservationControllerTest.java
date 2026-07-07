@@ -8,7 +8,6 @@ import com.padelMarius.backend.entity.RoleParticipation;
 import com.padelMarius.backend.entity.StatutParticipation;
 import com.padelMarius.backend.entity.VisibiliteMatch;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
-import com.padelMarius.backend.service.JoueurAuthorizationService;
 import com.padelMarius.backend.service.MembreReservationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,9 +38,6 @@ class MembreReservationControllerTest {
 
     @MockitoBean
     private MembreReservationService membreReservationService;
-
-    @MockitoBean
-    private JoueurAuthorizationService joueurAuthorizationService;
 
     @Test
     void consulterReservations_shouldReturnReservations() throws Exception {

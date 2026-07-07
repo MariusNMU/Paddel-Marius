@@ -1,9 +1,7 @@
 package com.padelMarius.backend.controller;
 
 import com.padelMarius.backend.dto.traitement.TraitementVeilleResponse;
-import com.padelMarius.backend.exception.AuthentificationException;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
-import com.padelMarius.backend.service.AdminAuthorizationService;
 import com.padelMarius.backend.service.TraitementVeilleService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,9 +32,6 @@ class TraitementVeilleControllerTest {
     @MockitoBean
     private TraitementVeilleService traitementVeilleService;
 
-    @MockitoBean
-    private AdminAuthorizationService adminAuthorizationService;
-
     @Test
     void shouldReturnOk_whenPreMatchProcessingRuns() throws Exception {
         TraitementVeilleResponse response = new TraitementVeilleResponse(
@@ -64,10 +59,6 @@ class TraitementVeilleControllerTest {
                 .andExpect(jsonPath("$.matchesPassesPublics").value(1))
                 .andExpect(jsonPath("$.participationsLiberees").value(2))
                 .andExpect(jsonPath("$.penalitesCreees").value(1));
-
-        verify(adminAuthorizationService).verifierAdminGlobal(
-                "Bearer jwt-admin-global"
-        );
     }
 
     @Test
@@ -113,23 +104,4 @@ class TraitementVeilleControllerTest {
         verify(traitementVeilleService, never()).traiterVeille(any(LocalDate.class));
     }
 
-    @Test
-    void shouldReturn401_whenOnlyLegacyAdminHeaderIsProvided() throws Exception {
-        org.mockito.Mockito.doThrow(new AuthentificationException(
-                "Token JWT obligatoire."
-        )).when(adminAuthorizationService)
-                .verifierAdminGlobal(null);
-
-        mockMvc.perform(post("/api/admin/matches/traitement-veille")
-                        .header(
-                                "X-Admin-Login",
-                                "admin-global"
-                        )
-                        .param("date", "2026-05-19"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("AUTHENTIFICATION_INVALIDE"))
-                .andExpect(jsonPath("$.message").value(
-                        "Token JWT obligatoire."
-                ));
-    }
 }

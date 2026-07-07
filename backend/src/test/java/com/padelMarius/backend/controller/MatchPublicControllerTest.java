@@ -5,7 +5,6 @@ import com.padelMarius.backend.dto.matchpublic.RejoindreMatchPublicRequest;
 import com.padelMarius.backend.dto.matchpublic.RejoindreMatchPublicResponse;
 import com.padelMarius.backend.entity.StatutParticipation;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
-import com.padelMarius.backend.service.JoueurAuthorizationService;
 import com.padelMarius.backend.service.MatchPublicService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,9 +39,6 @@ class MatchPublicControllerTest {
 
     @MockitoBean
     private MatchPublicService matchPublicService;
-
-    @MockitoBean
-    private JoueurAuthorizationService joueurAuthorizationService;
 
     @Test
     void listerMatchesPublics_shouldReturnPublicMatches() throws Exception {

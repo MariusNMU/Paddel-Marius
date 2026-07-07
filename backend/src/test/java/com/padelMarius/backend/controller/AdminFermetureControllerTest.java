@@ -3,9 +3,7 @@ package com.padelMarius.backend.controller;
 import com.padelMarius.backend.dto.fermeture.CreerFermetureRequest;
 import com.padelMarius.backend.dto.fermeture.FermetureAdminResponse;
 import com.padelMarius.backend.entity.PorteeFermeture;
-import com.padelMarius.backend.exception.AuthentificationException;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
-import com.padelMarius.backend.service.AdminAuthorizationService;
 import com.padelMarius.backend.service.AdminFermetureService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +18,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -35,9 +32,6 @@ class AdminFermetureControllerTest {
 
     @MockitoBean
     private AdminFermetureService adminFermetureService;
-
-    @MockitoBean
-    private AdminAuthorizationService adminAuthorizationService;
 
     @Test
     void creerFermeture_shouldReturnCreated() throws Exception {
@@ -76,12 +70,6 @@ class AdminFermetureControllerTest {
                 .andExpect(jsonPath("$.portee").value("GLOBALE"))
                 .andExpect(jsonPath("$.motif").value("Fermeture exceptionnelle"))
                 .andExpect(jsonPath("$.nombreMatchesAnnules").value(2));
-
-        verify(adminAuthorizationService).verifierAccesFermeture(
-                "Bearer jwt-admin-global",
-                PorteeFermeture.GLOBALE,
-                null
-        );
     }
 
     @Test
@@ -130,31 +118,4 @@ class AdminFermetureControllerTest {
                 ));
     }
 
-    @Test
-    void shouldReturn401_whenOnlyLegacyAdminHeaderIsProvided() throws Exception {
-        org.mockito.Mockito.doThrow(new AuthentificationException(
-                "Token JWT obligatoire."
-        )).when(adminAuthorizationService)
-                .verifierAccesFermeture(null, PorteeFermeture.GLOBALE, null);
-
-        mockMvc.perform(post("/api/admin/fermetures")
-                        .header(
-                                "X-Admin-Login",
-                                "admin-global"
-                        )
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "dateFermeture": "2026-07-21",
-                                  "portee": "GLOBALE",
-                                  "siteId": null,
-                                  "motif": "Fermeture exceptionnelle"
-                                }
-                                """))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("AUTHENTIFICATION_INVALIDE"))
-                .andExpect(jsonPath("$.message").value(
-                        "Token JWT obligatoire."
-                ));
-    }
 }

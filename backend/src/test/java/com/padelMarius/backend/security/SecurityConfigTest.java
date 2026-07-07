@@ -46,6 +46,22 @@ class SecurityConfigTest {
     }
 
     @Test
+    void shouldPermitAuthenticationEndpointWhenInvalidBearerTokenIsPresent()
+            throws Exception {
+        mockMvc.perform(post("/api/auth/joueur")
+                        .header(AUTHORIZATION, "Bearer token-invalide")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "matricule": "G1001",
+                                  "motDePasse": "password"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
     void shouldRejectPlayerEndpointWithoutToken() throws Exception {
         mockMvc.perform(get("/api/disponibilites")
                         .param("siteId", "1001")
@@ -65,6 +81,40 @@ class SecurityConfigTest {
                 .andExpect(jsonPath("$.code").value("ACCES_REFUSE"));
     }
 
+    @Test
+    void shouldRejectPlayerAccessToAnotherPlayerBalance() throws Exception {
+        String playerToken = authenticatePlayerAndReadToken();
+
+        mockMvc.perform(get("/api/membres/S1001/solde")
+                        .header(AUTHORIZATION, bearer(playerToken)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCES_REFUSE"));
+    }
+
+    @Test
+    void shouldRejectSiteAdminAccessToGlobalStatistics() throws Exception {
+        String adminToken = authenticateAdminAndReadToken("admin-bruxelles");
+
+        mockMvc.perform(get("/api/admin/statistiques")
+                        .header(AUTHORIZATION, bearer(adminToken))
+                        .param("dateDebut", "2026-05-01")
+                        .param("dateFin", "2026-05-31"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCES_REFUSE"));
+    }
+
+    @Test
+    void shouldAllowSiteAdminAccessToOwnSiteStatistics() throws Exception {
+        String adminToken = authenticateAdminAndReadToken("admin-bruxelles");
+
+        mockMvc.perform(get("/api/admin/statistiques")
+                        .header(AUTHORIZATION, bearer(adminToken))
+                        .param("dateDebut", "2026-05-01")
+                        .param("dateFin", "2026-05-31")
+                        .param("siteId", "1001"))
+                .andExpect(status().isOk());
+    }
+
     private String authenticatePlayerAndReadToken() throws Exception {
         MvcResult result = mockMvc.perform(post("/api/auth/joueur")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -74,6 +124,33 @@ class SecurityConfigTest {
                                   "motDePasse": "password"
                                 }
                                 """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode body = objectMapper.readTree(result.getResponse()
+                .getContentAsString());
+
+        String token = body.get("token").asText();
+        assertThat(token).isNotBlank();
+
+        return token;
+    }
+
+    private String authenticateAdminAndReadToken(String login) throws Exception {
+        String motDePasse = switch (login) {
+            case "admin-global" -> "secret";
+            case "admin-bruxelles", "admin-namur" -> "secret-site";
+            default -> "password";
+        };
+
+        MvcResult result = mockMvc.perform(post("/api/auth/admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "login": "%s",
+                                  "motDePasse": "%s"
+                                }
+                                """.formatted(login, motDePasse)))
                 .andExpect(status().isOk())
                 .andReturn();
 

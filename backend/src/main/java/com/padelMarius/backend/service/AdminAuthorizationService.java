@@ -3,120 +3,129 @@ package com.padelMarius.backend.service;
 import com.padelMarius.backend.entity.Administrateur;
 import com.padelMarius.backend.entity.PorteeFermeture;
 import com.padelMarius.backend.entity.RoleAdministrateur;
-import com.padelMarius.backend.exception.AuthentificationException;
-import com.padelMarius.backend.exception.AutorisationException;
 import com.padelMarius.backend.repository.AdministrateurRepository;
 import com.padelMarius.backend.security.JwtService;
 import com.padelMarius.backend.security.JwtUtilisateur;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 
-@Service
+import java.util.Objects;
+import java.util.Optional;
+
+@Service("adminAuthorizationService")
 @RequiredArgsConstructor
 public class AdminAuthorizationService {
 
     private final AdministrateurRepository administrateurRepository;
-    private final JwtService jwtService;
 
-    public void verifierAdminGlobal(String authorizationHeader) {
-        Administrateur administrateur = chargerAdministrateurActif(authorizationHeader);
-
-        if (administrateur.getRoleAdministrateur() != RoleAdministrateur.GLOBAL) {
-            throw new AutorisationException(
-                    "Seul un administrateur GLOBAL peut réaliser cette opération."
-            );
-        }
+    public boolean estAdminGlobal(Authentication authentication) {
+        return chargerAdministrateurActif(authentication)
+                .map(administrateur ->
+                        administrateur.getRoleAdministrateur()
+                                == RoleAdministrateur.GLOBAL
+                )
+                .orElse(false);
     }
 
-    public void verifierAccesAdminSite(String authorizationHeader, Long siteIdDemande) {
-        Administrateur administrateur = chargerAdministrateurActif(authorizationHeader);
+    public boolean peutAccederAuSite(
+            Authentication authentication,
+            Long siteIdDemande
+    ) {
+        Optional<Administrateur> administrateurConnecte =
+                chargerAdministrateurActif(authentication);
 
-        if (administrateur.getRoleAdministrateur() == RoleAdministrateur.GLOBAL) {
-            return;
+        if (administrateurConnecte.isEmpty()) {
+            return false;
+        }
+
+        Administrateur administrateur = administrateurConnecte.get();
+
+        if (administrateur.getRoleAdministrateur()
+                == RoleAdministrateur.GLOBAL) {
+            return true;
         }
 
         if (siteIdDemande == null) {
-            throw new AutorisationException(
-                    "Un administrateur SITE ne peut pas accéder à une vue globale."
-            );
+            return false;
         }
 
-        verifierAdminSiteSurSonSite(administrateur, siteIdDemande);
+        return estAdminSiteSurSonSite(administrateur, siteIdDemande);
     }
 
-    public void verifierAccesFermeture(
-            String authorizationHeader,
+    public boolean peutGererFermeture(
+            Authentication authentication,
             PorteeFermeture portee,
             Long siteId
     ) {
-        Administrateur administrateur = chargerAdministrateurActif(authorizationHeader);
+        Optional<Administrateur> administrateurConnecte =
+                chargerAdministrateurActif(authentication);
 
-        if (administrateur.getRoleAdministrateur() == RoleAdministrateur.GLOBAL) {
-            return;
+        if (administrateurConnecte.isEmpty()) {
+            return false;
+        }
+
+        Administrateur administrateur = administrateurConnecte.get();
+
+        if (administrateur.getRoleAdministrateur()
+                == RoleAdministrateur.GLOBAL) {
+            return true;
         }
 
         if (portee == PorteeFermeture.GLOBALE) {
-            throw new AutorisationException(
-                    "Un administrateur SITE ne peut pas créer une fermeture globale."
-            );
+            return false;
         }
 
         if (siteId == null) {
-            throw new AutorisationException(
-                    "Un administrateur SITE doit agir sur son propre site."
-            );
+            return false;
         }
 
-        verifierAdminSiteSurSonSite(administrateur, siteId);
+        return estAdminSiteSurSonSite(administrateur, siteId);
     }
 
-    private Administrateur chargerAdministrateurActif(String authorizationHeader) {
-        String login = extraireLoginAdministrateur(authorizationHeader);
+    private Optional<Administrateur> chargerAdministrateurActif(
+            Authentication authentication
+    ) {
+        return extrairePrincipal(authentication)
+                .filter(utilisateur ->
+                        JwtService.TYPE_UTILISATEUR_ADMIN.equals(
+                                utilisateur.typeUtilisateur()
+                        )
+                )
+                .flatMap(utilisateur ->
+                        administrateurRepository.findByEmailOuLogin(
+                                utilisateur.sujet()
+                        )
+                )
+                .filter(Administrateur::isActif);
+    }
 
-        Administrateur administrateur = administrateurRepository
-                .findByEmailOuLogin(login)
-                .orElseThrow(() -> new AuthentificationException(
-                        "Administrateur introuvable ou non authentifié."
-                ));
-
-        if (!administrateur.isActif()) {
-            throw new AuthentificationException(
-                    "Administrateur introuvable ou non authentifié."
-            );
+    private Optional<JwtUtilisateur> extrairePrincipal(
+            Authentication authentication
+    ) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return Optional.empty();
         }
 
-        return administrateur;
-    }
-
-    private String extraireLoginAdministrateur(String authorizationHeader) {
-        JwtUtilisateur utilisateur = jwtService
-                .extraireUtilisateurDepuisAuthorization(authorizationHeader);
-
-        if (!JwtService.TYPE_UTILISATEUR_ADMIN.equals(
-                utilisateur.typeUtilisateur()
-        )) {
-            throw new AuthentificationException(
-                    "Token administrateur requis."
-            );
+        if (authentication.getPrincipal() instanceof JwtUtilisateur utilisateur) {
+            return Optional.of(utilisateur);
         }
 
-        return utilisateur.sujet();
+        return Optional.empty();
     }
 
-    private void verifierAdminSiteSurSonSite(
+    private boolean estAdminSiteSurSonSite(
             Administrateur administrateur,
             Long siteIdDemande
     ) {
-        if (administrateur.getSite() == null || administrateur.getSite().getId() == null) {
-            throw new AutorisationException(
-                    "L'administrateur SITE n'a pas de site rattaché."
-            );
+        if (administrateur.getSite() == null
+                || administrateur.getSite().getId() == null) {
+            return false;
         }
 
-        if (!administrateur.getSite().getId().equals(siteIdDemande)) {
-            throw new AutorisationException(
-                    "Un administrateur SITE ne peut agir que sur son propre site."
-            );
-        }
+        return Objects.equals(
+                administrateur.getSite().getId(),
+                siteIdDemande
+        );
     }
 }

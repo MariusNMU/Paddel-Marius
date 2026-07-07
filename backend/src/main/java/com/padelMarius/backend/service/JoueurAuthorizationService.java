@@ -5,9 +5,6 @@ import com.padelMarius.backend.entity.Membre;
 import com.padelMarius.backend.entity.Participation;
 import com.padelMarius.backend.entity.RoleParticipation;
 import com.padelMarius.backend.entity.StatutParticipation;
-import com.padelMarius.backend.exception.AuthentificationException;
-import com.padelMarius.backend.exception.AutorisationException;
-import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.repository.DetteRepository;
 import com.padelMarius.backend.repository.MembreRepository;
 import com.padelMarius.backend.repository.PadelMatchRepository;
@@ -15,105 +12,100 @@ import com.padelMarius.backend.repository.ParticipationRepository;
 import com.padelMarius.backend.security.JwtService;
 import com.padelMarius.backend.security.JwtUtilisateur;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
+import java.util.Optional;
 
-@Service
+@Service("joueurAuthorizationService")
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class JoueurAuthorizationService {
-
-    private static final String JOUEUR_INTROUVABLE =
-            "Joueur introuvable ou non authentifié.";
 
     private final MembreRepository membreRepository;
     private final ParticipationRepository participationRepository;
     private final DetteRepository detteRepository;
     private final PadelMatchRepository padelMatchRepository;
-    private final JwtService jwtService;
 
-    public void verifierJoueurConnecte(String authorizationHeader) {
-        chargerJoueurActif(authorizationHeader);
+    public boolean estJoueurActif(Authentication authentication) {
+        return chargerJoueurActif(authentication).isPresent();
     }
 
-    public void verifierAccesMatricule(
-            String authorizationHeader,
+    public boolean peutAgirPourMatricule(
+            Authentication authentication,
             String matriculeDemande
     ) {
-        Membre joueurConnecte = chargerJoueurActif(authorizationHeader);
-
-        String matriculeNormalise = matriculeDemande == null
-                ? ""
-                : matriculeDemande.trim();
-
-        if (!joueurConnecte.getMatricule().equals(matriculeNormalise)) {
-            throw new AutorisationException(
-                    "Un joueur ne peut agir que pour son propre compte."
-            );
-        }
+        return chargerJoueurActif(authentication)
+                .map(joueur -> Objects.equals(
+                        joueur.getMatricule(),
+                        normaliserMatricule(matriculeDemande)
+                ))
+                .orElse(false);
     }
 
-    public void verifierParticipationDuJoueur(
-            String authorizationHeader,
+    public boolean peutAccederParticipation(
+            Authentication authentication,
             Long participationId
     ) {
-        Membre joueurConnecte = chargerJoueurActif(authorizationHeader);
-
-        Participation participation = participationRepository
-                .findById(participationId)
-                .orElseThrow(() -> new RessourceIntrouvableException(
-                        "Participation introuvable avec l'id "
-                                + participationId
-                ));
-
-        if (!estMemeMembre(
-                joueurConnecte,
-                participation.getMembre()
-        )) {
-            throw new AutorisationException(
-                    "Cette participation n'appartient pas "
-                            + "au joueur connecté."
-            );
+        if (participationId == null) {
+            return false;
         }
+
+        Optional<Membre> joueurConnecte = chargerJoueurActif(authentication);
+
+        if (joueurConnecte.isEmpty()) {
+            return false;
+        }
+
+        return participationRepository.findById(participationId)
+                .map(Participation::getMembre)
+                .map(membre -> estMemeMembre(
+                        joueurConnecte.get(),
+                        membre
+                ))
+                .orElse(false);
     }
 
-    public void verifierDetteDuJoueur(
-            String authorizationHeader,
+    public boolean peutAccederDette(
+            Authentication authentication,
             Long detteId
     ) {
-        Membre joueurConnecte = chargerJoueurActif(authorizationHeader);
-
-        Dette dette = detteRepository.findById(detteId)
-                .orElseThrow(() -> new RessourceIntrouvableException(
-                        "Dette introuvable avec l'id " + detteId
-                ));
-
-        if (!estMemeMembre(
-                joueurConnecte,
-                dette.getMembreResponsable()
-        )) {
-            throw new AutorisationException(
-                    "Cette dette n'appartient pas au joueur connecté."
-            );
+        if (detteId == null) {
+            return false;
         }
+
+        Optional<Membre> joueurConnecte = chargerJoueurActif(authentication);
+
+        if (joueurConnecte.isEmpty()) {
+            return false;
+        }
+
+        return detteRepository.findById(detteId)
+                .map(Dette::getMembreResponsable)
+                .map(membre -> estMemeMembre(
+                        joueurConnecte.get(),
+                        membre
+                ))
+                .orElse(false);
     }
 
-    public void verifierOrganisateurDuMatch(
-            String authorizationHeader,
+    public boolean estOrganisateurDuMatch(
+            Authentication authentication,
             Long matchId
     ) {
-        Membre joueurConnecte = chargerJoueurActif(authorizationHeader);
-
-        if (!padelMatchRepository.existsById(matchId)) {
-            throw new RessourceIntrouvableException(
-                    "Match introuvable avec l'id " + matchId
-            );
+        if (matchId == null || !padelMatchRepository.existsById(matchId)) {
+            return false;
         }
 
-        boolean estOrganisateur = participationRepository
-                .findByMatchId(matchId)
+        Optional<Membre> joueurConnecte = chargerJoueurActif(authentication);
+
+        if (joueurConnecte.isEmpty()) {
+            return false;
+        }
+
+        return participationRepository.findByMatchId(matchId)
                 .stream()
                 .filter(participation ->
                         participation.getRoleParticipation()
@@ -126,46 +118,39 @@ public class JoueurAuthorizationService {
                 .map(Participation::getMembre)
                 .filter(Objects::nonNull)
                 .anyMatch(membre ->
-                        estMemeMembre(joueurConnecte, membre)
+                        estMemeMembre(joueurConnecte.get(), membre)
                 );
-
-        if (!estOrganisateur) {
-            throw new AutorisationException(
-                    "Seul l'organisateur du match "
-                            + "peut réaliser cette opération."
-            );
-        }
     }
 
-    private Membre chargerJoueurActif(String authorizationHeader) {
-        JwtUtilisateur utilisateur = jwtService
-                .extraireUtilisateurDepuisAuthorization(
-                        authorizationHeader
-                );
-
-        if (!JwtService.TYPE_UTILISATEUR_JOUEUR.equals(
-                utilisateur.typeUtilisateur()
-        )) {
-            throw new AuthentificationException(
-                    "Token joueur requis."
-            );
-        }
-
-        Membre joueur = membreRepository
-                .findByMatricule(utilisateur.sujet())
-                .orElseThrow(() ->
-                        new AuthentificationException(
-                                JOUEUR_INTROUVABLE
+    private Optional<Membre> chargerJoueurActif(Authentication authentication) {
+        return extrairePrincipal(authentication)
+                .filter(utilisateur ->
+                        JwtService.TYPE_UTILISATEUR_JOUEUR.equals(
+                                utilisateur.typeUtilisateur()
                         )
-                );
+                )
+                .flatMap(utilisateur ->
+                        membreRepository.findByMatricule(utilisateur.sujet())
+                )
+                .filter(Membre::isActif);
+    }
 
-        if (!joueur.isActif()) {
-            throw new AuthentificationException(
-                    JOUEUR_INTROUVABLE
-            );
+    private Optional<JwtUtilisateur> extrairePrincipal(
+            Authentication authentication
+    ) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return Optional.empty();
         }
 
-        return joueur;
+        if (authentication.getPrincipal() instanceof JwtUtilisateur utilisateur) {
+            return Optional.of(utilisateur);
+        }
+
+        return Optional.empty();
+    }
+
+    private String normaliserMatricule(String matricule) {
+        return matricule == null ? "" : matricule.trim();
     }
 
     private boolean estMemeMembre(

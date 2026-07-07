@@ -9,6 +9,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -68,6 +69,17 @@ public class ApiExceptionHandler {
         return new ApiErrorResponse(
                 "ACCES_REFUSE",
                 exception.getMessage()
+        );
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ApiErrorResponse gererAccessDenied(
+            AccessDeniedException exception
+    ) {
+        return new ApiErrorResponse(
+                "ACCES_REFUSE",
+                "Accès refusé."
         );
     }
 

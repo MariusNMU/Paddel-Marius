@@ -2,8 +2,6 @@ package com.padelMarius.backend.controller;
 
 import com.padelMarius.backend.dto.membre.MembreResponse;
 import com.padelMarius.backend.entity.CategorieMembre;
-import com.padelMarius.backend.exception.AuthentificationException;
-import com.padelMarius.backend.service.AdminAuthorizationService;
 import com.padelMarius.backend.service.MembreAdminService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +14,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.util.List;
 
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -31,9 +28,6 @@ class AdminMembreControllerTest {
 
     @MockitoBean
     private MembreAdminService membreAdminService;
-
-    @MockitoBean
-    private AdminAuthorizationService adminAuthorizationService;
 
     @Test
     void listerMembres_shouldReturnAllMembers_whenNoSiteId() throws Exception {
@@ -71,11 +65,6 @@ class AdminMembreControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].matricule").value("G1001"))
                 .andExpect(jsonPath("$[1].matricule").value("S1001"));
-
-        verify(adminAuthorizationService).verifierAccesAdminSite(
-                "Bearer jwt-admin-global",
-                null
-        );
     }
 
     @Test
@@ -106,22 +95,4 @@ class AdminMembreControllerTest {
                 .andExpect(jsonPath("$[0].siteRattachementId").value(1001));
     }
 
-    @Test
-    void shouldReturn401_whenOnlyLegacyAdminHeaderIsProvided() throws Exception {
-        org.mockito.Mockito.doThrow(new AuthentificationException(
-                "Token JWT obligatoire."
-        )).when(adminAuthorizationService)
-                .verifierAccesAdminSite(null, null);
-
-        mockMvc.perform(get("/api/admin/membres")
-                        .header(
-                                "X-Admin-Login",
-                                "admin-global"
-                        ))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("AUTHENTIFICATION_INVALIDE"))
-                .andExpect(jsonPath("$.message").value(
-                        "Token JWT obligatoire."
-                ));
-    }
 }

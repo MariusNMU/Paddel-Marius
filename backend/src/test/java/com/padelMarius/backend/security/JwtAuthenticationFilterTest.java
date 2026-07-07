@@ -106,4 +106,31 @@ class JwtAuthenticationFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication())
                 .isNull();
     }
+
+    @Test
+    void shouldSkipJwtValidation_whenPublicEndpointContainsInvalidBearerToken()
+            throws Exception {
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(
+                new JwtService(SECRET, 120, clock),
+                new SecurityErrorWriter(new ObjectMapper())
+        );
+
+        MockHttpServletRequest request = new MockHttpServletRequest(
+                "POST",
+                "/api/auth/joueur"
+        );
+        request.addHeader(
+                HttpHeaders.AUTHORIZATION,
+                "Bearer token-invalide"
+        );
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        MockFilterChain filterChain = new MockFilterChain();
+
+        filter.doFilter(request, response, filterChain);
+
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(SecurityContextHolder.getContext().getAuthentication())
+                .isNull();
+    }
 }

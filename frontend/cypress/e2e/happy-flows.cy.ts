@@ -248,7 +248,7 @@ describe('Happy flows MVP Padel Marius', () => {
 
     cy.contains('Padel Bruxelles — Terrain T1').should('be.visible');
     cy.contains('Places disponibles').should('be.visible');
-    cy.contains('Rejoindre et payer 15 €').click();
+    cy.contains('Rejoindre et payer 15.00 €').click();
 
     cy.wait('@paiementMatchPublic');
 

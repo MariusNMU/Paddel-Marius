@@ -4,22 +4,23 @@ import com.padelMarius.backend.entity.Administrateur;
 import com.padelMarius.backend.entity.PorteeFermeture;
 import com.padelMarius.backend.entity.RoleAdministrateur;
 import com.padelMarius.backend.entity.Site;
-import com.padelMarius.backend.exception.AuthentificationException;
-import com.padelMarius.backend.exception.AutorisationException;
 import com.padelMarius.backend.repository.AdministrateurRepository;
 import com.padelMarius.backend.security.JwtService;
 import com.padelMarius.backend.security.JwtUtilisateur;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,23 +29,11 @@ class AdminAuthorizationServiceTest {
     @Mock
     private AdministrateurRepository administrateurRepository;
 
-    @Mock
-    private JwtService jwtService;
-
+    @InjectMocks
     private AdminAuthorizationService adminAuthorizationService;
 
-    @BeforeEach
-    void setUp() {
-        adminAuthorizationService = new AdminAuthorizationService(
-                administrateurRepository,
-                jwtService
-        );
-    }
-
     @Test
-    void verifierAdminGlobal_shouldAcceptGlobalAdmin() {
-        String authorization = "Bearer jwt-admin-global";
-
+    void estAdminGlobal_shouldReturnTrueForActiveGlobalAdmin() {
         Administrateur admin = creerAdmin(
                 "admin-global",
                 RoleAdministrateur.GLOBAL,
@@ -52,23 +41,33 @@ class AdminAuthorizationServiceTest {
                 true
         );
 
-        simulerTokenAdmin(
-                authorization,
-                "admin-global",
-                "GLOBAL",
-                null
-        );
-
         when(administrateurRepository.findByEmailOuLogin("admin-global"))
                 .thenReturn(Optional.of(admin));
 
-        adminAuthorizationService.verifierAdminGlobal(authorization);
+        assertThat(adminAuthorizationService.estAdminGlobal(
+                authenticationAdmin("admin-global", "GLOBAL", null)
+        )).isTrue();
     }
 
     @Test
-    void verifierAdminGlobal_shouldAcceptBearerJwtAdminToken() {
-        String authorization = "Bearer jwt-admin-global";
+    void estAdminGlobal_shouldReturnFalseForSiteAdmin() {
+        Administrateur admin = creerAdmin(
+                "admin-bruxelles",
+                RoleAdministrateur.SITE,
+                creerSite(1001L),
+                true
+        );
 
+        when(administrateurRepository.findByEmailOuLogin("admin-bruxelles"))
+                .thenReturn(Optional.of(admin));
+
+        assertThat(adminAuthorizationService.estAdminGlobal(
+                authenticationAdmin("admin-bruxelles", "SITE", 1001L)
+        )).isFalse();
+    }
+
+    @Test
+    void peutAccederAuSite_shouldReturnTrueForGlobalAdmin() {
         Administrateur admin = creerAdmin(
                 "admin-global",
                 RoleAdministrateur.GLOBAL,
@@ -76,74 +75,71 @@ class AdminAuthorizationServiceTest {
                 true
         );
 
-        simulerTokenAdmin(
-                authorization,
-                "admin-global",
-                "GLOBAL",
-                null
-        );
-
         when(administrateurRepository.findByEmailOuLogin("admin-global"))
                 .thenReturn(Optional.of(admin));
 
-        adminAuthorizationService.verifierAdminGlobal(authorization);
+        assertThat(adminAuthorizationService.peutAccederAuSite(
+                authenticationAdmin("admin-global", "GLOBAL", null),
+                null
+        )).isTrue();
     }
 
     @Test
-    void verifierAdminGlobal_shouldRejectBearerJwtPlayerToken() {
-        when(jwtService.extraireUtilisateurDepuisAuthorization("Bearer jwt-joueur"))
-                .thenReturn(new JwtUtilisateur(
-                        "G1001",
-                        JwtService.TYPE_UTILISATEUR_JOUEUR,
-                        "GLOBAL",
-                        null
-                ));
-
-        AuthentificationException exception = assertThrows(
-                AuthentificationException.class,
-                () -> adminAuthorizationService.verifierAdminGlobal("Bearer jwt-joueur")
-        );
-
-        assertEquals("Token administrateur requis.", exception.getMessage());
-    }
-
-    @Test
-    void verifierAdminGlobal_shouldRejectSiteAdmin() {
-        String authorization = "Bearer jwt-admin-site";
-        Site site = creerSite(1001L);
-
+    void peutAccederAuSite_shouldReturnTrueForSiteAdminOnOwnSite() {
         Administrateur admin = creerAdmin(
                 "admin-bruxelles",
                 RoleAdministrateur.SITE,
-                site,
+                creerSite(1001L),
                 true
-        );
-
-        simulerTokenAdmin(
-                authorization,
-                "admin-bruxelles",
-                "SITE",
-                1001L
         );
 
         when(administrateurRepository.findByEmailOuLogin("admin-bruxelles"))
                 .thenReturn(Optional.of(admin));
 
-        AutorisationException exception = assertThrows(
-                AutorisationException.class,
-                () -> adminAuthorizationService.verifierAdminGlobal(authorization)
-        );
-
-        assertEquals(
-                "Seul un administrateur GLOBAL peut réaliser cette opération.",
-                exception.getMessage()
-        );
+        assertThat(adminAuthorizationService.peutAccederAuSite(
+                authenticationAdmin("admin-bruxelles", "SITE", 1001L),
+                1001L
+        )).isTrue();
     }
 
     @Test
-    void verifierAccesAdminSite_shouldAcceptGlobalAdminWithoutSiteId() {
-        String authorization = "Bearer jwt-admin-global";
+    void peutAccederAuSite_shouldReturnFalseForSiteAdminOnOtherSite() {
+        Administrateur admin = creerAdmin(
+                "admin-bruxelles",
+                RoleAdministrateur.SITE,
+                creerSite(1001L),
+                true
+        );
 
+        when(administrateurRepository.findByEmailOuLogin("admin-bruxelles"))
+                .thenReturn(Optional.of(admin));
+
+        assertThat(adminAuthorizationService.peutAccederAuSite(
+                authenticationAdmin("admin-bruxelles", "SITE", 1001L),
+                1002L
+        )).isFalse();
+    }
+
+    @Test
+    void peutAccederAuSite_shouldReturnFalseForSiteAdminWithoutSiteId() {
+        Administrateur admin = creerAdmin(
+                "admin-bruxelles",
+                RoleAdministrateur.SITE,
+                creerSite(1001L),
+                true
+        );
+
+        when(administrateurRepository.findByEmailOuLogin("admin-bruxelles"))
+                .thenReturn(Optional.of(admin));
+
+        assertThat(adminAuthorizationService.peutAccederAuSite(
+                authenticationAdmin("admin-bruxelles", "SITE", 1001L),
+                null
+        )).isFalse();
+    }
+
+    @Test
+    void peutGererFermeture_shouldReturnTrueForGlobalAdmin() {
         Administrateur admin = creerAdmin(
                 "admin-global",
                 RoleAdministrateur.GLOBAL,
@@ -151,269 +147,92 @@ class AdminAuthorizationServiceTest {
                 true
         );
 
-        simulerTokenAdmin(
-                authorization,
-                "admin-global",
-                "GLOBAL",
-                null
-        );
-
         when(administrateurRepository.findByEmailOuLogin("admin-global"))
                 .thenReturn(Optional.of(admin));
 
-        adminAuthorizationService.verifierAccesAdminSite(authorization, null);
+        assertThat(adminAuthorizationService.peutGererFermeture(
+                authenticationAdmin("admin-global", "GLOBAL", null),
+                PorteeFermeture.GLOBALE,
+                null
+        )).isTrue();
     }
 
     @Test
-    void verifierAccesAdminSite_shouldAcceptSiteAdminOnOwnSite() {
-        String authorization = "Bearer jwt-admin-site";
-        Site site = creerSite(1001L);
-
+    void peutGererFermeture_shouldReturnFalseForSiteAdminOnGlobalClosure() {
         Administrateur admin = creerAdmin(
                 "admin-bruxelles",
                 RoleAdministrateur.SITE,
-                site,
+                creerSite(1001L),
                 true
-        );
-
-        simulerTokenAdmin(
-                authorization,
-                "admin-bruxelles",
-                "SITE",
-                1001L
         );
 
         when(administrateurRepository.findByEmailOuLogin("admin-bruxelles"))
                 .thenReturn(Optional.of(admin));
 
-        adminAuthorizationService.verifierAccesAdminSite(authorization, 1001L);
+        assertThat(adminAuthorizationService.peutGererFermeture(
+                authenticationAdmin("admin-bruxelles", "SITE", 1001L),
+                PorteeFermeture.GLOBALE,
+                null
+        )).isFalse();
     }
 
     @Test
-    void verifierAccesAdminSite_shouldRejectSiteAdminWithoutSiteId() {
-        String authorization = "Bearer jwt-admin-site";
-        Site site = creerSite(1001L);
-
+    void peutGererFermeture_shouldReturnTrueForSiteAdminOnOwnLocalClosure() {
         Administrateur admin = creerAdmin(
                 "admin-bruxelles",
                 RoleAdministrateur.SITE,
-                site,
+                creerSite(1001L),
                 true
-        );
-
-        simulerTokenAdmin(
-                authorization,
-                "admin-bruxelles",
-                "SITE",
-                1001L
         );
 
         when(administrateurRepository.findByEmailOuLogin("admin-bruxelles"))
                 .thenReturn(Optional.of(admin));
 
-        AutorisationException exception = assertThrows(
-                AutorisationException.class,
-                () -> adminAuthorizationService.verifierAccesAdminSite(authorization, null)
-        );
-
-        assertEquals(
-                "Un administrateur SITE ne peut pas accéder à une vue globale.",
-                exception.getMessage()
-        );
-    }
-
-    @Test
-    void verifierAccesAdminSite_shouldRejectSiteAdminOnOtherSite() {
-        String authorization = "Bearer jwt-admin-site";
-        Site site = creerSite(1001L);
-
-        Administrateur admin = creerAdmin(
-                "admin-bruxelles",
-                RoleAdministrateur.SITE,
-                site,
-                true
-        );
-
-        simulerTokenAdmin(
-                authorization,
-                "admin-bruxelles",
-                "SITE",
-                1001L
-        );
-
-        when(administrateurRepository.findByEmailOuLogin("admin-bruxelles"))
-                .thenReturn(Optional.of(admin));
-
-        AutorisationException exception = assertThrows(
-                AutorisationException.class,
-                () -> adminAuthorizationService.verifierAccesAdminSite(authorization, 1002L)
-        );
-
-        assertEquals(
-                "Un administrateur SITE ne peut agir que sur son propre site.",
-                exception.getMessage()
-        );
-    }
-
-    @Test
-    void verifierAccesFermeture_shouldRejectSiteAdminForGlobalClosure() {
-        String authorization = "Bearer jwt-admin-site";
-        Site site = creerSite(1001L);
-
-        Administrateur admin = creerAdmin(
-                "admin-bruxelles",
-                RoleAdministrateur.SITE,
-                site,
-                true
-        );
-
-        simulerTokenAdmin(
-                authorization,
-                "admin-bruxelles",
-                "SITE",
-                1001L
-        );
-
-        when(administrateurRepository.findByEmailOuLogin("admin-bruxelles"))
-                .thenReturn(Optional.of(admin));
-
-        AutorisationException exception = assertThrows(
-                AutorisationException.class,
-                () -> adminAuthorizationService.verifierAccesFermeture(
-                        authorization,
-                        PorteeFermeture.GLOBALE,
-                        null
-                )
-        );
-
-        assertEquals(
-                "Un administrateur SITE ne peut pas créer une fermeture globale.",
-                exception.getMessage()
-        );
-    }
-
-    @Test
-    void verifierAccesFermeture_shouldAcceptSiteAdminForLocalClosureOnOwnSite() {
-        String authorization = "Bearer jwt-admin-site";
-        Site site = creerSite(1001L);
-
-        Administrateur admin = creerAdmin(
-                "admin-bruxelles",
-                RoleAdministrateur.SITE,
-                site,
-                true
-        );
-
-        simulerTokenAdmin(
-                authorization,
-                "admin-bruxelles",
-                "SITE",
-                1001L
-        );
-
-        when(administrateurRepository.findByEmailOuLogin("admin-bruxelles"))
-                .thenReturn(Optional.of(admin));
-
-        adminAuthorizationService.verifierAccesFermeture(
-                authorization,
+        assertThat(adminAuthorizationService.peutGererFermeture(
+                authenticationAdmin("admin-bruxelles", "SITE", 1001L),
                 PorteeFermeture.LOCALE,
                 1001L
-        );
+        )).isTrue();
     }
 
     @Test
-    void verifierAdminGlobal_shouldRejectLegacyRawLogin() {
-        when(jwtService.extraireUtilisateurDepuisAuthorization(
-                "admin-global"
-        )).thenThrow(new AuthentificationException(
-                "Token JWT obligatoire."
-        ));
-
-        AuthentificationException exception = assertThrows(
-                AuthentificationException.class,
-                () -> adminAuthorizationService.verifierAdminGlobal(
-                        "admin-global"
-                )
-        );
-
-        assertEquals(
-                "Token JWT obligatoire.",
-                exception.getMessage()
-        );
-    }
-
-    @Test
-    void verifierAdminGlobal_shouldRejectMissingJwt() {
-        when(jwtService.extraireUtilisateurDepuisAuthorization(null))
-                .thenThrow(new AuthentificationException(
-                        "Token JWT obligatoire."
-                ));
-
-        AuthentificationException exception = assertThrows(
-                AuthentificationException.class,
-                () -> adminAuthorizationService.verifierAdminGlobal(null)
-        );
-
-        assertEquals(
-                "Token JWT obligatoire.",
-                exception.getMessage()
-        );
-    }
-
-    @Test
-    void shouldRejectUnknownAdmin() {
-        String authorization = "Bearer jwt-admin-inconnu";
-
-        simulerTokenAdmin(
-                authorization,
-                "admin-inconnu",
-                "GLOBAL",
-                null
-        );
-
-        when(administrateurRepository.findByEmailOuLogin("admin-inconnu"))
-                .thenReturn(Optional.empty());
-
-        AuthentificationException exception = assertThrows(
-                AuthentificationException.class,
-                () -> adminAuthorizationService.verifierAdminGlobal(authorization)
-        );
-
-        assertEquals(
-                "Administrateur introuvable ou non authentifié.",
-                exception.getMessage()
-        );
-    }
-
-    @Test
-    void shouldRejectInactiveAdmin() {
-        String authorization = "Bearer jwt-admin-global";
-
+    void peutGererFermeture_shouldReturnFalseForSiteAdminOnOtherSite() {
         Administrateur admin = creerAdmin(
-                "admin-global",
-                RoleAdministrateur.GLOBAL,
-                null,
-                false
+                "admin-bruxelles",
+                RoleAdministrateur.SITE,
+                creerSite(1001L),
+                true
         );
 
-        simulerTokenAdmin(
-                authorization,
-                "admin-global",
-                "GLOBAL",
-                null
-        );
-
-        when(administrateurRepository.findByEmailOuLogin("admin-global"))
+        when(administrateurRepository.findByEmailOuLogin("admin-bruxelles"))
                 .thenReturn(Optional.of(admin));
 
-        AuthentificationException exception = assertThrows(
-                AuthentificationException.class,
-                () -> adminAuthorizationService.verifierAdminGlobal(authorization)
+        assertThat(adminAuthorizationService.peutGererFermeture(
+                authenticationAdmin("admin-bruxelles", "SITE", 1001L),
+                PorteeFermeture.LOCALE,
+                1002L
+        )).isFalse();
+    }
+
+    private Authentication authenticationAdmin(
+            String login,
+            String role,
+            Long siteId
+    ) {
+        JwtUtilisateur utilisateur = new JwtUtilisateur(
+                login,
+                JwtService.TYPE_UTILISATEUR_ADMIN,
+                role,
+                siteId
         );
 
-        assertEquals(
-                "Administrateur introuvable ou non authentifié.",
-                exception.getMessage()
+        return new UsernamePasswordAuthenticationToken(
+                utilisateur,
+                null,
+                List.of(
+                        new SimpleGrantedAuthority("ROLE_ADMIN"),
+                        new SimpleGrantedAuthority("ROLE_ADMIN_" + role)
+                )
         );
     }
 
@@ -445,21 +264,5 @@ class AdminAuthorizationServiceTest {
                 .site(site)
                 .actif(actif)
                 .build();
-    }
-
-    private void simulerTokenAdmin(
-            String authorization,
-            String login,
-            String role,
-            Long siteId
-    ) {
-        when(jwtService.extraireUtilisateurDepuisAuthorization(
-                authorization
-        )).thenReturn(new JwtUtilisateur(
-                login,
-                JwtService.TYPE_UTILISATEUR_ADMIN,
-                role,
-                siteId
-        ));
     }
 }

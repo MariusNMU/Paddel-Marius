@@ -7,7 +7,6 @@ import com.padelMarius.backend.entity.NaturePaiement;
 import com.padelMarius.backend.entity.StatutDette;
 import com.padelMarius.backend.entity.StatutPaiement;
 import com.padelMarius.backend.service.DetteService;
-import com.padelMarius.backend.service.JoueurAuthorizationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -25,7 +24,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -45,9 +43,6 @@ class DetteControllerTest {
 
     @MockitoBean
     private DetteService detteService;
-
-    @MockitoBean
-    private JoueurAuthorizationService joueurAuthorizationService;
 
     @Test
     void shouldReturnOpenDebtsForMember() throws Exception {
@@ -80,12 +75,6 @@ class DetteControllerTest {
                 .andExpect(jsonPath("$[0].matriculeResponsable").value("G0001"))
                 .andExpect(jsonPath("$[0].montantRestant").value(30.00))
                 .andExpect(jsonPath("$[0].statutDette").value("OUVERTE"));
-
-        verify(joueurAuthorizationService)
-                .verifierAccesMatricule(
-                        AUTHORIZATION,
-                        "G0001"
-                );
 
         verify(detteService)
                 .consulterDettesOuvertes("G0001");
@@ -135,12 +124,6 @@ class DetteControllerTest {
                 .andExpect(jsonPath("$.statutPaiement").value("PAYE"))
                 .andExpect(jsonPath("$.statutDette").value("REGLEE"));
 
-        verify(joueurAuthorizationService)
-                .verifierDetteDuJoueur(
-                        AUTHORIZATION,
-                        500L
-                );
-
         verify(detteService).payerDette(
                 eq(500L),
                 any(PayerDetteRequest.class)
@@ -165,8 +148,6 @@ class DetteControllerTest {
                                         """)
                 )
                 .andExpect(status().isBadRequest());
-
-        verifyNoInteractions(joueurAuthorizationService);
 
         verify(detteService, never()).payerDette(
                 eq(500L),

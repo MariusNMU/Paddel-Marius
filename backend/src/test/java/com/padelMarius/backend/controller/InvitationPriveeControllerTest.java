@@ -6,7 +6,6 @@ import com.padelMarius.backend.dto.invitation.InviterJoueurPriveRequest;
 import com.padelMarius.backend.entity.StatutParticipation;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.service.InvitationPriveeService;
-import com.padelMarius.backend.service.JoueurAuthorizationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -40,9 +39,6 @@ class InvitationPriveeControllerTest {
 
     @MockitoBean
     private InvitationPriveeService invitationPriveeService;
-
-    @MockitoBean
-    private JoueurAuthorizationService joueurAuthorizationService;
 
     @Test
     void inviterJoueur_shouldReturnCreated() throws Exception {

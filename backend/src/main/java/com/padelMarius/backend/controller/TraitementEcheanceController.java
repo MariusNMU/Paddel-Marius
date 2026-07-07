@@ -1,12 +1,11 @@
 package com.padelMarius.backend.controller;
 
 import com.padelMarius.backend.dto.traitement.TraitementEcheanceResponse;
-import com.padelMarius.backend.service.AdminAuthorizationService;
 import com.padelMarius.backend.service.TraitementEcheanceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -14,16 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class TraitementEcheanceController {
 
     private final TraitementEcheanceService traitementEcheanceService;
-    private final AdminAuthorizationService adminAuthorizationService;
 
     @PostMapping("/api/admin/matches/traitement-echeance")
+    @PreAuthorize("@adminAuthorizationService.estAdminGlobal(authentication)")
     public ResponseEntity<TraitementEcheanceResponse>
-    traiterMatchesArrivesAEcheance(
-            @RequestHeader(name = "Authorization", required = false)
-            String authorization
-    ) {
-        adminAuthorizationService.verifierAdminGlobal(authorization);
-
+    traiterMatchesArrivesAEcheance() {
         return ResponseEntity.ok(
                 traitementEcheanceService
                         .traiterMatchesArrivesAEcheance()

@@ -1,10 +1,8 @@
 package com.padelMarius.backend.controller;
 
 import com.padelMarius.backend.dto.statistique.StatistiquesAdminResponse;
-import com.padelMarius.backend.exception.AuthentificationException;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
-import com.padelMarius.backend.service.AdminAuthorizationService;
 import com.padelMarius.backend.service.StatistiquesAdminService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,9 +35,6 @@ class StatistiquesAdminControllerTest {
 
     @MockitoBean
     private StatistiquesAdminService statistiquesAdminService;
-
-    @MockitoBean
-    private AdminAuthorizationService adminAuthorizationService;
 
     @Test
     void shouldReturnOk_whenRequestingGlobalStats() throws Exception {
@@ -86,11 +81,6 @@ class StatistiquesAdminControllerTest {
                 .andExpect(jsonPath("$.nombreParticipationsActives").value(6))
                 .andExpect(jsonPath("$.capaciteTheoriqueJoueurs").value(8))
                 .andExpect(jsonPath("$.tauxRemplissage").value(75.00));
-
-        verify(adminAuthorizationService).verifierAccesAdminSite(
-                "Bearer jwt-admin-global",
-                null
-        );
     }
 
     @Test
@@ -210,30 +200,4 @@ class StatistiquesAdminControllerTest {
                 .calculerStatistiques(any(), any(), any());
     }
 
-    @Test
-    void shouldReturn401_whenOnlyLegacyAdminHeaderIsProvided() throws Exception {
-        when(statistiquesAdminService.calculerStatistiques(
-                eq(LocalDate.of(2026, 5, 1)),
-                eq(LocalDate.of(2026, 5, 31)),
-                isNull()
-        )).thenReturn(null);
-
-        org.mockito.Mockito.doThrow(new AuthentificationException(
-                "Token JWT obligatoire."
-        )).when(adminAuthorizationService)
-                .verifierAccesAdminSite(null, null);
-
-        mockMvc.perform(get("/api/admin/statistiques")
-                        .header(
-                                "X-Admin-Login",
-                                "admin-global"
-                        )
-                        .param("dateDebut", "2026-05-01")
-                        .param("dateFin", "2026-05-31"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("AUTHENTIFICATION_INVALIDE"))
-                .andExpect(jsonPath("$.message").value(
-                        "Token JWT obligatoire."
-                ));
-    }
 }

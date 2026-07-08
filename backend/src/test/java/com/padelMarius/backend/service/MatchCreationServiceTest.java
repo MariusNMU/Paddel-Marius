@@ -198,7 +198,10 @@ class MatchCreationServiceTest {
                 () -> matchCreationService.creerMatch(request)
         );
 
-        assertTrue(exception.getMessage().contains("passé"));
+        assertEquals(
+                "Impossible d'organiser un match dans le passé ou à l'heure courante.",
+                exception.getMessage()
+        );
         verify(padelMatchRepository, never()).save(any(PadelMatch.class));
         verify(participationRepository, never()).save(any(Participation.class));
     }
@@ -456,10 +459,12 @@ class MatchCreationServiceTest {
 
         when(terrainRepository.findById(10L)).thenReturn(Optional.of(terrain));
 
-        assertThrows(
+        ConfigurationMetierException exception = assertThrows(
                 ConfigurationMetierException.class,
                 () -> matchCreationService.creerMatch(request)
         );
+
+        assertEquals("Le terrain demandé est inactif.", exception.getMessage());
 
         verify(padelMatchRepository, never()).save(any());
         verify(participationRepository, never()).save(any());
@@ -535,7 +540,7 @@ class MatchCreationServiceTest {
         when(terrainRepository.findById(10L)).thenReturn(Optional.of(terrain));
         when(membreRepository.findByMatricule("S0001")).thenReturn(Optional.of(organisateur));
         doThrow(new ConfigurationMetierException(
-                "Un membre SITE ne peut réserver que sur son site de rattachement."
+                "Un membre SITE ne peut rÃƒÂ©server que sur son site de rattachement."
         )).when(reglesReservationMembreService).verifierReglesCreationMatch(
                 organisateur,
                 terrain,

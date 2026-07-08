@@ -127,15 +127,15 @@ public class MatchCreationService {
 
     private void verifierTerrainReservable(Terrain terrain) {
         if (!terrain.isActif()) {
-            throw new ConfigurationMetierException("Le terrain demandÃ© est inactif.");
+            throw new ConfigurationMetierException("Le terrain demandé est inactif.");
         }
 
         if (terrain.getSite() == null) {
-            throw new ConfigurationMetierException("Le terrain demandÃ© n'est rattachÃ© Ã  aucun site.");
+            throw new ConfigurationMetierException("Le terrain demandé n'est rattaché à aucun site.");
         }
 
         if (!terrain.getSite().isActif()) {
-            throw new ConfigurationMetierException("Le site du terrain demandÃ© est inactif.");
+            throw new ConfigurationMetierException("Le site du terrain demandé est inactif.");
         }
     }
 
@@ -153,7 +153,7 @@ public class MatchCreationService {
 
         if (detteOuverte) {
             throw new ConfigurationMetierException(
-                    "L'organisateur a une dette ouverte et ne peut pas crÃ©er un nouveau match."
+                    "L'organisateur a une dette ouverte et ne peut pas créer un nouveau match."
             );
         }
     }
@@ -225,7 +225,7 @@ public class MatchCreationService {
 
         if (!creneauDisponible) {
             throw new ConfigurationMetierException(
-                    "Le terrain n'est pas disponible sur le crÃ©neau demandÃ©."
+                    "Le terrain n'est pas disponible sur le créneau demandé."
             );
         }
     }
@@ -256,7 +256,7 @@ public class MatchCreationService {
 
         if (conflit) {
             throw new ConfigurationMetierException(
-                    "L'organisateur participe dÃ©jÃ  Ã  un autre match sur ce crÃ©neau."
+                    "L'organisateur participe déjà à un autre match sur ce créneau."
             );
         }
     }

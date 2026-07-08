@@ -92,6 +92,62 @@ class SecurityConfigTest {
     }
 
     @Test
+    void shouldReturnNotFoundWhenProtectedParticipationDoesNotExist()
+            throws Exception {
+        String playerToken = authenticatePlayerAndReadToken();
+
+        mockMvc.perform(post("/api/participations/999999/paiements/standard")
+                        .header(AUTHORIZATION, bearer(playerToken)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RESSOURCE_INTROUVABLE"));
+    }
+
+    @Test
+    void shouldReturnForbiddenWhenProtectedParticipationBelongsToAnotherPlayer()
+            throws Exception {
+        String playerToken = authenticatePlayerAndReadToken();
+
+        mockMvc.perform(post("/api/participations/3202/paiements/standard")
+                        .header(AUTHORIZATION, bearer(playerToken)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCES_REFUSE"));
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenProtectedDebtDoesNotExist()
+            throws Exception {
+        String playerToken = authenticatePlayerAndReadToken();
+
+        mockMvc.perform(post("/api/dettes/999999/paiements")
+                        .header(AUTHORIZATION, bearer(playerToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "montant": 30.00
+                                }
+                                """))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RESSOURCE_INTROUVABLE"));
+    }
+
+    @Test
+    void shouldReturnForbiddenWhenProtectedDebtBelongsToAnotherPlayer()
+            throws Exception {
+        String playerToken = authenticatePlayerAndReadToken();
+
+        mockMvc.perform(post("/api/dettes/4001/paiements")
+                        .header(AUTHORIZATION, bearer(playerToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "montant": 30.00
+                                }
+                                """))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCES_REFUSE"));
+    }
+
+    @Test
     void shouldRejectSiteAdminAccessToGlobalStatistics() throws Exception {
         String adminToken = authenticateAdminAndReadToken("admin-bruxelles");
 

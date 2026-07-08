@@ -167,6 +167,26 @@ class JoueurAuthorizationServiceTest {
     }
 
     @Test
+    void peutAccederParticipation_shouldReturnTrueForMissingParticipationToPreserveNotFound() {
+        Membre joueur = creerMembre(
+                20L,
+                "G1001",
+                true
+        );
+
+        when(membreRepository.findByMatricule("G1001"))
+                .thenReturn(Optional.of(joueur));
+
+        when(participationRepository.findById(999999L))
+                .thenReturn(Optional.empty());
+
+        assertThat(service.peutAccederParticipation(
+                authenticationJoueur("G1001"),
+                999999L
+        )).isTrue();
+    }
+
+    @Test
     void peutAccederDette_shouldReturnTrueForDebtOwner() {
         Membre joueur = creerMembre(
                 20L,
@@ -214,6 +234,26 @@ class JoueurAuthorizationServiceTest {
                 authenticationJoueur("G1001"),
                 500L
         )).isFalse();
+    }
+
+    @Test
+    void peutAccederDette_shouldReturnTrueForMissingDebtToPreserveNotFound() {
+        Membre joueur = creerMembre(
+                20L,
+                "G1001",
+                true
+        );
+
+        when(membreRepository.findByMatricule("G1001"))
+                .thenReturn(Optional.of(joueur));
+
+        when(detteRepository.findById(999999L))
+                .thenReturn(Optional.empty());
+
+        assertThat(service.peutAccederDette(
+                authenticationJoueur("G1001"),
+                999999L
+        )).isTrue();
     }
 
     @Test
@@ -278,6 +318,26 @@ class JoueurAuthorizationServiceTest {
                 authenticationJoueur("G1001"),
                 100L
         )).isFalse();
+    }
+
+    @Test
+    void estOrganisateurDuMatch_shouldReturnTrueForMissingMatchToPreserveNotFound() {
+        Membre joueur = creerMembre(
+                20L,
+                "G1001",
+                true
+        );
+
+        when(membreRepository.findByMatricule("G1001"))
+                .thenReturn(Optional.of(joueur));
+
+        when(padelMatchRepository.existsById(999999L))
+                .thenReturn(false);
+
+        assertThat(service.estOrganisateurDuMatch(
+                authenticationJoueur("G1001"),
+                999999L
+        )).isTrue();
     }
 
     private Authentication authenticationJoueur(String matricule) {

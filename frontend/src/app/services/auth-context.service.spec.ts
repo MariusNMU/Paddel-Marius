@@ -68,6 +68,48 @@ describe('AuthContextService', () => {
     expect(JSON.parse(localStorage.getItem('padel-admin') ?? '{}')).toEqual(admin);
   });
 
+  it('doit déconnecter l admin quand un joueur se connecte', () => {
+    const service = creerService();
+
+    service.definirAdmin(admin);
+    service.definirJoueur(joueur);
+
+    expect(service.joueur()).toEqual(joueur);
+    expect(service.admin()).toBeNull();
+    expect(service.joueurConnecte()).toBe(true);
+    expect(service.adminConnecte()).toBe(false);
+    expect(JSON.parse(localStorage.getItem('padel-joueur') ?? '{}')).toEqual(joueur);
+    expect(localStorage.getItem('padel-admin')).toBeNull();
+  });
+
+  it('doit déconnecter le joueur quand un admin se connecte', () => {
+    const service = creerService();
+
+    service.definirJoueur(joueur);
+    service.definirAdmin(admin);
+
+    expect(service.joueur()).toBeNull();
+    expect(service.admin()).toEqual(admin);
+    expect(service.joueurConnecte()).toBe(false);
+    expect(service.adminConnecte()).toBe(true);
+    expect(localStorage.getItem('padel-joueur')).toBeNull();
+    expect(JSON.parse(localStorage.getItem('padel-admin') ?? '{}')).toEqual(admin);
+  });
+
+  it('doit nettoyer le stockage si joueur et admin existent en même temps', () => {
+    localStorage.setItem('padel-joueur', JSON.stringify(joueur));
+    localStorage.setItem('padel-admin', JSON.stringify(admin));
+
+    const service = creerService();
+
+    expect(service.joueur()).toBeNull();
+    expect(service.admin()).toBeNull();
+    expect(service.joueurConnecte()).toBe(false);
+    expect(service.adminConnecte()).toBe(false);
+    expect(localStorage.getItem('padel-joueur')).toBeNull();
+    expect(localStorage.getItem('padel-admin')).toBeNull();
+  });
+
   it('doit déconnecter le joueur', () => {
     const service = creerService();
 

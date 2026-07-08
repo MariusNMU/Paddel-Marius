@@ -59,7 +59,14 @@ public class JoueurAuthorizationService {
             return false;
         }
 
-        return participationRepository.findById(participationId)
+        Optional<Participation> participation =
+                participationRepository.findById(participationId);
+
+        if (participation.isEmpty()) {
+            return true;
+        }
+
+        return participation
                 .map(Participation::getMembre)
                 .map(membre -> estMemeMembre(
                         joueurConnecte.get(),
@@ -82,7 +89,13 @@ public class JoueurAuthorizationService {
             return false;
         }
 
-        return detteRepository.findById(detteId)
+        Optional<Dette> dette = detteRepository.findById(detteId);
+
+        if (dette.isEmpty()) {
+            return true;
+        }
+
+        return dette
                 .map(Dette::getMembreResponsable)
                 .map(membre -> estMemeMembre(
                         joueurConnecte.get(),
@@ -95,7 +108,7 @@ public class JoueurAuthorizationService {
             Authentication authentication,
             Long matchId
     ) {
-        if (matchId == null || !padelMatchRepository.existsById(matchId)) {
+        if (matchId == null) {
             return false;
         }
 
@@ -103,6 +116,10 @@ public class JoueurAuthorizationService {
 
         if (joueurConnecte.isEmpty()) {
             return false;
+        }
+
+        if (!padelMatchRepository.existsById(matchId)) {
+            return true;
         }
 
         return participationRepository.findByMatchId(matchId)

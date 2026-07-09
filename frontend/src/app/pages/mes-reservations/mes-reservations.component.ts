@@ -1,4 +1,4 @@
-﻿import { CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { finalize, timeout } from 'rxjs';
@@ -6,6 +6,7 @@ import { ReservationJoueurResponse } from '../../models/reservation.model';
 import { AuthContextService } from '../../services/auth-context.service';
 import { ReservationApiService } from '../../services/reservation-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
+import { enumLabel } from '../../shared/enum-label.util';
 
 @Component({
   selector: 'app-mes-reservations',
@@ -40,7 +41,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
 
           <p><strong>Matricule :</strong> {{ joueurConnecte()?.matricule }}</p>
           <p><strong>Nom :</strong> {{ joueurConnecte()?.nom }} {{ joueurConnecte()?.prenom }}</p>
-          <p><strong>Catégorie :</strong> {{ joueurConnecte()?.categorieMembre }}</p>
+          <p><strong>Catégorie :</strong> {{ enumLabel(joueurConnecte()?.categorieMembre) }}</p>
         </div>
 
         <button type="button" (click)="chargerReservations()" [disabled]="chargement()">
@@ -92,12 +93,12 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
             </p>
 
             <div class="resume-grid">
-              <p><strong>Rôle</strong><br>{{ reservation.roleParticipation }}</p>
-              <p><strong>Entrée</strong><br>{{ reservation.modeEntree }}</p>
-              <p><strong>Participation</strong><br>{{ reservation.statutParticipation }}</p>
-              <p><strong>Match</strong><br>{{ reservation.etatCycle }}</p>
-              <p><strong>Mode</strong><br>{{ reservation.modeCreation }}</p>
-              <p><strong>Visibilité</strong><br>{{ reservation.visibiliteCourante }}</p>
+              <p><strong>Rôle</strong><br>{{ enumLabel(reservation.roleParticipation) }}</p>
+              <p><strong>Entrée</strong><br>{{ enumLabel(reservation.modeEntree) }}</p>
+              <p><strong>Participation</strong><br>{{ enumLabel(reservation.statutParticipation) }}</p>
+              <p><strong>Match</strong><br>{{ enumLabel(reservation.etatCycle) }}</p>
+              <p><strong>Mode</strong><br>{{ enumLabel(reservation.modeCreation) }}</p>
+              <p><strong>Visibilité</strong><br>{{ enumLabel(reservation.visibiliteCourante) }}</p>
               <p><strong>Prix total</strong><br>{{ reservation.prixTotal | number:'1.2-2' }} €</p>
             </div>
 
@@ -199,6 +200,7 @@ export class MesReservationsComponent implements OnInit {
   readonly messageErreur = signal('');
   readonly chargement = signal(false);
   readonly rechercheEffectuee = signal(false);
+  readonly enumLabel = enumLabel;
 
   constructor(
     private readonly authContextService: AuthContextService,

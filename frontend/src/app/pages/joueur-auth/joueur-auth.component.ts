@@ -1,10 +1,11 @@
-﻿import { CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthApiService } from '../../services/auth-api.service';
 import { AuthContextService } from '../../services/auth-context.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
+import { enumLabel } from '../../shared/enum-label.util';
 
 @Component({
   selector: 'app-joueur-auth',
@@ -41,7 +42,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
 
           <p>
             Catégorie :
-            <strong>{{ joueur.categorieMembre }}</strong>
+            <strong>{{ enumLabel(joueur.categorieMembre) }}</strong>
           </p>
 
           <p *ngIf="joueur.nomSiteRattachement">
@@ -112,6 +113,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
   `]
 })
 export class JoueurAuthComponent {
+  readonly enumLabel = enumLabel;
   matricule = '';
   motDePasse = '';
   chargement = false;

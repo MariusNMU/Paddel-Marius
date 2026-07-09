@@ -10,6 +10,7 @@ import { SiteResponse } from '../../models/site.model';
 import { AdminFermetureApiService } from '../../services/admin-fermeture-api.service';
 import { SiteApiService } from '../../services/site-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
+import { enumLabel } from '../../shared/enum-label.util';
 
 @Component({
   selector: 'app-admin-fermetures',
@@ -82,7 +83,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
           <h3>Résumé avant validation</h3>
 
           <p><strong>Date :</strong> {{ dateFermeture || 'Non renseignée' }}</p>
-          <p><strong>Portée :</strong> {{ portee }}</p>
+          <p><strong>Portée :</strong> {{ enumLabel(portee) }}</p>
 
           @if (portee === 'LOCALE') {
             <p><strong>Site :</strong> {{ nomSiteSelectionne() }}</p>
@@ -109,7 +110,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
           <div class="resume-grid">
             <p><strong>ID fermeture</strong><br>{{ fermetureCreee.fermetureId }}</p>
             <p><strong>Date</strong><br>{{ fermetureCreee.dateFermeture }}</p>
-            <p><strong>Portée</strong><br>{{ fermetureCreee.portee }}</p>
+            <p><strong>Portée</strong><br>{{ enumLabel(fermetureCreee.portee) }}</p>
             <p><strong>Site</strong><br>{{ fermetureCreee.nomSite || 'Tous les sites' }}</p>
             <p><strong>Matches annulés</strong><br>{{ fermetureCreee.nombreMatchesAnnules }}</p>
           </div>
@@ -135,6 +136,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
   `]
 })
 export class AdminFermeturesComponent implements OnInit {
+  readonly enumLabel = enumLabel;
   sites: SiteResponse[] = [];
 
   dateFermeture = '';

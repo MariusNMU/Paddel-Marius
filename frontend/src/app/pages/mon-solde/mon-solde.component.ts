@@ -8,6 +8,7 @@ import { AuthContextService } from '../../services/auth-context.service';
 import { ParametresMetierApiService } from '../../services/parametres-metier-api.service';
 import { SoldeJoueurApiService } from '../../services/solde-joueur-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
+import { enumLabel } from '../../shared/enum-label.util';
 
 @Component({
   selector: 'app-mon-solde',
@@ -53,7 +54,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
 
           <p><strong>Matricule :</strong> {{ joueurConnecte()?.matricule }}</p>
           <p><strong>Nom :</strong> {{ joueurConnecte()?.nom }} {{ joueurConnecte()?.prenom }}</p>
-          <p><strong>Catégorie :</strong> {{ joueurConnecte()?.categorieMembre }}</p>
+          <p><strong>Catégorie :</strong> {{ enumLabel(joueurConnecte()?.categorieMembre) }}</p>
         </div>
 
         <button type="button" (click)="chargerSolde()" [disabled]="chargement()">
@@ -119,6 +120,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
   `]
 })
 export class MonSoldeComponent implements OnInit {
+  readonly enumLabel = enumLabel;
   parametresMetier: ParametresMetierResponse | null = null;
 
   readonly solde = signal<SoldeJoueurResponse | null>(null);

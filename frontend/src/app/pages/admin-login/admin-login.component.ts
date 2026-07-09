@@ -1,9 +1,10 @@
-﻿import { Component, signal } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthApiService } from '../../services/auth-api.service';
 import { AuthContextService } from '../../services/auth-context.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
+import { enumLabel } from '../../shared/enum-label.util';
 
 @Component({
   selector: 'app-admin-login',
@@ -24,7 +25,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
 
           <p>
             <strong>{{ admin.prenom }} {{ admin.nom }}</strong>
-            — rôle {{ admin.roleAdministrateur }}
+            — rôle {{ enumLabel(admin.roleAdministrateur) }}
           </p>
 
           @if (admin.siteId) {
@@ -111,6 +112,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
   `]
 })
 export class AdminLoginComponent {
+  readonly enumLabel = enumLabel;
   login = '';
   motDePasse = '';
 

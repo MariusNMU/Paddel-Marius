@@ -8,6 +8,7 @@ import { AuthContextService } from '../../services/auth-context.service';
 import { InvitationApiService } from '../../services/invitation-api.service';
 import { PaiementApiService } from '../../services/paiement-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
+import { enumLabel } from '../../shared/enum-label.util';
 
 @Component({
   selector: 'app-invitations-recues',
@@ -79,7 +80,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
 
               <p>
                 <strong>Statut</strong><br>
-                {{ invitation.statutParticipation }}
+                {{ enumLabel(invitation.statutParticipation) }}
               </p>
             </div>
 
@@ -190,6 +191,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
   `]
 })
 export class InvitationsRecuesComponent implements OnInit {
+  readonly enumLabel = enumLabel;
   joueur: AuthJoueurResponse | null = null;
   invitations: InvitationPriveeResponse[] = [];
   chargement = false;

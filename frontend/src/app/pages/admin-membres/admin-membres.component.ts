@@ -6,6 +6,7 @@ import { SiteResponse } from '../../models/site.model';
 import { AdminMembreApiService } from '../../services/admin-membre-api.service';
 import { SiteApiService } from '../../services/site-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
+import { enumLabel } from '../../shared/enum-label.util';
 
 @Component({
   selector: 'app-admin-membres',
@@ -85,7 +86,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
               <td>{{ membre.matricule }}</td>
               <td>{{ membre.nom }}</td>
               <td>{{ membre.prenom }}</td>
-              <td>{{ membre.categorieMembre }}</td>
+              <td>{{ enumLabel(membre.categorieMembre) }}</td>
               <td>
                   <span *ngIf="membre.nomSiteRattachement">
                     {{ membre.nomSiteRattachement }} ({{ membre.siteRattachementId }})
@@ -155,6 +156,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
   `]
 })
 export class AdminMembresComponent implements OnInit {
+  readonly enumLabel = enumLabel;
   sites: SiteResponse[] = [];
   siteId: number | null = null;
   membres: MembreResponse[] = [];

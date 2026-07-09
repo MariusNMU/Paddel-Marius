@@ -1,4 +1,4 @@
-﻿import { CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { finalize, timeout } from 'rxjs';
@@ -6,6 +6,7 @@ import { DetteResponse } from '../../models/dette.model';
 import { AuthContextService } from '../../services/auth-context.service';
 import { DetteApiService } from '../../services/dette-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
+import { enumLabel } from '../../shared/enum-label.util';
 
 @Component({
   selector: 'app-mes-dettes',
@@ -96,7 +97,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
 
               <p>
                 <strong>Statut</strong><br>
-                {{ dette.statutDette }}
+                {{ enumLabel(dette.statutDette) }}
               </p>
             </div>
 
@@ -188,6 +189,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
   `]
 })
 export class MesDettesComponent implements OnInit {
+  readonly enumLabel = enumLabel;
   readonly dettes = signal<DetteResponse[]>([]);
   readonly chargement = signal(false);
   readonly rechercheEffectuee = signal(false);

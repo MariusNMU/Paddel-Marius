@@ -1,4 +1,4 @@
-﻿import { CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -13,6 +13,7 @@ import { ParametresMetierApiService } from '../../services/parametres-metier-api
 import { TerrainApiService } from '../../services/terrain-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
 import { dateHeureDuJourPourInput } from '../../shared/date-ui.util';
+import { enumLabel } from '../../shared/enum-label.util';
 
 @Component({
   selector: 'app-creer-match',
@@ -44,11 +45,11 @@ import { dateHeureDuJourPourInput } from '../../shared/date-ui.util';
         <h3>Public ou privé ?</h3>
 
         <p>
-          <strong>PUBLIC :</strong> les autres joueurs pourront rejoindre le match via les inscriptions publiques.
+          <strong>Public :</strong> les autres joueurs pourront rejoindre le match via les inscriptions publiques.
         </p>
 
         <p>
-          <strong>PRIVE :</strong> l'organisateur invite les autres joueurs.
+          <strong>Privé :</strong> l'organisateur invite les autres joueurs.
         </p>
       </div>
 
@@ -121,7 +122,7 @@ import { dateHeureDuJourPourInput } from '../../shared/date-ui.util';
 
           <p><strong>Prix total :</strong> {{ parametresMetier?.prixTotalMatch | number:'1.2-2' }} €</p>
           <p><strong>Part par joueur :</strong> {{ parametresMetier?.montantParticipationStandard | number:'1.2-2' }} €</p>
-          <p><strong>Mode sélectionné :</strong> {{ modeCreation || 'Non choisi' }}</p>
+          <p><strong>Type :</strong> {{ enumLabel(modeCreation) }}</p>
           <p><strong>Début demandé :</strong> {{ dateHeureDebut }}</p>
         </div>
 
@@ -143,10 +144,10 @@ import { dateHeureDuJourPourInput } from '../../shared/date-ui.util';
           <p><strong>Terrain</strong><br>{{ matchCree.numeroTerrain }} ({{ matchCree.terrainId }})</p>
           <p><strong>Début</strong><br>{{ matchCree.dateHeureDebut }}</p>
           <p><strong>Fin</strong><br>{{ matchCree.dateHeureFin }}</p>
-          <p><strong>Mode</strong><br>{{ matchCree.modeCreation }}</p>
-          <p><strong>Visibilité</strong><br>{{ matchCree.visibiliteCourante }}</p>
-          <p><strong>Prix total</strong><br>{{ matchCree.prixTotal }} €</p>
-          <p><strong>État</strong><br>{{ matchCree.etatCycle }}</p>
+          <p><strong>Mode</strong><br>{{ enumLabel(matchCree.modeCreation) }}</p>
+          <p><strong>Visibilité</strong><br>{{ enumLabel(matchCree.visibiliteCourante) }}</p>
+          <p><strong>Prix total</strong><br>{{ matchCree.prixTotal | number:'1.2-2' }} €</p>
+          <p><strong>État</strong><br>{{ enumLabel(matchCree.etatCycle) }}</p>
         </div>
       </div>
 
@@ -216,6 +217,8 @@ import { dateHeureDuJourPourInput } from '../../shared/date-ui.util';
   `]
 })
 export class CreerMatchComponent implements OnInit {
+  readonly enumLabel = enumLabel;
+
   terrains: TerrainResponse[] = [];
   parametresMetier: ParametresMetierResponse | null = null;
 

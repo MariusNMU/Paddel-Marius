@@ -11,6 +11,7 @@ import { SiteResponse } from '../../models/site.model';
 import { MembreApiService } from '../../services/membre-api.service';
 import { SiteApiService } from '../../services/site-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
+import { enumLabel } from '../../shared/enum-label.util';
 
 @Component({
   selector: 'app-inscription-joueur',
@@ -29,9 +30,9 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
         <h3>Catégories disponibles</h3>
 
         <ul>
-          <li><strong>GLOBAL</strong> : matricule Gxxxx, peut réserver sur tous les sites.</li>
-          <li><strong>SITE</strong> : matricule Sxxxx, rattaché à un site précis.</li>
-          <li><strong>LIBRE</strong> : matricule Lxxxx, accès libre selon les règles métier.</li>
+          <li><strong>Global</strong> : matricule Gxxxx, peut réserver sur tous les sites.</li>
+          <li><strong>Site</strong> : matricule Sxxxx, rattaché à un site précis.</li>
+          <li><strong>Libre</strong> : matricule Lxxxx, accès libre selon les règles métier.</li>
         </ul>
       </div>
 
@@ -61,9 +62,9 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
           [(ngModel)]="categorieMembre"
           (ngModelChange)="mettreAJourSiteRattachement()"
         >
-          <option value="GLOBAL">GLOBAL</option>
-          <option value="SITE">SITE</option>
-          <option value="LIBRE">LIBRE</option>
+          <option value="GLOBAL">Global</option>
+          <option value="SITE">Site</option>
+          <option value="LIBRE">Libre</option>
         </select>
 
         @if (categorieMembre === 'SITE') {
@@ -85,7 +86,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
 
           <p><strong>Nom :</strong> {{ nom || 'Non renseigné' }}</p>
           <p><strong>Prénom :</strong> {{ prenom || 'Non renseigné' }}</p>
-          <p><strong>Catégorie :</strong> {{ categorieMembre }}</p>
+          <p><strong>Catégorie :</strong> {{ enumLabel(categorieMembre) }}</p>
 
           @if (categorieMembre === 'SITE') {
             <p><strong>Site :</strong> {{ nomSiteSelectionne() }}</p>
@@ -111,7 +112,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
             <p><strong>Matricule</strong><br>{{ membreCree.matricule }}</p>
             <p><strong>Nom</strong><br>{{ membreCree.nom }}</p>
             <p><strong>Prénom</strong><br>{{ membreCree.prenom }}</p>
-            <p><strong>Catégorie</strong><br>{{ membreCree.categorieMembre }}</p>
+            <p><strong>Catégorie</strong><br>{{ enumLabel(membreCree.categorieMembre) }}</p>
             <p><strong>Actif</strong><br>{{ membreCree.actif ? 'Oui' : 'Non' }}</p>
           </div>
 
@@ -151,6 +152,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
   `]
 })
 export class InscriptionJoueurComponent implements OnInit {
+  readonly enumLabel = enumLabel;
   sites: SiteResponse[] = [];
 
   nom = '';

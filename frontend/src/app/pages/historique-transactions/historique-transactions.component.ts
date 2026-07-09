@@ -5,6 +5,7 @@ import { HistoriquePaiementResponse } from '../../models/paiement.model';
 import { AuthContextService } from '../../services/auth-context.service';
 import { PaiementApiService } from '../../services/paiement-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
+import { enumLabel } from '../../shared/enum-label.util';
 
 @Component({
   selector: 'app-historique-transactions',
@@ -91,9 +92,9 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
           <tbody>
           <tr *ngFor="let transaction of transactions()">
             <td>{{ transaction.dateHeurePaiement }}</td>
-            <td>{{ transaction.naturePaiement }}</td>
+            <td>{{ enumLabel(transaction.naturePaiement) }}</td>
             <td>{{ transaction.montant | number:'1.2-2' }} €</td>
-            <td>{{ transaction.statutPaiement }}</td>
+            <td>{{ enumLabel(transaction.statutPaiement) }}</td>
             <td>{{ transaction.matchId || '-' }}</td>
             <td>{{ transaction.participationId || '-' }}</td>
             <td>{{ transaction.detteId || '-' }}</td>
@@ -127,6 +128,7 @@ import { extraireMessageErreur } from '../../shared/api-error.util';
   `]
 })
 export class HistoriqueTransactionsComponent implements OnInit {
+  readonly enumLabel = enumLabel;
   readonly transactions = signal<HistoriquePaiementResponse[]>([]);
   readonly chargement = signal(false);
   readonly rechercheEffectuee = signal(false);

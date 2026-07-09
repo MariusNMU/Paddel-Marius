@@ -1,6 +1,7 @@
-﻿import { Component } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthContextService } from '../../services/auth-context.service';
+import { enumLabel } from '../../shared/enum-label.util';
 
 @Component({
   selector: 'app-admin-dashboard',
@@ -24,7 +25,7 @@ import { AuthContextService } from '../../services/auth-context.service';
 
           <div class="role-card">
             <p>Rôle</p>
-            <strong>{{ admin.roleAdministrateur }}</strong>
+            <strong>{{ enumLabel(admin.roleAdministrateur) }}</strong>
           </div>
         </div>
 
@@ -71,8 +72,8 @@ import { AuthContextService } from '../../services/auth-context.service';
           <h3>Rappel pour la démo</h3>
 
           <ul>
-            <li>L'admin GLOBAL peut consulter les données de tous les sites.</li>
-            <li>L'admin SITE est lié à un site précis.</li>
+            <li>L'admin Global peut consulter les données de tous les sites.</li>
+            <li>L'admin Site est lié à un site précis.</li>
             <li>Le frontend ne contient aucun SQL.</li>
             <li>Le frontend consomme uniquement l'API REST du backend.</li>
           </ul>
@@ -187,6 +188,7 @@ import { AuthContextService } from '../../services/auth-context.service';
   `]
 })
 export class AdminDashboardComponent {
+  readonly enumLabel = enumLabel;
   constructor(readonly authContextService: AuthContextService) {
   }
 

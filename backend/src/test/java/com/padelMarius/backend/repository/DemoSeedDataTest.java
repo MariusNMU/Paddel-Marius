@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.test.context.jdbc.Sql;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,6 +28,9 @@ class DemoSeedDataTest {
     private TerrainRepository terrainRepository;
 
     @Autowired
+    private HoraireAnnuelSiteRepository horaireAnnuelSiteRepository;
+
+    @Autowired
     private MembreRepository membreRepository;
 
     @Autowired
@@ -39,6 +43,7 @@ class DemoSeedDataTest {
     void dataSql_shouldCreateDemoSitesMembersAdminsAndDebts() {
         Optional<Site> siteBruxelles = siteRepository.findByCode("BRU");
         Optional<Site> siteNamur = siteRepository.findByCode("NAM");
+        int anneeCourante = LocalDate.now().getYear();
         List<Terrain> terrainsBruxelles = terrainRepository.findBySiteIdAndActifTrue(1001L);
         Optional<Membre> membreGlobal = membreRepository.findByMatricule("G1001");
         Optional<Membre> membreAvecDette = membreRepository.findByMatricule("G1002");
@@ -63,6 +68,34 @@ class DemoSeedDataTest {
                 .contains("T1", "T2", "T3");
         assertThat(siteNamur).isPresent();
         assertThat(siteNamur.get().getNom()).isEqualTo("Padel Namur");
+
+        assertThat(
+                horaireAnnuelSiteRepository.existsBySiteIdAndAnneeCivile(
+                        1001L,
+                        anneeCourante
+                )
+        ).isTrue();
+
+        assertThat(
+                horaireAnnuelSiteRepository.existsBySiteIdAndAnneeCivile(
+                        1001L,
+                        anneeCourante + 1
+                )
+        ).isTrue();
+
+        assertThat(
+                horaireAnnuelSiteRepository.existsBySiteIdAndAnneeCivile(
+                        1002L,
+                        anneeCourante
+                )
+        ).isTrue();
+
+        assertThat(
+                horaireAnnuelSiteRepository.existsBySiteIdAndAnneeCivile(
+                        1002L,
+                        anneeCourante + 1
+                )
+        ).isTrue();
 
         assertThat(membreGlobal).isPresent();
         assertThat(membreGlobal.get().isActif()).isTrue();

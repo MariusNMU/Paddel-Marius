@@ -103,7 +103,9 @@ public class MatchCreationService {
         return new MatchResponse(
                 matchEnregistre.getId(),
                 matchEnregistre.getTerrain().getId(),
+                matchEnregistre.getTerrain().getNumero(),
                 matchEnregistre.getTerrain().getSite().getId(),
+                matchEnregistre.getTerrain().getSite().getNom(),
                 organisateur.getMatricule(),
                 matchEnregistre.getDateHeureDebut(),
                 matchEnregistre.getDateHeureFin(),

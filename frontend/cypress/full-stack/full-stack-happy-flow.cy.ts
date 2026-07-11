@@ -74,9 +74,11 @@ describe('Happy flow full stack Padel Marius', () => {
       timeout: 10000
     }).should('be.visible');
 
-    cy.contains('T3').should('be.visible');
-    cy.contains('PUBLIC').should('be.visible');
-    cy.contains('A_VENIR').should('be.visible');
+    cy.get('.resultat.match-card').within(() => {
+      cy.contains('T3 (1103)').should('be.visible');
+      cy.contains('Public').should('be.visible');
+      cy.contains('À venir').should('be.visible');
+    });
 
     cy.visit('/joueur/mes-reservations');
 
@@ -89,10 +91,10 @@ describe('Happy flow full stack Padel Marius', () => {
       .within(() => {
         cy.contains('Padel Bruxelles').should('be.visible');
         cy.contains(dateMatch).should('be.visible');
-        cy.contains('ORGANISATEUR').should('be.visible');
-        cy.contains('EN_ATTENTE_PAIEMENT').should('be.visible');
-        cy.contains('A_VENIR').should('be.visible');
-        cy.contains('PUBLIC').should('be.visible');
+        cy.contains('Organisateur').should('be.visible');
+        cy.contains('En attente de paiement').should('be.visible');
+        cy.contains('À venir').should('be.visible');
+        cy.contains('Public').should('be.visible');
       });
   });
 });

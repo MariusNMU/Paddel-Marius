@@ -90,7 +90,9 @@ class MatchCreationServiceTest {
 
         assertEquals(100L, response.matchId());
         assertEquals(10L, response.terrainId());
+        assertEquals("1", response.numeroTerrain());
         assertEquals(1L, response.siteId());
+        assertEquals("Site 1", response.nomSite());
         assertEquals("G0001", response.matriculeOrganisateur());
         assertEquals(scenario.dateHeureDebut(), response.dateHeureDebut());
         assertEquals(scenario.dateHeureFin(), response.dateHeureFin());

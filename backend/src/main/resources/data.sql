@@ -24,7 +24,8 @@ INSERT INTO terrain (id, site_id, numero, actif) VALUES
                                                      (1201, 1002, 'T1', TRUE),
                                                      (1202, 1002, 'T2', TRUE);
 
--- Horaires annuels
+-- Horaires annuels de l'année courante et de l'année suivante.
+-- La seconde année sécurise les réservations à J+N proches du 31 décembre.
 INSERT INTO horaire_annuel_site (
     id,
     site_id,
@@ -33,7 +34,9 @@ INSERT INTO horaire_annuel_site (
     heure_fin_reservation
 ) VALUES
       (1301, 1001, EXTRACT(YEAR FROM CURRENT_DATE), TIME '08:00:00', TIME '22:00:00'),
-      (1302, 1002, EXTRACT(YEAR FROM CURRENT_DATE), TIME '09:00:00', TIME '21:00:00');
+      (1302, 1002, EXTRACT(YEAR FROM CURRENT_DATE), TIME '09:00:00', TIME '21:00:00'),
+      (1303, 1001, EXTRACT(YEAR FROM CURRENT_DATE) + 1, TIME '08:00:00', TIME '22:00:00'),
+      (1304, 1002, EXTRACT(YEAR FROM CURRENT_DATE) + 1, TIME '09:00:00', TIME '21:00:00');
 
 -- Fermetures futures
 INSERT INTO fermeture (

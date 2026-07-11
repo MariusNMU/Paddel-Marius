@@ -41,6 +41,30 @@ const soldeG1001 = {
   soldeCredit: 100
 };
 
+const sitesActifs = [
+  {
+    siteId: 1001,
+    code: 'BRU',
+    nom: 'Padel Bruxelles',
+    adresse: 'Rue du Padel 1, 1000 Bruxelles'
+  },
+  {
+    siteId: 1002,
+    code: 'NAM',
+    nom: 'Padel Namur',
+    adresse: 'Avenue des Sports 10, 5000 Namur'
+  }
+];
+
+const parametresMetier = {
+  dureeMatchMinutes: 90,
+  pauseEntreMatchesMinutes: 15,
+  nombreJoueursMaximum: 4,
+  prixTotalMatch: 60,
+  montantParticipationStandard: 15,
+  soldeInitialJoueur: 100
+};
+
 const disponibilitesBruxelles = {
   siteId: 1001,
   nomSite: 'Padel Bruxelles',
@@ -97,6 +121,25 @@ const statistiquesGlobales = {
   capaciteTheoriqueJoueurs: 12,
   tauxRemplissage: 66.67
 };
+
+function intercepterSitesActifs(): void {
+  cy.intercept('GET', '/api/sites', {
+    statusCode: 200,
+    body: sitesActifs
+  }).as('listeSitesActifs');
+}
+
+function intercepterParametresMetier(): void {
+  cy.intercept('GET', '/api/parametres-metier', {
+    statusCode: 200,
+    body: parametresMetier
+  }).as('parametresMetier');
+}
+
+function intercepterReferentielsPublics(): void {
+  intercepterSitesActifs();
+  intercepterParametresMetier();
+}
 
 function intercepterCompteurInvitationsRecues(): void {
   cy.intercept('GET', '/api/membres/G1001/invitations/recues/count', {
@@ -176,6 +219,7 @@ function connecterAdminGlobal(): void {
 describe('Happy flows MVP Padel Marius', () => {
   it('connecte un joueur puis consulte son solde', () => {
     connecterJoueurG1001();
+    intercepterParametresMetier();
 
     cy.intercept('GET', '/api/membres/G1001/solde', {
       statusCode: 200,
@@ -184,7 +228,7 @@ describe('Happy flows MVP Padel Marius', () => {
 
     cy.visit('/joueur/mon-solde');
 
-    cy.wait('@consultationSolde');
+    cy.wait(['@parametresMetier', '@consultationSolde']);
 
     cy.contains('h2', 'Mon solde').should('be.visible');
     cy.contains('Solde disponible').should('be.visible');
@@ -194,6 +238,7 @@ describe('Happy flows MVP Padel Marius', () => {
 
   it('connecte un joueur puis consulte les disponibilités', () => {
     connecterJoueurG1001();
+    intercepterReferentielsPublics();
 
     cy.intercept('GET', '/api/disponibilites*', {
       statusCode: 200,
@@ -203,6 +248,8 @@ describe('Happy flows MVP Padel Marius', () => {
     cy.contains('a', 'Organiser un match').click();
 
     cy.contains('h2', 'Organiser un match').should('be.visible');
+
+    cy.wait('@listeSitesActifs');
 
     cy.get('input[name="date"]').clear().type(dateMatchPublic);
 
@@ -219,6 +266,7 @@ describe('Happy flows MVP Padel Marius', () => {
 
   it('connecte un joueur puis rejoint un match public avec paiement', () => {
     connecterJoueurG1001();
+    intercepterReferentielsPublics();
 
     cy.intercept('GET', '/api/matches/publics*', {
       statusCode: 200,
@@ -240,6 +288,8 @@ describe('Happy flows MVP Padel Marius', () => {
 
     cy.contains('h2', 'Rejoindre un match public').should('be.visible');
 
+    cy.wait(['@listeSitesActifs', '@parametresMetier']);
+
     cy.get('input[name="date"]').clear().type(dateMatchPublic);
 
     cy.contains('button', 'Rechercher les matches publics').click();
@@ -257,6 +307,7 @@ describe('Happy flows MVP Padel Marius', () => {
 
   it('connecte un admin puis consulte les statistiques globales', () => {
     connecterAdminGlobal();
+    intercepterSitesActifs();
 
     cy.intercept('GET', '/api/admin/statistiques*', {
       statusCode: 200,
@@ -266,6 +317,8 @@ describe('Happy flows MVP Padel Marius', () => {
     cy.contains('a', 'Ouvrir les statistiques').click();
 
     cy.contains('h2', 'Statistiques admin').should('be.visible');
+
+    cy.wait('@listeSitesActifs');
 
     cy.contains('button', 'Période démo complète').click();
     cy.contains('button', 'Charger les statistiques').click();

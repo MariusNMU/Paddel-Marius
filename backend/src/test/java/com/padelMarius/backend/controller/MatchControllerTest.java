@@ -45,7 +45,9 @@ class MatchControllerTest {
         MatchResponse response = new MatchResponse(
                 100L,
                 10L,
+                "T1",
                 1L,
+                "Padel Bruxelles",
                 "G0001",
                 LocalDateTime.of(2026, 5, 20, 9, 0),
                 LocalDateTime.of(2026, 5, 20, 10, 30),
@@ -73,7 +75,9 @@ class MatchControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.matchId").value(100))
                 .andExpect(jsonPath("$.terrainId").value(10))
+                .andExpect(jsonPath("$.numeroTerrain").value("T1"))
                 .andExpect(jsonPath("$.siteId").value(1))
+                .andExpect(jsonPath("$.nomSite").value("Padel Bruxelles"))
                 .andExpect(jsonPath("$.matriculeOrganisateur").value("G0001"))
                 .andExpect(jsonPath("$.dateHeureDebut").value("2026-05-20T09:00:00"))
                 .andExpect(jsonPath("$.dateHeureFin").value("2026-05-20T10:30:00"))

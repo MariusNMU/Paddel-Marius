@@ -613,20 +613,22 @@ Spring Boot réel
 H2 réelle
 ```
 
-Terminal 1 — démarrer le backend H2 :
-
-```powershell
-cd backend
-.\mvnw.cmd spring-boot:run
-```
-
-Terminal 2 — lancer Cypress full stack :
+Depuis la racine du projet :
 
 ```powershell
 cd frontend
 npm.cmd run cypress:run:fullstack
 cd ..
 ```
+
+Cette commande :
+
+- démarre automatiquement le backend Spring Boot avec H2 ;
+- attend le health check http://localhost:8080/api/health ;
+- démarre Angular ;
+- attend http://localhost:4200 ;
+- exécute le parcours Cypress full stack ;
+- arrête les processus démarrés à la fin du test.
 
 ### 11.6. GitHub Actions
 
@@ -751,6 +753,8 @@ cd backend
 
 ### Tests backend
 
+Depuis la racine :
+
 ```powershell
 cd backend
 .\mvnw.cmd clean test
@@ -791,14 +795,7 @@ cd ..
 
 ### Cypress full stack
 
-Terminal 1 :
-
-```powershell
-cd backend
-.\mvnw.cmd spring-boot:run
-```
-
-Terminal 2 :
+Avant le full stack, vérifie que les ports `8080` et `4200` ne sont pas déjà utilisés par une ancienne exécution.
 
 ```powershell
 cd frontend

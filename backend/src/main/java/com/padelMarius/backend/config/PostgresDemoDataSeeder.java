@@ -137,6 +137,22 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 LocalTime.of(9, 0),
                 LocalTime.of(21, 0)
         );
+
+        insererHoraireAnnuel(
+                1303L,
+                1001L,
+                anneeCivile + 1,
+                LocalTime.of(8, 0),
+                LocalTime.of(22, 0)
+        );
+
+        insererHoraireAnnuel(
+                1304L,
+                1002L,
+                anneeCivile + 1,
+                LocalTime.of(9, 0),
+                LocalTime.of(21, 0)
+        );
     }
 
     private void insererHoraireAnnuel(

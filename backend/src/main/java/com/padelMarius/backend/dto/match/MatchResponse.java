@@ -10,7 +10,9 @@ import java.time.LocalDateTime;
 public record MatchResponse(
         Long matchId,
         Long terrainId,
+        String numeroTerrain,
         Long siteId,
+        String nomSite,
         String matriculeOrganisateur,
         LocalDateTime dateHeureDebut,
         LocalDateTime dateHeureFin,

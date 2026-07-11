@@ -56,14 +56,21 @@ class PostgresDemoDataSeederTest {
         seeder.run();
 
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<SqlParameterSource> parametresCaptor =
+                ArgumentCaptor.forClass(SqlParameterSource.class);
 
         verify(jdbcTemplate, atLeastOnce()).update(
                 sqlCaptor.capture(),
-                org.mockito.ArgumentMatchers.any(SqlParameterSource.class)
+                parametresCaptor.capture()
         );
 
         List<String> requetes = sqlCaptor.getAllValues();
         String toutesLesRequetes = String.join("\n", requetes);
+
+        List<Object> anneesHoraires = parametresCaptor.getAllValues().stream()
+                .filter(parametres -> parametres.hasValue("anneeCivile"))
+                .map(parametres -> parametres.getValue("anneeCivile"))
+                .toList();
 
         assertThat(toutesLesRequetes).contains("INSERT INTO site");
         assertThat(toutesLesRequetes).contains("INSERT INTO terrain");
@@ -72,6 +79,7 @@ class PostgresDemoDataSeederTest {
         assertThat(toutesLesRequetes).contains("INSERT INTO padel_match");
         assertThat(toutesLesRequetes).contains("INSERT INTO participation");
         assertThat(toutesLesRequetes).contains("INSERT INTO paiement");
+        assertThat(anneesHoraires).contains(2026, 2027);
 
         verify(passwordEncoder).encode("password");
         verify(passwordEncoder).encode("secret");

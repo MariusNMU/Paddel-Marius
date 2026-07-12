@@ -1,4 +1,4 @@
-﻿import { computed, Injectable, signal } from '@angular/core';
+﻿import { computed, Injectable, OnDestroy, signal } from '@angular/core';
 import { AuthAdminResponse, AuthJoueurResponse } from '../models/auth.model';
 
 function lireStockage<T>(cle: string): T | null {
@@ -19,7 +19,7 @@ function lireStockage<T>(cle: string): T | null {
 @Injectable({
   providedIn: 'root'
 })
-export class AuthContextService {
+export class AuthContextService implements OnDestroy {
   private readonly joueurKey = 'padel-joueur';
   private readonly adminKey = 'padel-admin';
 
@@ -32,8 +32,24 @@ export class AuthContextService {
   readonly joueurConnecte = computed(() => this.joueurSignal() !== null);
   readonly adminConnecte = computed(() => this.adminSignal() !== null);
 
+  private readonly gererChangementStockage = (event: StorageEvent): void => {
+    const concerneAuthentification =
+      event.key === null ||
+      event.key === this.joueurKey ||
+      event.key === this.adminKey;
+
+    if (concerneAuthentification) {
+      this.initialiserDepuisStockage();
+    }
+  };
+
   constructor() {
     this.initialiserDepuisStockage();
+    window.addEventListener('storage', this.gererChangementStockage);
+  }
+
+  ngOnDestroy(): void {
+    window.removeEventListener('storage', this.gererChangementStockage);
   }
 
   definirJoueur(joueur: AuthJoueurResponse): void {

@@ -31,6 +31,14 @@ describe('AuthContextService', () => {
     return TestBed.inject(AuthContextService);
   }
 
+  function notifierChangementStockage(cle: string | null): void {
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: cle
+      })
+    );
+  }
+
   beforeEach(() => {
     localStorage.clear();
   });
@@ -108,6 +116,49 @@ describe('AuthContextService', () => {
     expect(service.adminConnecte()).toBe(false);
     expect(localStorage.getItem('padel-joueur')).toBeNull();
     expect(localStorage.getItem('padel-admin')).toBeNull();
+  });
+
+  it('doit synchroniser la connexion d un joueur depuis un autre onglet', () => {
+    const service = creerService();
+    service.definirAdmin(admin);
+
+    localStorage.removeItem('padel-admin');
+    notifierChangementStockage('padel-admin');
+
+    localStorage.setItem('padel-joueur', JSON.stringify(joueur));
+    notifierChangementStockage('padel-joueur');
+
+    expect(service.joueur()).toEqual(joueur);
+    expect(service.admin()).toBeNull();
+    expect(service.joueurConnecte()).toBe(true);
+    expect(service.adminConnecte()).toBe(false);
+  });
+
+  it('doit synchroniser la connexion d un admin depuis un autre onglet', () => {
+    const service = creerService();
+    service.definirJoueur(joueur);
+
+    localStorage.removeItem('padel-joueur');
+    notifierChangementStockage('padel-joueur');
+
+    localStorage.setItem('padel-admin', JSON.stringify(admin));
+    notifierChangementStockage('padel-admin');
+
+    expect(service.joueur()).toBeNull();
+    expect(service.admin()).toEqual(admin);
+    expect(service.joueurConnecte()).toBe(false);
+    expect(service.adminConnecte()).toBe(true);
+  });
+
+  it('doit synchroniser une déconnexion effectuée dans un autre onglet', () => {
+    const service = creerService();
+    service.definirJoueur(joueur);
+
+    localStorage.removeItem('padel-joueur');
+    notifierChangementStockage('padel-joueur');
+
+    expect(service.joueur()).toBeNull();
+    expect(service.joueurConnecte()).toBe(false);
   });
 
   it('doit déconnecter le joueur', () => {

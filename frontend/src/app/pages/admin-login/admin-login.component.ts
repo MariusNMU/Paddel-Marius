@@ -1,9 +1,7 @@
-import { Component, signal } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
-import { AuthApiService } from '../../services/auth-api.service';
-import { AuthContextService } from '../../services/auth-context.service';
-import { extraireMessageErreur } from '../../shared/api-error.util';
+import { RouterLink } from '@angular/router';
+import { AuthFacadeService } from '../../services/auth-facade.service';
 import { enumLabel } from '../../shared/enum-label.util';
 
 @Component({
@@ -19,7 +17,7 @@ import { enumLabel } from '../../shared/enum-label.util';
         aux statistiques et au traitement de veille.
       </p>
 
-      @if (authContextService.admin(); as admin) {
+      @if (authFacade.admin(); as admin) {
         <div class="bloc-info">
           <h3>Admin connecté</h3>
 
@@ -40,20 +38,25 @@ import { enumLabel } from '../../shared/enum-label.util';
 
           <div class="actions">
             <a routerLink="/admin/dashboard">Aller au dashboard</a>
-            <button type="button" (click)="deconnecterAdmin()">Déconnecter l'admin</button>
+
+            <button type="button" (click)="deconnecterAdmin()">
+              Déconnecter l'admin
+            </button>
           </div>
         </div>
       } @else {
-        @if (messageSucces()) {
-          <p class="succes">{{ messageSucces() }}</p>
+        @if (authFacade.messageSuccesAdmin()) {
+          <p class="succes">
+            {{ authFacade.messageSuccesAdmin() }}
+          </p>
         }
 
         <div class="bloc-info">
           <h3>Compte de test</h3>
 
           <p>
-            Les comptes administrateurs de démonstration restent temporairement indiqués sur la homepage.
-            Cette page de connexion ne préremplit plus d'identifiants.
+            Les comptes administrateurs de démonstration restent temporairement indiqués
+            sur la homepage. Cette page de connexion ne préremplit plus d'identifiants.
           </p>
 
           <a routerLink="/accueil" class="lien-action">
@@ -82,14 +85,23 @@ import { enumLabel } from '../../shared/enum-label.util';
             required
           >
 
-          <button type="submit" [disabled]="chargement()">
-            {{ chargement() ? 'Connexion...' : 'Se connecter' }}
+          <button
+            type="submit"
+            [disabled]="authFacade.chargementAdmin()"
+          >
+            {{
+              authFacade.chargementAdmin()
+                ? 'Connexion...'
+                : 'Se connecter'
+            }}
           </button>
         </form>
       }
 
-      @if (messageErreur()) {
-        <p class="erreur">{{ messageErreur() }}</p>
+      @if (authFacade.messageErreurAdmin()) {
+        <p class="erreur">
+          {{ authFacade.messageErreurAdmin() }}
+        </p>
       }
 
       <p>
@@ -111,60 +123,29 @@ import { enumLabel } from '../../shared/enum-label.util';
     }
   `]
 })
-export class AdminLoginComponent {
+export class AdminLoginComponent implements OnInit {
   readonly enumLabel = enumLabel;
+
   login = '';
   motDePasse = '';
 
-  readonly chargement = signal(false);
-  readonly messageErreur = signal<string | null>(null);
-  readonly messageSucces = signal<string | null>(null);
-
   constructor(
-    private readonly authApiService: AuthApiService,
-    readonly authContextService: AuthContextService,
-    private readonly router: Router
+    readonly authFacade: AuthFacadeService
   ) {
   }
 
-  deconnecterAdmin(): void {
-    const admin = this.authContextService.admin();
-
-    this.authContextService.deconnecterAdmin();
-    this.messageErreur.set(null);
-    this.messageSucces.set(
-      admin
-        ? `Admin déconnecté : ${admin.prenom} ${admin.nom}.`
-        : 'Admin déconnecté.'
-    );
-
-    void this.router.navigate(['/accueil']);
+  ngOnInit(): void {
+    this.authFacade.preparerConnexionAdmin();
   }
 
   connecter(): void {
-    this.messageErreur.set(null);
-    this.messageSucces.set(null);
+    this.authFacade.connecterAdmin(
+      this.login,
+      this.motDePasse
+    );
+  }
 
-    if (!this.login.trim() || !this.motDePasse.trim()) {
-      this.messageErreur.set('Le login et le mot de passe sont obligatoires.');
-      return;
-    }
-
-    this.chargement.set(true);
-
-    this.authApiService.connecterAdmin({
-      login: this.login.trim(),
-      motDePasse: this.motDePasse
-    }).subscribe({
-      next: admin => {
-        this.authContextService.definirAdmin(admin);
-        this.chargement.set(false);
-        this.router.navigate(['/admin/dashboard']);
-      },
-      error: error => {
-        this.messageErreur.set(extraireMessageErreur(error));
-        this.chargement.set(false);
-      }
-    });
+  deconnecterAdmin(): void {
+    this.authFacade.deconnecterAdmin();
   }
 }

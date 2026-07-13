@@ -1,25 +1,13 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
-import { of, throwError } from 'rxjs';
+import { provideRouter } from '@angular/router';
 import { AuthAdminResponse } from '../../models/auth.model';
-import { AuthApiService } from '../../services/auth-api.service';
-import { AuthContextService } from '../../services/auth-context.service';
+import { AuthFacadeService } from '../../services/auth-facade.service';
 import { AdminLoginComponent } from './admin-login.component';
 
 describe('AdminLoginComponent', () => {
   let fixture: ComponentFixture<AdminLoginComponent>;
   let component: AdminLoginComponent;
-
-  let authApiService: {
-    connecterAdmin: ReturnType<typeof vi.fn>;
-  };
-
-  let authContextService: {
-    admin: ReturnType<typeof vi.fn>;
-    definirAdmin: ReturnType<typeof vi.fn>;
-    deconnecterAdmin: ReturnType<typeof vi.fn>;
-  };
 
   const admin: AuthAdminResponse = {
     administrateurId: 1,
@@ -32,14 +20,34 @@ describe('AdminLoginComponent', () => {
     actif: true
   };
 
-  beforeEach(async () => {
-    authApiService = {
-      connecterAdmin: vi.fn()
-    };
+  const adminSignal = signal<AuthAdminResponse | null>(null);
+  const chargementAdminSignal = signal(false);
+  const messageErreurAdminSignal = signal<string | null>(null);
+  const messageSuccesAdminSignal = signal<string | null>(null);
 
-    authContextService = {
-      admin: vi.fn(() => null),
-      definirAdmin: vi.fn(),
+  let authFacade: {
+    admin: typeof adminSignal;
+    chargementAdmin: typeof chargementAdminSignal;
+    messageErreurAdmin: typeof messageErreurAdminSignal;
+    messageSuccesAdmin: typeof messageSuccesAdminSignal;
+    preparerConnexionAdmin: ReturnType<typeof vi.fn>;
+    connecterAdmin: ReturnType<typeof vi.fn>;
+    deconnecterAdmin: ReturnType<typeof vi.fn>;
+  };
+
+  beforeEach(async () => {
+    adminSignal.set(null);
+    chargementAdminSignal.set(false);
+    messageErreurAdminSignal.set(null);
+    messageSuccesAdminSignal.set(null);
+
+    authFacade = {
+      admin: adminSignal,
+      chargementAdmin: chargementAdminSignal,
+      messageErreurAdmin: messageErreurAdminSignal,
+      messageSuccesAdmin: messageSuccesAdminSignal,
+      preparerConnexionAdmin: vi.fn(),
+      connecterAdmin: vi.fn(),
       deconnecterAdmin: vi.fn()
     };
 
@@ -47,8 +55,10 @@ describe('AdminLoginComponent', () => {
       imports: [AdminLoginComponent],
       providers: [
         provideRouter([]),
-        { provide: AuthApiService, useValue: authApiService },
-        { provide: AuthContextService, useValue: authContextService }
+        {
+          provide: AuthFacadeService,
+          useValue: authFacade
+        }
       ]
     }).compileComponents();
 
@@ -61,71 +71,32 @@ describe('AdminLoginComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('ne doit pas préremplir le formulaire avec un compte administrateur de démonstration', () => {
+  it('doit préparer le parcours de connexion admin', () => {
+    expect(authFacade.preparerConnexionAdmin).toHaveBeenCalled();
+  });
+
+  it('ne doit pas préremplir le formulaire', () => {
     expect(component.login).toBe('');
     expect(component.motDePasse).toBe('');
   });
 
-  it('doit refuser la connexion si le login est vide', () => {
-    component.login = '   ';
-    component.motDePasse = 'motdepasse-test';
-
-    component.connecter();
-
-    expect(component.messageErreur()).toBe('Le login et le mot de passe sont obligatoires.');
-    expect(authApiService.connecterAdmin).not.toHaveBeenCalled();
-  });
-
-  it('doit connecter un admin valide et aller au dashboard', () => {
-    authApiService.connecterAdmin.mockReturnValue(of(admin));
-
-    const router = TestBed.inject(Router);
-    const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
-
+  it('doit transmettre la demande de connexion à la façade', () => {
     component.login = ' admin-test ';
     component.motDePasse = 'motdepasse-test';
 
     component.connecter();
 
-    expect(authApiService.connecterAdmin).toHaveBeenCalledWith({
-      login: 'admin-test',
-      motDePasse: 'motdepasse-test'
-    });
-
-    expect(authContextService.definirAdmin).toHaveBeenCalledWith(admin);
-    expect(component.chargement()).toBe(false);
-    expect(navigateSpy).toHaveBeenCalledWith(['/admin/dashboard']);
-  });
-
-  it('doit afficher une erreur si la connexion admin échoue', () => {
-    authApiService.connecterAdmin.mockReturnValue(
-      throwError(() => new HttpErrorResponse({
-        status: 401,
-        error: {
-          message: 'Identifiants administrateur invalides.'
-        }
-      }))
+    expect(authFacade.connecterAdmin).toHaveBeenCalledWith(
+      ' admin-test ',
+      'motdepasse-test'
     );
-
-    component.login = 'admin-test';
-    component.motDePasse = 'motdepasse-test';
-
-    component.connecter();
-
-    expect(component.messageErreur()).toBe('Identifiants administrateur invalides.');
-    expect(component.chargement()).toBe(false);
   });
 
-  it('doit déconnecter l admin et revenir à l accueil', () => {
-    authContextService.admin.mockReturnValue(admin);
-
-    const router = TestBed.inject(Router);
-    const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+  it('doit transmettre la déconnexion à la façade', () => {
+    adminSignal.set(admin);
 
     component.deconnecterAdmin();
 
-    expect(authContextService.deconnecterAdmin).toHaveBeenCalled();
-    expect(component.messageSucces()).toContain('Admin déconnecté');
-    expect(navigateSpy).toHaveBeenCalledWith(['/accueil']);
+    expect(authFacade.deconnecterAdmin).toHaveBeenCalled();
   });
 });

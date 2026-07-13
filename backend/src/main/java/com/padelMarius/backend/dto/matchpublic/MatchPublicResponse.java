@@ -14,6 +14,8 @@ public record MatchPublicResponse(
         int nombreParticipantsActifs,
         int placesDisponibles,
         BigDecimal prixTotal,
-        BigDecimal montantParticipation
+        BigDecimal montantParticipation,
+        boolean peutRejoindre,
+        String motifNonEligibilite
 ) {
 }

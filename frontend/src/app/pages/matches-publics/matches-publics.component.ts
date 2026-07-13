@@ -137,13 +137,30 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
             <p><strong>Prix total :</strong> {{ match.prixTotal | number:'1.2-2' }} €</p>
             <p><strong>Ta place :</strong> {{ match.montantParticipation | number:'1.2-2' }} €</p>
 
-            <button
-              type="button"
-              [disabled]="chargementPaiement || !joueurConnecte()"
-              (click)="rejoindreEtPayer(match)"
-            >
-              {{ chargementPaiement ? 'Paiement...' : ('Rejoindre et payer ' + (match.montantParticipation | number:'1.2-2') + ' €') }}
-            </button>
+            @if (match.peutRejoindre) {
+              <button
+                type="button"
+                [disabled]="chargementPaiement || !joueurConnecte()"
+                (click)="rejoindreEtPayer(match)"
+              >
+                {{
+                  chargementPaiement
+                    ? 'Paiement...'
+                    : (
+                        'Rejoindre et payer '
+                        + (match.montantParticipation | number:'1.2-2')
+                        + ' €'
+                      )
+                }}
+              </button>
+            } @else {
+              <p class="action-indisponible">
+                {{
+                  match.motifNonEligibilite
+                    || 'Ce match ne peut pas être rejoint.'
+                }}
+              </p>
+            }
           </article>
         </div>
       }
@@ -206,6 +223,15 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
 
     .match-card button {
       margin-top: 12px;
+    }
+
+    .action-indisponible {
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 8px;
+      background: #f1f5f9;
+      color: #475569;
+      font-weight: 600;
     }
 
     .resume-grid {
@@ -353,6 +379,15 @@ export class MatchesPublicsComponent implements OnInit {
     this.messageErreur = '';
     this.messageSucces = '';
     this.dernierPaiement = null;
+
+    if (!match.peutRejoindre) {
+      this.messageErreur =
+        match.motifNonEligibilite
+        ?? 'Ce match ne peut pas être rejoint.';
+
+      this.changeDetectorRef.detectChanges();
+      return;
+    }
 
     const joueur = this.joueurConnecte();
 

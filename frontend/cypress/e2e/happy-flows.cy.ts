@@ -92,7 +92,9 @@ const matchPublicDisponible = {
   nombreParticipantsActifs: 2,
   placesDisponibles: 2,
   prixTotal: 60,
-  montantParticipation: 15
+  montantParticipation: 15,
+  peutRejoindre: true,
+  motifNonEligibilite: null
 };
 
 const paiementMatchPublic = {

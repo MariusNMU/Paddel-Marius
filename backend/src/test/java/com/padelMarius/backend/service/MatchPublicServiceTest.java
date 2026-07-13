@@ -40,7 +40,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -78,6 +80,14 @@ class MatchPublicServiceTest {
     @Test
     void listerMatchesPublicsDisponibles_shouldReturnOnlyPublicMatchesWithAvailablePlacesForSite() {
         LocalDate date = LocalDate.of(2026, 6, 20);
+
+        Membre joueurConnecte = creerMembre(
+                2001L,
+                "G1001"
+        );
+
+        when(membreRepository.findByMatricule("G1001"))
+                .thenReturn(Optional.of(joueurConnecte));
 
         Site siteBruxelles = creerSite(1001L, "Padel Bruxelles");
         Site siteNamur = creerSite(1002L, "Padel Namur");
@@ -124,16 +134,89 @@ class MatchPublicServiceTest {
                         creerParticipation(6L, matchComplet, StatutParticipation.CONFIRMEE)
                 ));
 
-        List<MatchPublicResponse> responses = matchPublicService.listerMatchesPublicsDisponibles(
-                1001L,
-                date
-        );
+        when(participationRepository.existsByMatchIdAndMembreId(
+                3001L,
+                2001L
+        )).thenReturn(false);
+
+        List<MatchPublicResponse> responses =
+                matchPublicService.listerMatchesPublicsDisponibles(
+                        1001L,
+                        date,
+                        "G1001"
+                );
 
         assertEquals(1, responses.size());
         assertEquals(3001L, responses.getFirst().matchId());
         assertEquals(2, responses.getFirst().nombreParticipantsActifs());
         assertEquals(2, responses.getFirst().placesDisponibles());
         assertEquals(new BigDecimal("15.00"), responses.getFirst().montantParticipation());
+        assertTrue(responses.getFirst().peutRejoindre());
+        assertEquals(
+                null,
+                responses.getFirst().motifNonEligibilite()
+        );
+    }
+
+    @Test
+    void listerMatchesPublicsDisponibles_shouldMarkMatchAsNotEligible_whenPlayerAlreadyParticipates() {
+        LocalDate date = LocalDate.of(2026, 6, 20);
+
+        Site site = creerSite(
+                1001L,
+                "Padel Bruxelles"
+        );
+
+        Terrain terrain = creerTerrain(
+                1101L,
+                site,
+                "T1"
+        );
+
+        PadelMatch match = creerMatch(
+                3001L,
+                terrain,
+                LocalDateTime.of(2026, 6, 20, 9, 0)
+        );
+
+        Membre joueurConnecte = creerMembre(
+                2001L,
+                "G1001"
+        );
+
+        when(membreRepository.findByMatricule("G1001"))
+                .thenReturn(Optional.of(joueurConnecte));
+
+        when(padelMatchRepository
+                .findByVisibiliteCouranteAndEtatCycleAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBefore(
+                        VisibiliteMatch.PUBLIC,
+                        EtatCycleMatch.A_VENIR,
+                        date.atStartOfDay(),
+                        date.plusDays(1).atStartOfDay()
+                ))
+                .thenReturn(List.of(match));
+
+        when(participationRepository.findByMatchId(3001L))
+                .thenReturn(List.of());
+
+        when(participationRepository.existsByMatchIdAndMembreId(
+                3001L,
+                2001L
+        )).thenReturn(true);
+
+        List<MatchPublicResponse> responses =
+                matchPublicService.listerMatchesPublicsDisponibles(
+                        1001L,
+                        date,
+                        "G1001"
+                );
+
+        assertEquals(1, responses.size());
+        assertFalse(responses.getFirst().peutRejoindre());
+        assertEquals(
+                "Tu participes déjà à ce match.",
+                responses.getFirst().motifNonEligibilite()
+        );
     }
 
     @Test
@@ -214,6 +297,31 @@ class MatchPublicServiceTest {
         );
 
         assertEquals("Le matricule du joueur est obligatoire.", exception.getMessage());
+    }
+
+    private Membre creerMembre(
+            Long id,
+            String matricule
+    ) {
+        Membre membre = Membre.builder()
+                .matricule(matricule)
+                .nom("Nom test")
+                .prenom("Prénom test")
+                .motDePasseHash(
+                        "$2y$10$w7Hmtss9GA8U9RAxfZeb3.JmBalmCw64iEo6pY5YEgNky9FM7OriK"
+                )
+                .categorieMembre(CategorieMembre.GLOBAL)
+                .actif(true)
+                .soldeCredit(new BigDecimal("100.00"))
+                .build();
+
+        ReflectionTestUtils.setField(
+                membre,
+                "id",
+                id
+        );
+
+        return membre;
     }
 
     private Site creerSite(Long id, String nom) {

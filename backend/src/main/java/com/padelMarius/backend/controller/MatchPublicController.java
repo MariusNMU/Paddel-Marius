@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -33,13 +34,16 @@ public class MatchPublicController {
             @DateTimeFormat(
                     iso = DateTimeFormat.ISO.DATE
             )
-            LocalDate date
+            LocalDate date,
+
+            Principal principal
     ) {
         return ResponseEntity.ok(
                 matchPublicService
                         .listerMatchesPublicsDisponibles(
                                 siteId,
-                                date
+                                date,
+                                principal.getName()
                         )
         );
     }

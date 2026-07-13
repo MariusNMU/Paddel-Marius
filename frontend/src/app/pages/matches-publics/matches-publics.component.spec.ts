@@ -72,7 +72,9 @@ describe('MatchesPublicsComponent', () => {
     nombreParticipantsActifs: 2,
     placesDisponibles: 2,
     prixTotal: 60,
-    montantParticipation: 15
+    montantParticipation: 15,
+    peutRejoindre: true,
+    motifNonEligibilite: null
   };
 
   const parametresMetier: ParametresMetierResponse = {
@@ -211,6 +213,42 @@ describe('MatchesPublicsComponent', () => {
 
     expect(matchPublicApiService.listerMatchesPublics).toHaveBeenCalledWith(1, '2026-06-20');
     expect(component.chargementPaiement).toBe(false);
+  });
+
+  it('ne doit pas appeler l API si le joueur ne peut pas rejoindre le match', () => {
+    const matchNonEligible: MatchPublicResponse = {
+      ...matchPublic,
+      peutRejoindre: false,
+      motifNonEligibilite: 'Tu participes déjà à ce match.'
+    };
+
+    component.rejoindreEtPayer(matchNonEligible);
+
+    expect(component.messageErreur).toBe(
+      'Tu participes déjà à ce match.'
+    );
+    expect(
+      matchPublicApiService.rejoindreEtPayer
+    ).not.toHaveBeenCalled();
+  });
+
+  it('doit masquer le bouton si le joueur participe déjà', () => {
+    component.matches = [{
+      ...matchPublic,
+      peutRejoindre: false,
+      motifNonEligibilite: 'Tu participes déjà à ce match.'
+    }];
+
+    fixture.detectChanges();
+
+    const contenu = fixture.nativeElement.textContent;
+
+    expect(contenu).toContain(
+      'Tu participes déjà à ce match.'
+    );
+    expect(contenu).not.toContain(
+      'Rejoindre et payer 15.00 €'
+    );
   });
 
   it('doit changer la date avec le choix rapide', () => {

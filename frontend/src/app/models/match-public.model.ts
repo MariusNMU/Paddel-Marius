@@ -10,6 +10,8 @@ export interface MatchPublicResponse {
   placesDisponibles: number;
   prixTotal: number;
   montantParticipation: number;
+  peutRejoindre: boolean;
+  motifNonEligibilite: string | null;
 }
 
 export interface RejoindreMatchPublicRequest {

@@ -44,14 +44,34 @@ public class MatchPublicService {
     private final MembreRepository membreRepository;
 
     @Transactional(readOnly = true)
-    public List<MatchPublicResponse> listerMatchesPublicsDisponibles(Long siteId, LocalDate date) {
+    public List<MatchPublicResponse> listerMatchesPublicsDisponibles(
+            Long siteId,
+            LocalDate date,
+            String matriculeJoueur
+    ) {
         if (siteId == null) {
-            throw new ConfigurationMetierException("Le site est obligatoire.");
+            throw new ConfigurationMetierException(
+                    "Le site est obligatoire."
+            );
         }
 
         if (date == null) {
-            throw new ConfigurationMetierException("La date est obligatoire.");
+            throw new ConfigurationMetierException(
+                    "La date est obligatoire."
+            );
         }
+
+        if (matriculeJoueur == null || matriculeJoueur.isBlank()) {
+            throw new ConfigurationMetierException(
+                    "Le joueur connecté est obligatoire."
+            );
+        }
+
+        Membre joueurConnecte = membreRepository
+                .findByMatricule(matriculeJoueur.trim())
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        "Joueur connecté introuvable."
+                ));
 
         LocalDateTime debutJour = date.atStartOfDay();
         LocalDateTime finJour = date.plusDays(1).atStartOfDay();
@@ -65,7 +85,10 @@ public class MatchPublicService {
                 )
                 .stream()
                 .filter(match -> appartientAuSite(match, siteId))
-                .map(this::convertirEnMatchPublicResponse)
+                .map(match -> convertirEnMatchPublicResponse(
+                        match,
+                        joueurConnecte
+                ))
                 .filter(response -> response.placesDisponibles() > 0)
                 .toList();
     }
@@ -117,12 +140,29 @@ public class MatchPublicService {
         return Objects.equals(terrain.getSite().getId(), siteId);
     }
 
-    private MatchPublicResponse convertirEnMatchPublicResponse(PadelMatch match) {
+    private MatchPublicResponse convertirEnMatchPublicResponse(
+            PadelMatch match,
+            Membre joueurConnecte
+    ) {
         Terrain terrain = match.getTerrain();
         Site site = terrain.getSite();
 
         int nombreParticipantsActifs = compterParticipantsActifs(match);
-        int placesDisponibles = NOMBRE_MAX_PARTICIPANTS - nombreParticipantsActifs;
+        int placesDisponibles =
+                NOMBRE_MAX_PARTICIPANTS - nombreParticipantsActifs;
+
+        boolean participeDeja =
+                participationRepository.existsByMatchIdAndMembreId(
+                        match.getId(),
+                        joueurConnecte.getId()
+                );
+
+        boolean peutRejoindre =
+                placesDisponibles > 0 && !participeDeja;
+
+        String motifNonEligibilite = participeDeja
+                ? "Tu participes déjà à ce match."
+                : null;
 
         return new MatchPublicResponse(
                 match.getId(),
@@ -135,7 +175,9 @@ public class MatchPublicService {
                 nombreParticipantsActifs,
                 placesDisponibles,
                 match.getPrixTotal(),
-                MONTANT_PARTICIPATION_STANDARD
+                MONTANT_PARTICIPATION_STANDARD,
+                peutRejoindre,
+                motifNonEligibilite
         );
     }
 

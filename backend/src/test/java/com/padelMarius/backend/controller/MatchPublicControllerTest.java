@@ -53,15 +53,19 @@ class MatchPublicControllerTest {
                 2,
                 2,
                 new BigDecimal("60.00"),
-                new BigDecimal("15.00")
+                new BigDecimal("15.00"),
+                true,
+                null
         );
 
         when(matchPublicService.listerMatchesPublicsDisponibles(
                 1001L,
-                LocalDate.of(2026, 6, 20)
+                LocalDate.of(2026, 6, 20),
+                "G1001"
         )).thenReturn(List.of(response));
 
         mockMvc.perform(get("/api/matches/publics")
+                        .principal(() -> "G1001")
                         .header("Authorization", AUTHORIZATION)
                         .param("siteId", "1001")
                         .param("date", "2026-06-20"))
@@ -70,7 +74,13 @@ class MatchPublicControllerTest {
                 .andExpect(jsonPath("$[0].siteId").value(1001))
                 .andExpect(jsonPath("$[0].nomSite").value("Padel Bruxelles"))
                 .andExpect(jsonPath("$[0].placesDisponibles").value(2))
-                .andExpect(jsonPath("$[0].montantParticipation").value(15.00));
+                .andExpect(jsonPath("$[0].montantParticipation").value(15.00))
+                .andExpect(
+                        jsonPath("$[0].peutRejoindre").value(true)
+                )
+                .andExpect(
+                        jsonPath("$[0].motifNonEligibilite").doesNotExist()
+                );
     }
 
     @Test

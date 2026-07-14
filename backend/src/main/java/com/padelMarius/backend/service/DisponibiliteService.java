@@ -20,7 +20,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -31,13 +30,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static com.padelMarius.backend.config.ReglesMetier.DUREE_MATCH;
+import static com.padelMarius.backend.config.ReglesMetier.PAUSE_ENTRE_MATCHES;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class DisponibiliteService {
-
-    private static final Duration DUREE_MATCH = Duration.ofMinutes(90);
-    private static final Duration DELAI_ENTRE_MATCHES = Duration.ofMinutes(15);
 
     private final SiteRepository siteRepository;
     private final TerrainRepository terrainRepository;
@@ -176,7 +175,7 @@ public class DisponibiliteService {
                 ));
             }
 
-            debutCreneau = debutCreneau.plus(DUREE_MATCH).plus(DELAI_ENTRE_MATCHES);
+            debutCreneau = debutCreneau.plus(DUREE_MATCH).plus(PAUSE_ENTRE_MATCHES);
         }
 
         return creneaux;
@@ -204,8 +203,8 @@ public class DisponibiliteService {
 
         LocalDateTime finMatchExistant = debutMatchExistant.plus(DUREE_MATCH);
 
-        boolean creneauFinitAssezTot = !finCreneau.plus(DELAI_ENTRE_MATCHES).isAfter(debutMatchExistant);
-        boolean creneauCommenceAssezTard = !debutCreneau.isBefore(finMatchExistant.plus(DELAI_ENTRE_MATCHES));
+        boolean creneauFinitAssezTot = !finCreneau.plus(PAUSE_ENTRE_MATCHES).isAfter(debutMatchExistant);
+        boolean creneauCommenceAssezTard = !debutCreneau.isBefore(finMatchExistant.plus(PAUSE_ENTRE_MATCHES));
 
         return !(creneauFinitAssezTot || creneauCommenceAssezTard);
     }

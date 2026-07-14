@@ -31,14 +31,15 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
+import static com.padelMarius.backend.config.ReglesMetier.DUREE_PENALITE_JOURS;
+import static com.padelMarius.backend.config.ReglesMetier.NOMBRE_JOUEURS_MAXIMUM;
+import static com.padelMarius.backend.config.ReglesMetier.PRIX_TOTAL_MATCH;
+
 @Service
 @RequiredArgsConstructor
 public class TraitementEcheanceService {
 
     private static final BigDecimal ZERO = new BigDecimal("0.00");
-    private static final BigDecimal PRIX_TOTAL_PAR_DEFAUT = new BigDecimal("60.00");
-    private static final int NOMBRE_JOUEURS_REQUIS = 4;
-    private static final long DUREE_PENALITE_JOURS = 7L;
     private static final String TYPE_PENALITE_MATCH_PRIVE_INCOMPLET = "RESERVATION_PRIVEE_INCOMPLETE";
     private static final String MOTIF_PENALITE_MATCH_PRIVE_INCOMPLET =
             "Match privé incomplet au moment du match.";
@@ -141,7 +142,7 @@ public class TraitementEcheanceService {
                 .filter(participation -> participation.getStatutParticipation() == StatutParticipation.CONFIRMEE)
                 .count();
 
-        if (participationsConfirmees >= NOMBRE_JOUEURS_REQUIS) {
+        if (participationsConfirmees >= NOMBRE_JOUEURS_MAXIMUM) {
             return;
         }
 
@@ -176,7 +177,7 @@ public class TraitementEcheanceService {
 
     private BigDecimal montantOuPrixDefaut(BigDecimal montant) {
         if (montant == null) {
-            return PRIX_TOTAL_PAR_DEFAUT;
+            return PRIX_TOTAL_MATCH;
         }
 
         return normaliserMontant(montant);

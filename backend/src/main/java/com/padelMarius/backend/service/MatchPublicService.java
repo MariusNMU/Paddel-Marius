@@ -24,18 +24,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
+import static com.padelMarius.backend.config.ReglesMetier.MONTANT_PARTICIPATION_STANDARD;
+import static com.padelMarius.backend.config.ReglesMetier.NOMBRE_JOUEURS_MAXIMUM;
+
 @Service
 @RequiredArgsConstructor
 public class MatchPublicService {
-
-    private static final int NOMBRE_MAX_PARTICIPANTS = 4;
-    private static final BigDecimal MONTANT_PARTICIPATION_STANDARD = new BigDecimal("15.00");
 
     private final PadelMatchRepository padelMatchRepository;
     private final ParticipationRepository participationRepository;
@@ -149,7 +148,7 @@ public class MatchPublicService {
 
         int nombreParticipantsActifs = compterParticipantsActifs(match);
         int placesDisponibles =
-                NOMBRE_MAX_PARTICIPANTS - nombreParticipantsActifs;
+                NOMBRE_JOUEURS_MAXIMUM - nombreParticipantsActifs;
 
         boolean participeDeja =
                 participationRepository.existsByMatchIdAndMembreId(

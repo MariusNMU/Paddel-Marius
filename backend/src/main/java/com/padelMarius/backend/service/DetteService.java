@@ -33,12 +33,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import static com.padelMarius.backend.config.ReglesMetier.PRIX_TOTAL_MATCH;
+
 @Service
 @RequiredArgsConstructor
 public class DetteService {
 
     private static final BigDecimal ZERO = new BigDecimal("0.00");
-    private static final BigDecimal PRIX_TOTAL_PAR_DEFAUT = new BigDecimal("60.00");
 
     private final PadelMatchRepository padelMatchRepository;
     private final ParticipationRepository participationRepository;
@@ -343,7 +344,7 @@ public class DetteService {
 
     private BigDecimal montantOuPrixDefaut(BigDecimal montant) {
         if (montant == null) {
-            return PRIX_TOTAL_PAR_DEFAUT;
+            return PRIX_TOTAL_MATCH;
         }
 
         return normaliserMontant(montant);

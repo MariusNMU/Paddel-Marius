@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.math.BigDecimal;
 
+import static com.padelMarius.backend.config.ReglesMetier.SOLDE_INITIAL_JOUEUR;
+
 @Entity
 @Table(
         name = "membre",
@@ -18,8 +20,6 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 public class Membre {
-
-    public static final BigDecimal SOLDE_INITIAL = new BigDecimal("100.00");
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,5 +50,5 @@ public class Membre {
 
     @Builder.Default
     @Column(name = "solde_credit", nullable = false, precision = 10, scale = 2)
-    private BigDecimal soldeCredit = SOLDE_INITIAL;
+    private BigDecimal soldeCredit = SOLDE_INITIAL_JOUEUR;
 }

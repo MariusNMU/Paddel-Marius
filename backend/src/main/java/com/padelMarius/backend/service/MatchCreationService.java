@@ -12,20 +12,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.Clock;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
+import static com.padelMarius.backend.config.ReglesMetier.DUREE_MATCH;
+import static com.padelMarius.backend.config.ReglesMetier.PAUSE_ENTRE_MATCHES;
+import static com.padelMarius.backend.config.ReglesMetier.PRIX_TOTAL_MATCH;
+
 @Service
 @RequiredArgsConstructor
 public class MatchCreationService {
-
-    private static final Duration DUREE_MATCH = Duration.ofMinutes(90);
-    private static final Duration DELAI_ENTRE_MATCHES = Duration.ofMinutes(15);
-    private static final BigDecimal PRIX_TOTAL_MATCH = new BigDecimal("60.00");
 
     private final TerrainRepository terrainRepository;
     private final MembreRepository membreRepository;
@@ -281,10 +279,10 @@ public class MatchCreationService {
         }
 
         boolean nouveauMatchFinitAssezTot =
-                !finNouveauMatch.plus(DELAI_ENTRE_MATCHES).isAfter(debutMatchExistant);
+                !finNouveauMatch.plus(PAUSE_ENTRE_MATCHES).isAfter(debutMatchExistant);
 
         boolean nouveauMatchCommenceAssezTard =
-                !debutNouveauMatch.isBefore(finMatchExistant.plus(DELAI_ENTRE_MATCHES));
+                !debutNouveauMatch.isBefore(finMatchExistant.plus(PAUSE_ENTRE_MATCHES));
 
         return !(nouveauMatchFinitAssezTot || nouveauMatchCommenceAssezTard);
     }

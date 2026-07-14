@@ -20,18 +20,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
+import static com.padelMarius.backend.config.ReglesMetier.DUREE_MATCH;
+import static com.padelMarius.backend.config.ReglesMetier.NOMBRE_JOUEURS_MAXIMUM;
+import static com.padelMarius.backend.config.ReglesMetier.PAUSE_ENTRE_MATCHES;
+
 @Service
 @RequiredArgsConstructor
 public class ParticipationService {
-
-    private static final int NOMBRE_MAX_PARTICIPANTS = 4;
-    private static final Duration DUREE_MATCH = Duration.ofMinutes(90);
-    private static final Duration DELAI_ENTRE_MATCHES = Duration.ofMinutes(15);
 
     private final PadelMatchRepository padelMatchRepository;
     private final MembreRepository membreRepository;
@@ -162,9 +161,11 @@ public class ParticipationService {
                 .filter(participation -> participation.getStatutParticipation() != StatutParticipation.LIBEREE)
                 .count();
 
-        if (nombreParticipantsActifs >= NOMBRE_MAX_PARTICIPANTS) {
+        if (nombreParticipantsActifs >= NOMBRE_JOUEURS_MAXIMUM) {
             throw new ConfigurationMetierException(
-                    "Le match contient deja 4 participants."
+                    "Le match contient deja "
+                            + NOMBRE_JOUEURS_MAXIMUM
+                            + " participants."
             );
         }
     }
@@ -219,10 +220,10 @@ public class ParticipationService {
         }
 
         boolean nouveauMatchFinitAssezTot =
-                !finNouveauMatch.plus(DELAI_ENTRE_MATCHES).isAfter(debutMatchExistant);
+                !finNouveauMatch.plus(PAUSE_ENTRE_MATCHES).isAfter(debutMatchExistant);
 
         boolean nouveauMatchCommenceAssezTard =
-                !debutNouveauMatch.isBefore(finMatchExistant.plus(DELAI_ENTRE_MATCHES));
+                !debutNouveauMatch.isBefore(finMatchExistant.plus(PAUSE_ENTRE_MATCHES));
 
         return !(nouveauMatchFinitAssezTot || nouveauMatchCommenceAssezTard);
     }

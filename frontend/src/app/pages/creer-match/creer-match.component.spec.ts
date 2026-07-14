@@ -1,62 +1,47 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
-import { of } from 'rxjs';
-import { AuthJoueurResponse } from '../../models/auth.model';
 import { MatchResponse } from '../../models/match.model';
 import { ParametresMetierResponse } from '../../models/parametres-metier.model';
 import { TerrainResponse } from '../../models/terrain.model';
-import { AuthContextService } from '../../services/auth-context.service';
-import { InvitationApiService } from '../../services/invitation-api.service';
-import { MatchApiService } from '../../services/match-api.service';
-import { ParametresMetierApiService } from '../../services/parametres-metier-api.service';
-import { TerrainApiService } from '../../services/terrain-api.service';
+import { CreerMatchFacadeService } from '../../services/creer-match-facade.service';
 import { CreerMatchComponent } from './creer-match.component';
 
 describe('CreerMatchComponent', () => {
   let fixture: ComponentFixture<CreerMatchComponent>;
   let component: CreerMatchComponent;
-
-  let matchApiService: {
+  let facade: {
+    initialiser: ReturnType<typeof vi.fn>;
     creerMatch: ReturnType<typeof vi.fn>;
-  };
-
-  let invitationApiService: {
     inviterJoueur: ReturnType<typeof vi.fn>;
-  };
-
-  let terrainApiService: {
-    listerTerrainsActifs: ReturnType<typeof vi.fn>;
-  };
-
-  let parametresMetierApiService: {
-    consulterParametresMetier: ReturnType<typeof vi.fn>;
-  };
-
-  let authContextService: {
-    joueur: ReturnType<typeof vi.fn>;
-  };
-
-  const joueur: AuthJoueurResponse = {
-    membreId: 2001,
-    matricule: 'TEST001',
-    nom: 'Dupont',
-    prenom: 'Marie',
-    categorieMembre: 'GLOBAL',
-    siteRattachementId: null,
-    nomSiteRattachement: null,
-    actif: true
+    modifierTerrainId: ReturnType<typeof vi.fn>;
+    modifierMatriculeOrganisateur: ReturnType<typeof vi.fn>;
+    modifierDateHeureDebut: ReturnType<typeof vi.fn>;
+    modifierModeCreation: ReturnType<typeof vi.fn>;
+    modifierMatriculeInvite: ReturnType<typeof vi.fn>;
+    dureeMatchLibelle: ReturnType<typeof vi.fn>;
+    terrainSelectionne: ReturnType<typeof vi.fn>;
+    terrains: ReturnType<typeof signal<TerrainResponse[]>>;
+    parametresMetier:
+      ReturnType<typeof signal<ParametresMetierResponse | null>>;
+    terrainId: ReturnType<typeof signal<number | null>>;
+    matriculeOrganisateur: ReturnType<typeof signal<string>>;
+    dateHeureDebut: ReturnType<typeof signal<string>>;
+    modeCreation: ReturnType<typeof signal<'PUBLIC' | 'PRIVE' | ''>>;
+    chargementTerrains: ReturnType<typeof signal<boolean>>;
+    chargementCreation: ReturnType<typeof signal<boolean>>;
+    chargementInvitation: ReturnType<typeof signal<boolean>>;
+    messageErreur: ReturnType<typeof signal<string>>;
+    matchCree: ReturnType<typeof signal<MatchResponse | null>>;
+    matriculeInvite: ReturnType<typeof signal<string>>;
+    invites: ReturnType<typeof signal<never[]>>;
+    messageInvitation: ReturnType<typeof signal<string>>;
   };
 
   const terrains: TerrainResponse[] = [
     {
-      terrainId: 10,
-      numeroTerrain: 'T1',
-      siteId: 1,
-      nomSite: 'Site Alpha'
-    },
-    {
       terrainId: 20,
-      numeroTerrain: 'T1',
+      numeroTerrain: 'T2',
       siteId: 2,
       nomSite: 'Site Beta'
     }
@@ -72,39 +57,48 @@ describe('CreerMatchComponent', () => {
   };
 
   beforeEach(async () => {
-    matchApiService = {
-      creerMatch: vi.fn()
-    };
-
-    invitationApiService = {
-      inviterJoueur: vi.fn()
-    };
-
-    terrainApiService = {
-      listerTerrainsActifs: vi.fn(() => of(terrains))
-    };
-
-    parametresMetierApiService = {
-      consulterParametresMetier: vi.fn(() => of(parametresMetier))
-    };
-
-    authContextService = {
-      joueur: vi.fn(() => joueur)
+    facade = {
+      initialiser: vi.fn(),
+      creerMatch: vi.fn(),
+      inviterJoueur: vi.fn(),
+      modifierTerrainId: vi.fn(),
+      modifierMatriculeOrganisateur: vi.fn(),
+      modifierDateHeureDebut: vi.fn(),
+      modifierModeCreation: vi.fn(),
+      modifierMatriculeInvite: vi.fn(),
+      dureeMatchLibelle: vi.fn(() => '1h30'),
+      terrainSelectionne: vi.fn(() => terrains[0]),
+      terrains: signal(terrains),
+      parametresMetier: signal(parametresMetier),
+      terrainId: signal(20),
+      matriculeOrganisateur: signal('TEST001'),
+      dateHeureDebut: signal('2026-06-20T09:00'),
+      modeCreation: signal('PUBLIC'),
+      chargementTerrains: signal(false),
+      chargementCreation: signal(false),
+      chargementInvitation: signal(false),
+      messageErreur: signal(''),
+      matchCree: signal<MatchResponse | null>(null),
+      matriculeInvite: signal(''),
+      invites: signal([]),
+      messageInvitation: signal('')
     };
 
     await TestBed.configureTestingModule({
       imports: [CreerMatchComponent],
       providers: [
-        { provide: MatchApiService, useValue: matchApiService },
-        { provide: InvitationApiService, useValue: invitationApiService },
-        { provide: TerrainApiService, useValue: terrainApiService },
-        { provide: ParametresMetierApiService, useValue: parametresMetierApiService },
-        { provide: AuthContextService, useValue: authContextService },
+        {
+          provide: CreerMatchFacadeService,
+          useValue: facade
+        },
         {
           provide: ActivatedRoute,
           useValue: {
             snapshot: {
-              queryParamMap: convertToParamMap({})
+              queryParamMap: convertToParamMap({
+                terrainId: '20',
+                dateHeureDebut: '2026-06-20T09:00:00'
+              })
             }
           }
         }
@@ -116,54 +110,22 @@ describe('CreerMatchComponent', () => {
     fixture.detectChanges();
   });
 
-  it('doit charger les terrains depuis l API backend', () => {
-    expect(terrainApiService.listerTerrainsActifs).toHaveBeenCalled();
-    expect(component.terrains).toEqual(terrains);
-    expect(component.terrainId).toBe(10);
+  it('doit initialiser la façade avec les paramètres de l URL', () => {
+    expect(facade.initialiser).toHaveBeenCalledWith(
+      '20',
+      '2026-06-20T09:00:00'
+    );
   });
 
-  it('doit charger les paramètres métier depuis le backend', () => {
-    expect(parametresMetierApiService.consulterParametresMetier).toHaveBeenCalled();
-    expect(component.parametresMetier).toEqual(parametresMetier);
-    expect(component.dureeMatchLibelle()).toBe('1h30');
-  });
-
-  it('ne doit pas choisir un mode de creation par defaut', () => {
-    expect(component.modeCreation).toBe('');
-  });
-
-  it('doit pre remplir le matricule depuis le joueur connecte', () => {
-    expect(component.matriculeOrganisateur).toBe('TEST001');
-  });
-
-  it('doit appeler l API de creation avec le terrain charge par API', () => {
-    const response: MatchResponse = {
-      matchId: 3001,
-      terrainId: 10,
-      numeroTerrain: 'T1',
-      siteId: 1,
-      nomSite: 'Site Alpha',
-      dateHeureDebut: '2026-06-20T09:00:00',
-      dateHeureFin: '2026-06-20T10:30:00',
-      modeCreation: 'PUBLIC',
-      visibiliteCourante: 'PUBLIC',
-      prixTotal: 60,
-      etatCycle: 'A_VENIR'
-    };
-
-    matchApiService.creerMatch.mockReturnValue(of(response));
-
-    component.dateHeureDebut = '2026-06-20T09:00';
-    component.modeCreation = 'PUBLIC';
-
+  it('doit déléguer la création du match à la façade', () => {
     component.creerMatch();
 
-    expect(matchApiService.creerMatch).toHaveBeenCalledWith({
-      terrainId: 10,
-      matriculeOrganisateur: 'TEST001',
-      dateHeureDebut: '2026-06-20T09:00',
-      modeCreation: 'PUBLIC'
-    });
-    expect(component.matchCree).toEqual(response);
+    expect(facade.creerMatch).toHaveBeenCalled();
+  });
+
+  it('doit déléguer l invitation à la façade', () => {
+    component.inviterJoueur();
+
+    expect(facade.inviterJoueur).toHaveBeenCalled();
   });
 });

@@ -1,18 +1,8 @@
 ﻿import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import {
-  MatchPublicResponse,
-  RejoindreMatchPublicResponse
-} from '../../models/match-public.model';
-import { ParametresMetierResponse } from '../../models/parametres-metier.model';
-import { SiteResponse } from '../../models/site.model';
-import { AuthContextService } from '../../services/auth-context.service';
-import { MatchPublicApiService } from '../../services/match-public-api.service';
-import { ParametresMetierApiService } from '../../services/parametres-metier-api.service';
-import { SiteApiService } from '../../services/site-api.service';
-import { extraireMessageErreur } from '../../shared/api-error.util';
-import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shared/date-ui.util';
+import { MatchPublicResponse } from '../../models/match-public.model';
+import { MatchesPublicsFacadeService } from '../../services/matches-publics-facade.service';
 
 @Component({
   selector: 'app-matches-publics',
@@ -23,7 +13,8 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
       <h2>Rejoindre un match public</h2>
 
       <p>
-        Retrouve les matches publics disponibles et rejoins une place en payant la participation calculée par le backend.
+        Retrouve les matches publics disponibles et rejoins une place
+        en payant la participation calculée par le backend.
         Premier payé = premier servi.
       </p>
 
@@ -31,24 +22,43 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
         <h3>Règles métier</h3>
 
         <ul>
-          <li>Un match public peut être rejoint par les joueurs disponibles.</li>
-          <li>Un match contient maximum {{ parametresMetier?.nombreJoueursMaximum }} joueurs.</li>
-          <li>La place est validée uniquement après paiement.</li>
-          <li>Le paiement débite ton solde crédit du montant de participation retourné par le backend.</li>
+          <li>
+            Un match public peut être rejoint par les joueurs
+            disponibles.
+          </li>
+          <li>
+            Un match contient maximum
+            {{ facade.parametresMetier()?.nombreJoueursMaximum }}
+            joueurs.
+          </li>
+          <li>
+            La place est validée uniquement après paiement.
+          </li>
+          <li>
+            Le paiement débite ton solde crédit du montant de
+            participation retourné par le backend.
+          </li>
         </ul>
       </div>
 
-      @if (!joueurConnecte()) {
+      @if (!facade.joueurConnecte()) {
         <p class="erreur">
-          Connecte-toi d'abord comme joueur pour rejoindre un match public.
+          Connecte-toi d'abord comme joueur pour rejoindre un match
+          public.
         </p>
       }
 
-      @if (joueurConnecte()) {
+      @if (facade.joueurConnecte(); as joueur) {
         <div class="bloc-info">
           <h3>Joueur connecté</h3>
-          <p><strong>Matricule :</strong> {{ joueurConnecte()?.matricule }}</p>
-          <p><strong>Nom :</strong> {{ joueurConnecte()?.nom }} {{ joueurConnecte()?.prenom }}</p>
+          <p>
+            <strong>Matricule :</strong>
+            {{ joueur.matricule }}
+          </p>
+          <p>
+            <strong>Nom :</strong>
+            {{ joueur.nom }} {{ joueur.prenom }}
+          </p>
         </div>
       }
 
@@ -57,10 +67,10 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
 
         <div class="jours-rapides">
           <button
-            *ngFor="let jour of joursRapides"
+            *ngFor="let jour of facade.joursRapides()"
             type="button"
             (click)="selectionnerJour(jour.date)"
-            [class.selectionne]="date === jour.date"
+            [class.selectionne]="facade.date() === jour.date"
           >
             <span>{{ jour.libelle }}</span>
             <strong>{{ jour.date }}</strong>
@@ -73,10 +83,17 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
         <select
           id="siteId"
           name="siteId"
-          [(ngModel)]="siteId"
-          [disabled]="chargementSites || sites.length === 0"
+          [ngModel]="facade.siteId()"
+          (ngModelChange)="facade.modifierSiteId($event)"
+          [disabled]="
+            facade.chargementSites()
+            || facade.sites().length === 0
+          "
         >
-          <option *ngFor="let site of sites" [ngValue]="site.siteId">
+          <option
+            *ngFor="let site of facade.sites()"
+            [ngValue]="site.siteId"
+          >
             {{ site.nom }} ({{ site.siteId }})
           </option>
         </select>
@@ -86,69 +103,142 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
           id="date"
           name="date"
           type="date"
-          [(ngModel)]="date"
+          [ngModel]="facade.date()"
+          (ngModelChange)="facade.modifierDate($event)"
           required
         />
 
-        <button type="submit" [disabled]="chargement || chargementSites || sites.length === 0">
-          {{ chargement ? 'Recherche...' : 'Rechercher les matches publics' }}
+        <button
+          type="submit"
+          [disabled]="
+            facade.chargementRecherche()
+            || facade.chargementSites()
+            || facade.sites().length === 0
+          "
+        >
+          {{
+            facade.chargementRecherche()
+              ? 'Recherche...'
+              : 'Rechercher les matches publics'
+          }}
         </button>
       </form>
 
-      @if (messageErreur) {
-        <p class="erreur">{{ messageErreur }}</p>
+      @if (facade.messageErreur()) {
+        <p class="erreur">
+          {{ facade.messageErreur() }}
+        </p>
       }
 
-      @if (messageSucces) {
+      @if (facade.messageSucces()) {
         <div class="resultat">
           <h3>Inscription confirmée</h3>
-          <p>{{ messageSucces }}</p>
+          <p>{{ facade.messageSucces() }}</p>
 
-          @if (dernierPaiement) {
+          @if (facade.dernierPaiement(); as dernierPaiement) {
             <div class="resume-grid">
-              <p><strong>Match</strong><br>{{ dernierPaiement.matchId }}</p>
-              <p><strong>Participation</strong><br>{{ dernierPaiement.participationId }}</p>
-              <p><strong>Paiement</strong><br>{{ dernierPaiement.paiementId }}</p>
-              <p><strong>Montant payé</strong><br>{{ dernierPaiement.montantPaye | number:'1.2-2' }} €</p>
-              <p><strong>Solde restant</strong><br>{{ dernierPaiement.soldeRestant | number:'1.2-2' }} €</p>
+              <p>
+                <strong>Match</strong><br>
+                {{ dernierPaiement.matchId }}
+              </p>
+              <p>
+                <strong>Participation</strong><br>
+                {{ dernierPaiement.participationId }}
+              </p>
+              <p>
+                <strong>Paiement</strong><br>
+                {{ dernierPaiement.paiementId }}
+              </p>
+              <p>
+                <strong>Montant payé</strong><br>
+                {{
+                  dernierPaiement.montantPaye
+                    | number:'1.2-2'
+                }} €
+              </p>
+              <p>
+                <strong>Solde restant</strong><br>
+                {{
+                  dernierPaiement.soldeRestant
+                    | number:'1.2-2'
+                }} €
+              </p>
             </div>
           }
         </div>
       }
 
-      @if (matches.length === 0 && rechercheEffectuee && !chargement) {
+      @if (
+        facade.matches().length === 0
+        && facade.rechercheEffectuee()
+        && !facade.chargementRecherche()
+      ) {
         <p>
           Aucun match public disponible pour cette date et ce site.
         </p>
       }
 
-      @if (matches.length > 0) {
+      @if (facade.matches().length > 0) {
         <div class="matches-grid">
-          <article *ngFor="let match of matches" class="match-card">
-            <h3>{{ match.nomSite }} — Terrain {{ match.numeroTerrain }}</h3>
+          <article
+            *ngFor="let match of facade.matches()"
+            class="match-card"
+          >
+            <h3>
+              {{ match.nomSite }} — Terrain
+              {{ match.numeroTerrain }}
+            </h3>
 
-            <p><strong>Début :</strong> {{ match.dateHeureDebut }}</p>
-            <p><strong>Fin :</strong> {{ match.dateHeureFin }}</p>
+            <p>
+              <strong>Début :</strong>
+              {{ match.dateHeureDebut }}
+            </p>
+            <p>
+              <strong>Fin :</strong>
+              {{ match.dateHeureFin }}
+            </p>
             <p>
               <strong>Participants :</strong>
-              {{ match.nombreParticipantsActifs }} / {{ parametresMetier?.nombreJoueursMaximum }}
+              {{ match.nombreParticipantsActifs }} /
+              {{
+                facade.parametresMetier()
+                  ?.nombreJoueursMaximum
+              }}
             </p>
-            <p><strong>Places disponibles :</strong> {{ match.placesDisponibles }}</p>
-            <p><strong>Prix total :</strong> {{ match.prixTotal | number:'1.2-2' }} €</p>
-            <p><strong>Ta place :</strong> {{ match.montantParticipation | number:'1.2-2' }} €</p>
+            <p>
+              <strong>Places disponibles :</strong>
+              {{ match.placesDisponibles }}
+            </p>
+            <p>
+              <strong>Prix total :</strong>
+              {{ match.prixTotal | number:'1.2-2' }} €
+            </p>
+            <p>
+              <strong>Ta place :</strong>
+              {{
+                match.montantParticipation
+                  | number:'1.2-2'
+              }} €
+            </p>
 
             @if (match.peutRejoindre) {
               <button
                 type="button"
-                [disabled]="chargementPaiement || !joueurConnecte()"
+                [disabled]="
+                  facade.chargementPaiement()
+                  || !facade.joueurConnecte()
+                "
                 (click)="rejoindreEtPayer(match)"
               >
                 {{
-                  chargementPaiement
+                  facade.chargementPaiement()
                     ? 'Paiement...'
                     : (
                         'Rejoindre et payer '
-                        + (match.montantParticipation | number:'1.2-2')
+                        + (
+                          match.montantParticipation
+                            | number:'1.2-2'
+                        )
                         + ' €'
                       )
                 }}
@@ -193,13 +283,15 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
 
     @media (max-width: 1100px) {
       .jours-rapides {
-        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        grid-template-columns:
+          repeat(auto-fit, minmax(100px, 1fr));
       }
     }
 
     .matches-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      grid-template-columns:
+        repeat(auto-fit, minmax(260px, 1fr));
       gap: 16px;
       margin-top: 18px;
     }
@@ -236,7 +328,8 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
 
     .resume-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      grid-template-columns:
+        repeat(auto-fit, minmax(160px, 1fr));
       gap: 12px;
       margin-top: 16px;
     }
@@ -251,171 +344,24 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
   `]
 })
 export class MatchesPublicsComponent implements OnInit {
-  sites: SiteResponse[] = [];
-  parametresMetier: ParametresMetierResponse | null = null;
-  joursRapides: JourRapide[] = genererJoursRapides(7);
-
-  siteId: number | null = null;
-  date = dateDuJourPourInput();
-
-  matches: MatchPublicResponse[] = [];
-  dernierPaiement: RejoindreMatchPublicResponse | null = null;
-
-  chargementSites = false;
-  chargementParametresMetier = false;
-  chargement = false;
-  chargementPaiement = false;
-  rechercheEffectuee = false;
-  messageErreur = '';
-  messageSucces = '';
-
   constructor(
-    private readonly matchPublicApiService: MatchPublicApiService,
-    private readonly siteApiService: SiteApiService,
-    private readonly parametresMetierApiService: ParametresMetierApiService,
-    private readonly authContextService: AuthContextService,
-    private readonly changeDetectorRef: ChangeDetectorRef
+    readonly facade: MatchesPublicsFacadeService
   ) {
   }
 
   ngOnInit(): void {
-    this.chargerParametresMetier();
-    this.chargerSites();
-  }
-
-  private chargerParametresMetier(): void {
-    this.chargementParametresMetier = true;
-
-    this.parametresMetierApiService.consulterParametresMetier().subscribe({
-      next: parametres => {
-        this.parametresMetier = parametres;
-        this.chargementParametresMetier = false;
-        this.changeDetectorRef.detectChanges();
-      },
-      error: error => {
-        this.messageErreur = extraireMessageErreur(error);
-        this.parametresMetier = null;
-        this.chargementParametresMetier = false;
-        this.changeDetectorRef.detectChanges();
-      }
-    });
-  }
-
-  private chargerSites(): void {
-    this.messageErreur = '';
-    this.chargementSites = true;
-
-    this.siteApiService.listerSitesActifs().subscribe({
-      next: (sites) => {
-        this.sites = sites;
-
-        const siteSelectionExiste = this.siteId !== null
-          && this.sites.some(site => site.siteId === this.siteId);
-
-        if (!siteSelectionExiste) {
-          this.siteId = this.sites.length > 0
-            ? this.sites[0].siteId
-            : null;
-        }
-
-        this.chargementSites = false;
-        this.changeDetectorRef.detectChanges();
-      },
-      error: (error) => {
-        this.messageErreur = extraireMessageErreur(error);
-        this.sites = [];
-        this.siteId = null;
-        this.chargementSites = false;
-        this.changeDetectorRef.detectChanges();
-      }
-    });
-  }
-
-  joueurConnecte() {
-    return this.authContextService.joueur();
+    this.facade.initialiser();
   }
 
   selectionnerJour(date: string): void {
-    this.date = date;
-    this.messageErreur = '';
-    this.messageSucces = '';
-    this.dernierPaiement = null;
-    this.matches = [];
-    this.rechercheEffectuee = false;
-    this.changeDetectorRef.detectChanges();
+    this.facade.selectionnerJour(date);
   }
 
   rechercherMatchesPublics(): void {
-    this.messageErreur = '';
-    this.messageSucces = '';
-    this.dernierPaiement = null;
-    this.rechercheEffectuee = true;
-
-    if (!this.siteId || !this.date) {
-      this.messageErreur = 'Le site et la date sont obligatoires.';
-      this.changeDetectorRef.detectChanges();
-      return;
-    }
-
-    this.chargement = true;
-    this.changeDetectorRef.detectChanges();
-
-    this.matchPublicApiService.listerMatchesPublics(Number(this.siteId), this.date).subscribe({
-      next: (response) => {
-        this.matches = response;
-        this.chargement = false;
-        this.changeDetectorRef.detectChanges();
-      },
-      error: (error) => {
-        this.messageErreur = extraireMessageErreur(error);
-        this.matches = [];
-        this.chargement = false;
-        this.changeDetectorRef.detectChanges();
-      }
-    });
+    this.facade.rechercherMatchesPublics();
   }
 
   rejoindreEtPayer(match: MatchPublicResponse): void {
-    this.messageErreur = '';
-    this.messageSucces = '';
-    this.dernierPaiement = null;
-
-    if (!match.peutRejoindre) {
-      this.messageErreur =
-        match.motifNonEligibilite
-        ?? 'Ce match ne peut pas être rejoint.';
-
-      this.changeDetectorRef.detectChanges();
-      return;
-    }
-
-    const joueur = this.joueurConnecte();
-
-    if (!joueur) {
-      this.messageErreur = 'Connecte-toi comme joueur pour rejoindre un match public.';
-      this.changeDetectorRef.detectChanges();
-      return;
-    }
-
-    this.chargementPaiement = true;
-    this.changeDetectorRef.detectChanges();
-
-    this.matchPublicApiService.rejoindreEtPayer(match.matchId, {
-      matriculeJoueur: joueur.matricule
-    }).subscribe({
-      next: (response) => {
-        this.dernierPaiement = response;
-        this.messageSucces =
-          `Le joueur ${response.matriculeJoueur} a rejoint le match public et payé ${response.montantPaye.toFixed(2)} €.`;
-        this.chargementPaiement = false;
-        this.rechercherMatchesPublics();
-        this.changeDetectorRef.detectChanges();
-      },
-      error: (error) => {
-        this.messageErreur = extraireMessageErreur(error);
-        this.chargementPaiement = false;
-        this.changeDetectorRef.detectChanges();
-      }
-    });
+    this.facade.rejoindreEtPayer(match);
   }
 }

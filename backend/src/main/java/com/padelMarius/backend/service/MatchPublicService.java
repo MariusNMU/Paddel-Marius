@@ -72,6 +72,11 @@ public class MatchPublicService {
                         "Joueur connecté introuvable."
                 ));
 
+        List<Participation> participationsJoueur =
+                participationRepository.findByMembreId(
+                        joueurConnecte.getId()
+                );
+
         LocalDateTime debutJour = date.atStartOfDay();
         LocalDateTime finJour = date.plusDays(1).atStartOfDay();
 
@@ -86,7 +91,8 @@ public class MatchPublicService {
                 .filter(match -> appartientAuSite(match, siteId))
                 .map(match -> convertirEnMatchPublicResponse(
                         match,
-                        joueurConnecte
+                        joueurConnecte,
+                        participationsJoueur
                 ))
                 .filter(response -> response.placesDisponibles() > 0)
                 .toList();
@@ -141,27 +147,41 @@ public class MatchPublicService {
 
     private MatchPublicResponse convertirEnMatchPublicResponse(
             PadelMatch match,
-            Membre joueurConnecte
+            Membre joueurConnecte,
+            List<Participation> participationsJoueur
     ) {
         Terrain terrain = match.getTerrain();
         Site site = terrain.getSite();
 
-        int nombreParticipantsActifs = compterParticipantsActifs(match);
+        int nombreParticipantsActifs =
+                compterParticipantsActifs(match);
         int placesDisponibles =
-                NOMBRE_JOUEURS_MAXIMUM - nombreParticipantsActifs;
+                NOMBRE_JOUEURS_MAXIMUM
+                        - nombreParticipantsActifs;
 
         boolean participeDeja =
-                participationRepository.existsByMatchIdAndMembreId(
-                        match.getId(),
-                        joueurConnecte.getId()
+                participationRepository
+                        .existsByMatchIdAndMembreId(
+                                match.getId(),
+                                joueurConnecte.getId()
+                        );
+
+        boolean conflitHoraire =
+                participationService.aUnConflitHoraire(
+                        match,
+                        participationsJoueur
                 );
 
         boolean peutRejoindre =
-                placesDisponibles > 0 && !participeDeja;
+                placesDisponibles > 0
+                        && !participeDeja
+                        && !conflitHoraire;
 
-        String motifNonEligibilite = participeDeja
-                ? "Tu participes déjà à ce match."
-                : null;
+        String motifNonEligibilite =
+                determinerMotifNonEligibilite(
+                        participeDeja,
+                        conflitHoraire
+                );
 
         return new MatchPublicResponse(
                 match.getId(),
@@ -178,6 +198,21 @@ public class MatchPublicService {
                 peutRejoindre,
                 motifNonEligibilite
         );
+    }
+
+    private String determinerMotifNonEligibilite(
+            boolean participeDeja,
+            boolean conflitHoraire
+    ) {
+        if (participeDeja) {
+            return "Tu participes déjà à ce match.";
+        }
+
+        if (conflitHoraire) {
+            return "Tu participes déjà à un autre match sur ce créneau.";
+        }
+
+        return null;
     }
 
     private int compterParticipantsActifs(PadelMatch match) {

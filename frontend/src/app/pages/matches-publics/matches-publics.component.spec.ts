@@ -116,12 +116,19 @@ describe('MatchesPublicsComponent', () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [MatchesPublicsComponent],
-      providers: [{
-        provide: MatchesPublicsFacadeService,
-        useValue: facade
-      }]
-    }).compileComponents();
+      imports: [MatchesPublicsComponent]
+    })
+      .overrideComponent(MatchesPublicsComponent, {
+        set: {
+          providers: [
+            {
+              provide: MatchesPublicsFacadeService,
+              useValue: facade
+            }
+          ]
+        }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(
       MatchesPublicsComponent

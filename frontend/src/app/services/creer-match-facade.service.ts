@@ -16,10 +16,10 @@ import { MatchApiService } from './match-api.service';
 import { ParametresMetierApiService } from './parametres-metier-api.service';
 import { TerrainApiService } from './terrain-api.service';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable()
 export class CreerMatchFacadeService {
+  private terrainDemandeDepuisUrl = false;
+
   private readonly terrainsSignal = signal<TerrainResponse[]>([]);
   private readonly parametresMetierSignal =
     signal<ParametresMetierResponse | null>(null);
@@ -87,6 +87,10 @@ export class CreerMatchFacadeService {
       this.authContextService.joueur()?.matricule ?? ''
     );
 
+    this.terrainDemandeDepuisUrl =
+      terrainIdParam !== null
+      && terrainIdParam.trim() !== '';
+
     this.terrainIdSignal.set(
       this.extraireTerrainId(terrainIdParam)
     );
@@ -103,6 +107,10 @@ export class CreerMatchFacadeService {
 
   modifierTerrainId(terrainId: number | null): void {
     this.terrainIdSignal.set(terrainId);
+
+    if (terrainId !== null) {
+      this.messageErreurSignal.set('');
+    }
   }
 
   modifierMatriculeOrganisateur(matricule: string): void {
@@ -251,6 +259,8 @@ export class CreerMatchFacadeService {
   }
 
   private reinitialiserParcours(): void {
+    this.terrainDemandeDepuisUrl = false;
+
     this.terrainsSignal.set([]);
     this.parametresMetierSignal.set(null);
 
@@ -323,13 +333,24 @@ export class CreerMatchFacadeService {
             terrain => terrain.terrainId === terrainIdActuel
           );
 
-        if (!terrainSelectionExiste) {
-          this.terrainIdSignal.set(
-            terrains.length > 0
-              ? terrains[0].terrainId
-              : null
-          );
+        if (terrainSelectionExiste) {
+          return;
         }
+
+        if (this.terrainDemandeDepuisUrl) {
+          this.terrainIdSignal.set(null);
+          this.messageErreurSignal.set(
+            'Le terrain demandé n’est plus disponible. '
+            + 'Choisis un autre terrain.'
+          );
+          return;
+        }
+
+        this.terrainIdSignal.set(
+          terrains.length > 0
+            ? terrains[0].terrainId
+            : null
+        );
       }),
       catchError(error => {
         this.messageErreurSignal.set(

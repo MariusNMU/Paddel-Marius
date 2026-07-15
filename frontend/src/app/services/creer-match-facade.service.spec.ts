@@ -176,6 +176,26 @@ describe('CreerMatchFacadeService', () => {
     expect(service.dureeMatchLibelle()).toBe('1h30');
   });
 
+  it('doit choisir le premier terrain sans terrain demandé dans l URL', () => {
+    service.initialiser(null, null);
+
+    expect(service.terrainId()).toBe(10);
+    expect(service.messageErreur()).toBe('');
+  });
+
+  it('doit refuser un terrain demandé absent des terrains actifs', () => {
+    service.initialiser(
+      '999',
+      '2026-06-20T09:00:00'
+    );
+
+    expect(service.terrainId()).toBeNull();
+    expect(service.messageErreur()).toBe(
+      'Le terrain demandé n’est plus disponible. '
+      + 'Choisis un autre terrain.'
+    );
+  });
+
   it('doit créer un match avec les valeurs du parcours', () => {
     matchApiService.creerMatch.mockReturnValue(of(matchCree));
 

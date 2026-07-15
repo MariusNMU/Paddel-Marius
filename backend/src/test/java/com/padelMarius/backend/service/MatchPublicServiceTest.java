@@ -220,6 +220,94 @@ class MatchPublicServiceTest {
     }
 
     @Test
+    void listerMatchesPublicsDisponibles_shouldMarkMatchAsNotEligible_whenPlayerHasScheduleConflict() {
+        LocalDate date = LocalDate.of(2026, 6, 20);
+
+        Site site = creerSite(
+                1001L,
+                "Padel Bruxelles"
+        );
+
+        Terrain terrain = creerTerrain(
+                1101L,
+                site,
+                "T1"
+        );
+
+        PadelMatch matchCandidat = creerMatch(
+                3001L,
+                terrain,
+                LocalDateTime.of(2026, 6, 20, 9, 0)
+        );
+
+        PadelMatch matchExistant = creerMatch(
+                3002L,
+                terrain,
+                LocalDateTime.of(2026, 6, 20, 10, 0)
+        );
+
+        Membre joueurConnecte = creerMembre(
+                2001L,
+                "G1001"
+        );
+
+        Participation participationExistante =
+                creerParticipation(
+                        7L,
+                        matchExistant,
+                        StatutParticipation.CONFIRMEE
+                );
+
+        List<Participation> participationsJoueur =
+                List.of(participationExistante);
+
+        when(membreRepository.findByMatricule("G1001"))
+                .thenReturn(Optional.of(joueurConnecte));
+
+        when(padelMatchRepository
+                .findByVisibiliteCouranteAndEtatCycleAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBefore(
+                        VisibiliteMatch.PUBLIC,
+                        EtatCycleMatch.A_VENIR,
+                        date.atStartOfDay(),
+                        date.plusDays(1).atStartOfDay()
+                ))
+                .thenReturn(List.of(matchCandidat));
+
+        when(participationRepository.findByMembreId(2001L))
+                .thenReturn(participationsJoueur);
+
+        when(participationRepository.findByMatchId(3001L))
+                .thenReturn(List.of());
+
+        when(participationRepository
+                .existsByMatchIdAndMembreId(
+                        3001L,
+                        2001L
+                ))
+                .thenReturn(false);
+
+        when(participationService.aUnConflitHoraire(
+                matchCandidat,
+                participationsJoueur
+        )).thenReturn(true);
+
+        List<MatchPublicResponse> responses =
+                matchPublicService
+                        .listerMatchesPublicsDisponibles(
+                                1001L,
+                                date,
+                                "G1001"
+                        );
+
+        assertEquals(1, responses.size());
+        assertFalse(responses.getFirst().peutRejoindre());
+        assertEquals(
+                "Tu participes déjà à un autre match sur ce créneau.",
+                responses.getFirst().motifNonEligibilite()
+        );
+    }
+
+    @Test
     void rejoindreEtPayer_shouldCreateParticipationAndPayment() {
         ParticipationResponse participationResponse = new ParticipationResponse(
                 3105L,

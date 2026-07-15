@@ -123,7 +123,6 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
 
     private void insererHorairesAnnuels(int anneeCivile) {
         insererHoraireAnnuel(
-                1301L,
                 1001L,
                 anneeCivile,
                 LocalTime.of(8, 0),
@@ -131,7 +130,6 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
         );
 
         insererHoraireAnnuel(
-                1302L,
                 1002L,
                 anneeCivile,
                 LocalTime.of(9, 0),
@@ -139,7 +137,6 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
         );
 
         insererHoraireAnnuel(
-                1303L,
                 1001L,
                 anneeCivile + 1,
                 LocalTime.of(8, 0),
@@ -147,7 +144,6 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
         );
 
         insererHoraireAnnuel(
-                1304L,
                 1002L,
                 anneeCivile + 1,
                 LocalTime.of(9, 0),
@@ -156,7 +152,6 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
     }
 
     private void insererHoraireAnnuel(
-            Long id,
             Long siteId,
             Integer anneeCivile,
             LocalTime heureDebutReservation,
@@ -164,31 +159,34 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
     ) {
         jdbcTemplate.update("""
                 INSERT INTO horaire_annuel_site (
-                    id,
                     site_id,
                     annee_civile,
                     heure_debut_reservation,
                     heure_fin_reservation
                 )
                 VALUES (
-                    :id,
                     :siteId,
                     :anneeCivile,
                     :heureDebutReservation,
                     :heureFinReservation
                 )
-                ON CONFLICT (id) DO UPDATE SET
-                    site_id = EXCLUDED.site_id,
-                    annee_civile = EXCLUDED.annee_civile,
-                    heure_debut_reservation = EXCLUDED.heure_debut_reservation,
-                    heure_fin_reservation = EXCLUDED.heure_fin_reservation
+                ON CONFLICT (site_id, annee_civile) DO UPDATE SET
+                    heure_debut_reservation =
+                        EXCLUDED.heure_debut_reservation,
+                    heure_fin_reservation =
+                        EXCLUDED.heure_fin_reservation
                 """,
                 new MapSqlParameterSource()
-                        .addValue("id", id)
                         .addValue("siteId", siteId)
                         .addValue("anneeCivile", anneeCivile)
-                        .addValue("heureDebutReservation", heureDebutReservation)
-                        .addValue("heureFinReservation", heureFinReservation)
+                        .addValue(
+                                "heureDebutReservation",
+                                heureDebutReservation
+                        )
+                        .addValue(
+                                "heureFinReservation",
+                                heureFinReservation
+                        )
         );
     }
 
@@ -374,8 +372,7 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                     categorie_membre = EXCLUDED.categorie_membre,
                     site_rattachement_id = EXCLUDED.site_rattachement_id,
                     actif = EXCLUDED.actif,
-                    mot_de_passe_hash = EXCLUDED.mot_de_passe_hash,
-                    solde_credit = EXCLUDED.solde_credit
+                    mot_de_passe_hash = EXCLUDED.mot_de_passe_hash
                 """,
                 new MapSqlParameterSource()
                         .addValue("id", id)
@@ -797,14 +794,7 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                     :dateReglement,
                     :statutDette
                 )
-                ON CONFLICT (id) DO UPDATE SET
-                    match_id = EXCLUDED.match_id,
-                    membre_responsable_id = EXCLUDED.membre_responsable_id,
-                    montant_initial = EXCLUDED.montant_initial,
-                    montant_restant = EXCLUDED.montant_restant,
-                    date_creation = EXCLUDED.date_creation,
-                    date_reglement = EXCLUDED.date_reglement,
-                    statut_dette = EXCLUDED.statut_dette
+                ON CONFLICT DO NOTHING
                 """,
                 new MapSqlParameterSource()
                         .addValue("id", id)

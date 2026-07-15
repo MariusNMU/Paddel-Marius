@@ -52,7 +52,7 @@ class PostgresDemoDataSeederTest {
     }
 
     @Test
-    void run_insereLesDonneesDemoAvecLesIdsCompatiblesFrontend() throws Exception {
+    void run_insereLesDonneesDemoCompatiblesAvecLeFrontend() throws Exception {
         seeder.run();
 
         ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
@@ -67,10 +67,33 @@ class PostgresDemoDataSeederTest {
         List<String> requetes = sqlCaptor.getAllValues();
         String toutesLesRequetes = String.join("\n", requetes);
 
-        List<Object> anneesHoraires = parametresCaptor.getAllValues().stream()
-                .filter(parametres -> parametres.hasValue("anneeCivile"))
-                .map(parametres -> parametres.getValue("anneeCivile"))
-                .toList();
+        String requeteMembre = requetes.stream()
+                .filter(requete ->
+                        requete.contains("INSERT INTO membre (")
+                )
+                .findFirst()
+                .orElseThrow();
+
+        String requeteDette = requetes.stream()
+                .filter(requete ->
+                        requete.contains("INSERT INTO dette (")
+                )
+                .findFirst()
+                .orElseThrow();
+
+        List<SqlParameterSource> parametresHoraires =
+                parametresCaptor.getAllValues().stream()
+                        .filter(parametres ->
+                                parametres.hasValue("anneeCivile")
+                        )
+                        .toList();
+
+        List<Object> anneesHoraires =
+                parametresHoraires.stream()
+                        .map(parametres ->
+                                parametres.getValue("anneeCivile")
+                        )
+                        .toList();
 
         assertThat(toutesLesRequetes).contains("INSERT INTO site");
         assertThat(toutesLesRequetes).contains("INSERT INTO terrain");
@@ -80,6 +103,25 @@ class PostgresDemoDataSeederTest {
         assertThat(toutesLesRequetes).contains("INSERT INTO participation");
         assertThat(toutesLesRequetes).contains("INSERT INTO paiement");
         assertThat(anneesHoraires).contains(2026, 2027);
+        assertThat(toutesLesRequetes).contains(
+                "ON CONFLICT (site_id, annee_civile) DO UPDATE SET"
+        );
+
+        assertThat(parametresHoraires)
+                .hasSize(4)
+                .allSatisfy(parametres ->
+                        assertThat(
+                                parametres.hasValue("id")
+                        ).isFalse()
+                );
+
+        assertThat(requeteMembre).doesNotContain(
+                "solde_credit = EXCLUDED.solde_credit"
+        );
+
+        assertThat(requeteDette).contains(
+                "ON CONFLICT DO NOTHING"
+        );
 
         verify(passwordEncoder).encode("password");
         verify(passwordEncoder).encode("secret");

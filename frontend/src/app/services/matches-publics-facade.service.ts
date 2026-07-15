@@ -18,9 +18,7 @@ import { MatchPublicApiService } from './match-public-api.service';
 import { ParametresMetierApiService } from './parametres-metier-api.service';
 import { SiteApiService } from './site-api.service';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable()
 export class MatchesPublicsFacadeService {
   private readonly sitesSignal = signal<SiteResponse[]>([]);
   private readonly parametresMetierSignal =

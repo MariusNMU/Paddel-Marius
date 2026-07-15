@@ -183,21 +183,43 @@ public class ParticipationService {
         }
     }
 
-    private void verifierMembreSansMatchChevauchant(Membre membre, PadelMatch nouveauMatch) {
-        List<Participation> participations = participationRepository.findByMembreId(membre.getId());
+    private void verifierMembreSansMatchChevauchant(
+            Membre membre,
+            PadelMatch nouveauMatch
+    ) {
+        List<Participation> participations =
+                participationRepository.findByMembreId(membre.getId());
 
-        boolean conflit = participations.stream()
-                .filter(participation -> participation.getStatutParticipation() != StatutParticipation.LIBEREE)
-                .map(Participation::getMatch)
-                .filter(Objects::nonNull)
-                .filter(matchExistant -> !Objects.equals(matchExistant.getId(), nouveauMatch.getId()))
-                .anyMatch(matchExistant -> chevaucheAvecPauseObligatoire(nouveauMatch, matchExistant));
-
-        if (conflit) {
+        if (aUnConflitHoraire(nouveauMatch, participations)) {
             throw new ConfigurationMetierException(
                     "Le membre participe deja a un autre match sur ce creneau."
             );
         }
+    }
+
+    boolean aUnConflitHoraire(
+            PadelMatch nouveauMatch,
+            List<Participation> participationsExistantes
+    ) {
+        return participationsExistantes.stream()
+                .filter(participation ->
+                        participation.getStatutParticipation()
+                                != StatutParticipation.LIBEREE
+                )
+                .map(Participation::getMatch)
+                .filter(Objects::nonNull)
+                .filter(matchExistant ->
+                        !Objects.equals(
+                                matchExistant.getId(),
+                                nouveauMatch.getId()
+                        )
+                )
+                .anyMatch(matchExistant ->
+                        chevaucheAvecPauseObligatoire(
+                                nouveauMatch,
+                                matchExistant
+                        )
+                );
     }
 
     private boolean chevaucheAvecPauseObligatoire(

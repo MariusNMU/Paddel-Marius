@@ -8,6 +8,7 @@ import { MatchesPublicsFacadeService } from '../../services/matches-publics-faca
   selector: 'app-matches-publics',
   standalone: true,
   imports: [CommonModule, FormsModule],
+  providers: [MatchesPublicsFacadeService],
   template: `
     <section class="page">
       <h2>Rejoindre un match public</h2>

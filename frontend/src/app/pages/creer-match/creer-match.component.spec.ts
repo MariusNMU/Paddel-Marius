@@ -88,10 +88,6 @@ describe('CreerMatchComponent', () => {
       imports: [CreerMatchComponent],
       providers: [
         {
-          provide: CreerMatchFacadeService,
-          useValue: facade
-        },
-        {
           provide: ActivatedRoute,
           useValue: {
             snapshot: {
@@ -103,7 +99,18 @@ describe('CreerMatchComponent', () => {
           }
         }
       ]
-    }).compileComponents();
+    })
+      .overrideComponent(CreerMatchComponent, {
+        set: {
+          providers: [
+            {
+              provide: CreerMatchFacadeService,
+              useValue: facade
+            }
+          ]
+        }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(CreerMatchComponent);
     component = fixture.componentInstance;
@@ -115,6 +122,19 @@ describe('CreerMatchComponent', () => {
       '20',
       '2026-06-20T09:00:00'
     );
+  });
+
+  it('doit désactiver la création sans terrain valide', () => {
+    facade.terrainId.set(null);
+
+    fixture.detectChanges();
+
+    const bouton: HTMLButtonElement =
+      fixture.nativeElement.querySelector(
+        'button[type="submit"]'
+      );
+
+    expect(bouton.disabled).toBe(true);
   });
 
   it('doit déléguer la création du match à la façade', () => {

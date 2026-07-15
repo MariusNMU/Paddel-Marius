@@ -9,6 +9,7 @@ import { enumLabel } from '../../shared/enum-label.util';
   selector: 'app-creer-match',
   standalone: true,
   imports: [CommonModule, FormsModule],
+  providers: [CreerMatchFacadeService],
   template: `
     <section class="page">
       <h2>Créer un match</h2>
@@ -124,6 +125,7 @@ import { enumLabel } from '../../shared/enum-label.util';
           facade.chargementCreation()
           || facade.chargementTerrains()
           || facade.terrains().length === 0
+          || facade.terrainId() === null
         ">
           {{ facade.chargementCreation() ? 'Création...' : 'Créer le match' }}
         </button>

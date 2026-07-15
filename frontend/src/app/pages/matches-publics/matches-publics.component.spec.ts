@@ -1,6 +1,11 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import {
+  signal,
+  WritableSignal
+} from '@angular/core';
+import {
+  ComponentFixture,
+  TestBed
+} from '@angular/core/testing';
 import { AuthJoueurResponse } from '../../models/auth.model';
 import {
   MatchPublicResponse,
@@ -8,31 +13,38 @@ import {
 } from '../../models/match-public.model';
 import { ParametresMetierResponse } from '../../models/parametres-metier.model';
 import { SiteResponse } from '../../models/site.model';
-import { AuthContextService } from '../../services/auth-context.service';
-import { MatchPublicApiService } from '../../services/match-public-api.service';
-import { ParametresMetierApiService } from '../../services/parametres-metier-api.service';
-import { SiteApiService } from '../../services/site-api.service';
+import { MatchesPublicsFacadeService } from '../../services/matches-publics-facade.service';
+import { JourRapide } from '../../shared/date-ui.util';
 import { MatchesPublicsComponent } from './matches-publics.component';
 
 describe('MatchesPublicsComponent', () => {
   let fixture: ComponentFixture<MatchesPublicsComponent>;
   let component: MatchesPublicsComponent;
 
-  let matchPublicApiService: {
-    listerMatchesPublics: ReturnType<typeof vi.fn>;
+  let facade: {
+    initialiser: ReturnType<typeof vi.fn>;
+    selectionnerJour: ReturnType<typeof vi.fn>;
+    rechercherMatchesPublics: ReturnType<typeof vi.fn>;
     rejoindreEtPayer: ReturnType<typeof vi.fn>;
-  };
+    modifierSiteId: ReturnType<typeof vi.fn>;
+    modifierDate: ReturnType<typeof vi.fn>;
+    joueurConnecte: ReturnType<typeof vi.fn>;
 
-  let authContextService: {
-    joueur: ReturnType<typeof vi.fn>;
-  };
-
-  let siteApiService: {
-    listerSitesActifs: ReturnType<typeof vi.fn>;
-  };
-
-  let parametresMetierApiService: {
-    consulterParametresMetier: ReturnType<typeof vi.fn>;
+    sites: WritableSignal<SiteResponse[]>;
+    parametresMetier:
+      WritableSignal<ParametresMetierResponse | null>;
+    joursRapides: WritableSignal<JourRapide[]>;
+    siteId: WritableSignal<number | null>;
+    date: WritableSignal<string>;
+    matches: WritableSignal<MatchPublicResponse[]>;
+    dernierPaiement:
+      WritableSignal<RejoindreMatchPublicResponse | null>;
+    chargementSites: WritableSignal<boolean>;
+    chargementRecherche: WritableSignal<boolean>;
+    chargementPaiement: WritableSignal<boolean>;
+    rechercheEffectuee: WritableSignal<boolean>;
+    messageErreur: WritableSignal<string>;
+    messageSucces: WritableSignal<string>;
   };
 
   const joueur: AuthJoueurResponse = {
@@ -46,20 +58,21 @@ describe('MatchesPublicsComponent', () => {
     actif: true
   };
 
-  const sites: SiteResponse[] = [
-    {
-      siteId: 1,
-      code: 'ALP',
-      nom: 'Site Alpha',
-      adresse: 'Rue du Test 1'
-    },
-    {
-      siteId: 2,
-      code: 'BET',
-      nom: 'Site Beta',
-      adresse: 'Rue du Test 2'
-    }
-  ];
+  const sites: SiteResponse[] = [{
+    siteId: 1,
+    code: 'ALP',
+    nom: 'Site Alpha',
+    adresse: 'Rue du Test 1'
+  }];
+
+  const parametresMetier: ParametresMetierResponse = {
+    dureeMatchMinutes: 90,
+    pauseEntreMatchesMinutes: 15,
+    nombreJoueursMaximum: 4,
+    prixTotalMatch: 60,
+    montantParticipationStandard: 15,
+    soldeInitialJoueur: 100
+  };
 
   const matchPublic: MatchPublicResponse = {
     matchId: 10,
@@ -77,44 +90,42 @@ describe('MatchesPublicsComponent', () => {
     motifNonEligibilite: null
   };
 
-  const parametresMetier: ParametresMetierResponse = {
-    dureeMatchMinutes: 90,
-    pauseEntreMatchesMinutes: 15,
-    nombreJoueursMaximum: 4,
-    prixTotalMatch: 60,
-    montantParticipationStandard: 15,
-    soldeInitialJoueur: 100
-  };
-
   beforeEach(async () => {
-    matchPublicApiService = {
-      listerMatchesPublics: vi.fn(),
-      rejoindreEtPayer: vi.fn()
-    };
+    facade = {
+      initialiser: vi.fn(),
+      selectionnerJour: vi.fn(),
+      rechercherMatchesPublics: vi.fn(),
+      rejoindreEtPayer: vi.fn(),
+      modifierSiteId: vi.fn(),
+      modifierDate: vi.fn(),
+      joueurConnecte: vi.fn(() => joueur),
 
-    authContextService = {
-      joueur: vi.fn(() => joueur)
-    };
-
-    siteApiService = {
-      listerSitesActifs: vi.fn(() => of(sites))
-    };
-
-    parametresMetierApiService = {
-      consulterParametresMetier: vi.fn(() => of(parametresMetier))
+      sites: signal(sites),
+      parametresMetier: signal(parametresMetier),
+      joursRapides: signal([]),
+      siteId: signal(1),
+      date: signal('2026-06-20'),
+      matches: signal([]),
+      dernierPaiement: signal(null),
+      chargementSites: signal(false),
+      chargementRecherche: signal(false),
+      chargementPaiement: signal(false),
+      rechercheEffectuee: signal(false),
+      messageErreur: signal(''),
+      messageSucces: signal('')
     };
 
     await TestBed.configureTestingModule({
       imports: [MatchesPublicsComponent],
-      providers: [
-        { provide: MatchPublicApiService, useValue: matchPublicApiService },
-        { provide: SiteApiService, useValue: siteApiService },
-        { provide: ParametresMetierApiService, useValue: parametresMetierApiService },
-        { provide: AuthContextService, useValue: authContextService }
-      ]
+      providers: [{
+        provide: MatchesPublicsFacadeService,
+        useValue: facade
+      }]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(MatchesPublicsComponent);
+    fixture = TestBed.createComponent(
+      MatchesPublicsComponent
+    );
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -123,121 +134,38 @@ describe('MatchesPublicsComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('doit charger les sites depuis l API backend', () => {
-    expect(siteApiService.listerSitesActifs).toHaveBeenCalled();
-    expect(component.sites).toEqual(sites);
-    expect(component.siteId).toBe(1);
+  it('doit initialiser la façade', () => {
+    expect(facade.initialiser).toHaveBeenCalled();
   });
 
-  it('doit charger les paramètres métier depuis l API backend', () => {
-    expect(parametresMetierApiService.consulterParametresMetier).toHaveBeenCalled();
-    expect(component.parametresMetier).toEqual(parametresMetier);
-  });
-
-  it('doit lister les matches publics pour un site et une date', () => {
-    matchPublicApiService.listerMatchesPublics.mockReturnValue(of([matchPublic]));
-
-    component.siteId = 1;
-    component.date = '2026-06-20';
-
+  it('doit déléguer la recherche à la façade', () => {
     component.rechercherMatchesPublics();
 
-    expect(matchPublicApiService.listerMatchesPublics).toHaveBeenCalledWith(1, '2026-06-20');
-    expect(component.matches).toEqual([matchPublic]);
-    expect(component.rechercheEffectuee).toBe(true);
-    expect(component.chargement).toBe(false);
+    expect(facade.rechercherMatchesPublics)
+      .toHaveBeenCalled();
   });
 
-  it('doit afficher une erreur si le site ou la date est manquant', () => {
-    component.siteId = null;
-    component.date = '';
-
-    component.rechercherMatchesPublics();
-
-    expect(component.messageErreur).toBe('Le site et la date sont obligatoires.');
-    expect(matchPublicApiService.listerMatchesPublics).not.toHaveBeenCalled();
-  });
-
-  it('doit afficher une erreur si la recherche échoue', () => {
-    matchPublicApiService.listerMatchesPublics.mockReturnValue(
-      throwError(() => new HttpErrorResponse({
-        status: 500,
-        error: {
-          message: 'Erreur backend matches publics.'
-        }
-      }))
-    );
-
-    component.siteId = 1;
-    component.date = '2026-06-20';
-
-    component.rechercherMatchesPublics();
-
-    expect(component.messageErreur).toBe('Erreur backend matches publics.');
-    expect(component.matches).toEqual([]);
-    expect(component.chargement).toBe(false);
-  });
-
-  it('doit refuser de rejoindre un match si aucun joueur n est connecté', () => {
-    authContextService.joueur.mockReturnValue(null);
-
+  it('doit déléguer le paiement à la façade', () => {
     component.rejoindreEtPayer(matchPublic);
 
-    expect(component.messageErreur).toBe('Connecte-toi comme joueur pour rejoindre un match public.');
-    expect(matchPublicApiService.rejoindreEtPayer).not.toHaveBeenCalled();
+    expect(facade.rejoindreEtPayer)
+      .toHaveBeenCalledWith(matchPublic);
   });
 
-  it('doit appeler l API pour rejoindre et payer un match public', () => {
-    const paiement: RejoindreMatchPublicResponse = {
-      matchId: 10,
-      participationId: 30,
-      paiementId: 40,
-      matriculeJoueur: 'TEST001',
-      montantPaye: 15,
-      statutParticipation: 'CONFIRMEE',
-      soldeRestant: 85
-    };
+  it('doit déléguer le choix rapide de la date', () => {
+    component.selectionnerJour('2026-06-21');
 
-    authContextService.joueur.mockReturnValue(joueur);
-    matchPublicApiService.rejoindreEtPayer.mockReturnValue(of(paiement));
-    matchPublicApiService.listerMatchesPublics.mockReturnValue(of([]));
-
-    component.siteId = 1;
-    component.date = '2026-06-20';
-
-    component.rejoindreEtPayer(matchPublic);
-
-    expect(matchPublicApiService.rejoindreEtPayer).toHaveBeenCalledWith(10, {
-      matriculeJoueur: 'TEST001'
-    });
-
-    expect(matchPublicApiService.listerMatchesPublics).toHaveBeenCalledWith(1, '2026-06-20');
-    expect(component.chargementPaiement).toBe(false);
+    expect(facade.selectionnerJour)
+      .toHaveBeenCalledWith('2026-06-21');
   });
 
-  it('ne doit pas appeler l API si le joueur ne peut pas rejoindre le match', () => {
-    const matchNonEligible: MatchPublicResponse = {
+  it('doit masquer le bouton pour un match non éligible', () => {
+    facade.matches.set([{
       ...matchPublic,
       peutRejoindre: false,
-      motifNonEligibilite: 'Tu participes déjà à ce match.'
-    };
-
-    component.rejoindreEtPayer(matchNonEligible);
-
-    expect(component.messageErreur).toBe(
-      'Tu participes déjà à ce match.'
-    );
-    expect(
-      matchPublicApiService.rejoindreEtPayer
-    ).not.toHaveBeenCalled();
-  });
-
-  it('doit masquer le bouton si le joueur participe déjà', () => {
-    component.matches = [{
-      ...matchPublic,
-      peutRejoindre: false,
-      motifNonEligibilite: 'Tu participes déjà à ce match.'
-    }];
+      motifNonEligibilite:
+        'Tu participes déjà à ce match.'
+    }]);
 
     fixture.detectChanges();
 
@@ -249,20 +177,5 @@ describe('MatchesPublicsComponent', () => {
     expect(contenu).not.toContain(
       'Rejoindre et payer 15.00 €'
     );
-  });
-
-  it('doit changer la date avec le choix rapide', () => {
-    component.matches = [matchPublic];
-    component.messageErreur = 'ancienne erreur';
-    component.messageSucces = 'ancien succès';
-    component.rechercheEffectuee = true;
-
-    component.selectionnerJour('2026-06-21');
-
-    expect(component.date).toBe('2026-06-21');
-    expect(component.matches).toEqual([]);
-    expect(component.messageErreur).toBe('');
-    expect(component.messageSucces).toBe('');
-    expect(component.rechercheEffectuee).toBe(false);
   });
 });

@@ -1,18 +1,14 @@
 ﻿import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { CreneauDisponibiliteResponse, DisponibilitesResponse } from '../../models/disponibilite.model';
-import { SiteResponse } from '../../models/site.model';
-import { DisponibiliteApiService } from '../../services/disponibilite-api.service';
-import { SiteApiService } from '../../services/site-api.service';
-import { extraireMessageErreur } from '../../shared/api-error.util';
-import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shared/date-ui.util';
+import { CreneauDisponibiliteResponse } from '../../models/disponibilite.model';
+import { DisponibilitesFacadeService } from '../../services/disponibilites-facade.service';
 
 @Component({
   selector: 'app-disponibilites',
   standalone: true,
   imports: [CommonModule, FormsModule],
+  providers: [DisponibilitesFacadeService],
   template: `
     <section class="page">
       <h2>Organiser un match</h2>
@@ -23,16 +19,31 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
       <div class="bloc-info">
         <h3>Sites disponibles</h3>
 
-        <p *ngIf="chargementSites" class="aide">
+        <p *ngIf="facade.chargementSites()" class="aide">
           Chargement des sites...
         </p>
 
-        <p *ngIf="!chargementSites && sites.length === 0" class="aide">
+        <p
+          *ngIf="
+            !facade.chargementSites()
+            && facade.sites().length === 0
+          "
+          class="aide"
+        >
           Aucun site actif disponible.
         </p>
 
-        <div *ngIf="!chargementSites && sites.length > 0" class="sites-api">
-          <article *ngFor="let site of sites" class="site-api-card">
+        <div
+          *ngIf="
+            !facade.chargementSites()
+            && facade.sites().length > 0
+          "
+          class="sites-api"
+        >
+          <article
+            *ngFor="let site of facade.sites()"
+            class="site-api-card"
+          >
             <h4>{{ site.nom }}</h4>
             <p><strong>Code :</strong> {{ site.code }}</p>
             <p><strong>Adresse :</strong> {{ site.adresse }}</p>
@@ -49,10 +60,10 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
 
         <div class="jours-rapides">
           <button
-            *ngFor="let jour of joursRapides"
+            *ngFor="let jour of facade.joursRapides()"
             type="button"
             (click)="selectionnerJour(jour.date)"
-            [class.selectionne]="date === jour.date"
+            [class.selectionne]="facade.date() === jour.date"
           >
             <span>{{ jour.libelle }}</span>
             <strong>{{ jour.date }}</strong>
@@ -62,43 +73,76 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
 
       <form (ngSubmit)="consulterDisponibilites()">
         <label for="siteId">Site</label>
+
         <select
           id="siteId"
           name="siteId"
-          [(ngModel)]="siteId"
+          [ngModel]="facade.siteId()"
+          (ngModelChange)="facade.modifierSiteId($event)"
           required
-          [disabled]="chargementSites || sites.length === 0"
+          [disabled]="
+            facade.chargementSites()
+            || facade.sites().length === 0
+          "
         >
-          <option *ngFor="let site of sites" [ngValue]="site.siteId">
+          <option
+            *ngFor="let site of facade.sites()"
+            [ngValue]="site.siteId"
+          >
             {{ site.nom }} ({{ site.siteId }})
           </option>
         </select>
 
-        <div class="bloc-info" *ngIf="siteSelectionne() as site">
+        <div
+          class="bloc-info"
+          *ngIf="facade.siteSelectionne() as site"
+        >
           <h3>Site sélectionné</h3>
-          <p><strong>{{ site.nom }}</strong> — code {{ site.code }} — ID {{ site.siteId }}</p>
+
+          <p>
+            <strong>{{ site.nom }}</strong>
+            — code {{ site.code }}
+            — ID {{ site.siteId }}
+          </p>
+
           <p>{{ site.adresse }}</p>
         </div>
 
         <label for="date">Date</label>
+
         <input
           id="date"
           name="date"
           type="date"
-          [(ngModel)]="date"
+          [ngModel]="facade.date()"
+          (ngModelChange)="facade.modifierDate($event)"
           required
         />
 
-        <button type="submit" [disabled]="chargement || chargementSites || sites.length === 0">
-          {{ chargement ? 'Recherche...' : 'Voir les créneaux disponibles' }}
+        <button
+          type="submit"
+          [disabled]="
+            facade.chargementRecherche()
+            || facade.chargementSites()
+            || facade.sites().length === 0
+          "
+        >
+          {{
+            facade.chargementRecherche()
+              ? 'Recherche...'
+              : 'Voir les créneaux disponibles'
+          }}
         </button>
       </form>
 
-      <p *ngIf="messageErreur" class="erreur">
-        {{ messageErreur }}
+      <p *ngIf="facade.messageErreur()" class="erreur">
+        {{ facade.messageErreur() }}
       </p>
 
-      <div *ngIf="disponibilites" class="resultat">
+      <div
+        *ngIf="facade.disponibilites() as disponibilites"
+        class="resultat"
+      >
         <h3>
           {{ disponibilites.nomSite }} ({{ disponibilites.siteId }}) — {{ disponibilites.date }}
         </h3>
@@ -135,7 +179,7 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
 
             <p>
               <strong>Durée :</strong>
-              1h30
+              {{ facade.dureeMatchLibelle() }}
             </p>
 
             <button type="button" (click)="allerCreerMatch(creneau)">
@@ -231,95 +275,21 @@ import { JourRapide, dateDuJourPourInput, genererJoursRapides } from '../../shar
   `]
 })
 export class DisponibilitesComponent implements OnInit {
-  sites: SiteResponse[] = [];
-  joursRapides: JourRapide[] = genererJoursRapides(7);
-
-  siteId: number | null = null;
-  date = dateDuJourPourInput();
-
-  chargementSites = false;
-  chargement = false;
-  messageErreur = '';
-  disponibilites: DisponibilitesResponse | null = null;
-
   constructor(
-    private readonly disponibiliteApiService: DisponibiliteApiService,
-    private readonly siteApiService: SiteApiService,
-    private readonly router: Router,
-    private readonly changeDetectorRef: ChangeDetectorRef
+    readonly facade: DisponibilitesFacadeService
   ) {
   }
 
   ngOnInit(): void {
-    this.chargerSites();
-  }
-
-  private chargerSites(): void {
-    this.messageErreur = '';
-    this.chargementSites = true;
-
-    this.siteApiService.listerSitesActifs().subscribe({
-      next: (sites) => {
-        this.sites = sites;
-
-        const siteSelectionExiste = this.siteId !== null
-          && this.sites.some(site => site.siteId === this.siteId);
-
-        if (!siteSelectionExiste) {
-          this.siteId = this.sites.length > 0
-            ? this.sites[0].siteId
-            : null;
-        }
-
-        this.chargementSites = false;
-        this.changeDetectorRef.detectChanges();
-      },
-      error: (error) => {
-        this.messageErreur = extraireMessageErreur(error);
-        this.sites = [];
-        this.siteId = null;
-        this.chargementSites = false;
-        this.changeDetectorRef.detectChanges();
-      }
-    });
-  }
-
-  siteSelectionne(): SiteResponse | undefined {
-    return this.sites.find(site => site.siteId === Number(this.siteId));
+    this.facade.initialiser();
   }
 
   selectionnerJour(date: string): void {
-    this.date = date;
-    this.messageErreur = '';
-    this.disponibilites = null;
-    this.changeDetectorRef.detectChanges();
+    this.facade.selectionnerJour(date);
   }
 
   consulterDisponibilites(): void {
-    this.messageErreur = '';
-    this.disponibilites = null;
-
-    if (!this.siteId || !this.date) {
-      this.messageErreur = 'Le site et la date sont obligatoires.';
-      this.changeDetectorRef.detectChanges();
-      return;
-    }
-
-    this.chargement = true;
-    this.changeDetectorRef.detectChanges();
-
-    this.disponibiliteApiService.consulterDisponibilites(Number(this.siteId), this.date).subscribe({
-      next: (response) => {
-        this.disponibilites = response;
-        this.chargement = false;
-        this.changeDetectorRef.detectChanges();
-      },
-      error: (error) => {
-        this.messageErreur = extraireMessageErreur(error);
-        this.chargement = false;
-        this.changeDetectorRef.detectChanges();
-      }
-    });
+    this.facade.consulterDisponibilites();
   }
 
   formaterHeure(dateHeure: string): string {
@@ -330,12 +300,9 @@ export class DisponibilitesComponent implements OnInit {
     return dateHeure.substring(11, 16);
   }
 
-  allerCreerMatch(creneau: CreneauDisponibiliteResponse): void {
-    this.router.navigate(['/joueur/creer-match'], {
-      queryParams: {
-        terrainId: creneau.terrainId,
-        dateHeureDebut: creneau.dateHeureDebut
-      }
-    });
+  allerCreerMatch(
+    creneau: CreneauDisponibiliteResponse
+  ): void {
+    this.facade.allerCreerMatch(creneau);
   }
 }

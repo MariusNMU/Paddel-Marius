@@ -15,4 +15,6 @@ export interface FermetureAdminResponse {
   nomSite: string | null;
   motif: string | null;
   nombreMatchesAnnules: number;
+  nombreRemboursementsCredites: number;
+  montantTotalRembourse: number;
 }

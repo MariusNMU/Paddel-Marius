@@ -35,6 +35,11 @@ public interface FermetureRepository extends JpaRepository<Fermeture, Long> {
             PorteeFermeture portee
     );
 
+    List<Fermeture> findByDateFermetureAndPortee(
+            LocalDate dateFermeture,
+            PorteeFermeture portee
+    );
+
     boolean existsBySiteIdAndDateFermetureAndPortee(
             Long siteId,
             LocalDate dateFermeture,

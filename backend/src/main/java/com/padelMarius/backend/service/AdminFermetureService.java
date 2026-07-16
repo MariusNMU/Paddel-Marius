@@ -94,24 +94,71 @@ public class AdminFermetureService {
     }
 
     private void verifierDoublonFermeture(CreerFermetureRequest request, Site site) {
-        boolean existeDeja;
-
         if (request.portee() == PorteeFermeture.GLOBALE) {
-            existeDeja = fermetureRepository.existsByDateFermetureAndPorteeAndSiteIsNull(
-                    request.dateFermeture(),
-                    PorteeFermeture.GLOBALE
-            );
-        } else {
-            existeDeja = fermetureRepository.existsBySiteIdAndDateFermetureAndPortee(
-                    site.getId(),
-                    request.dateFermeture(),
-                    PorteeFermeture.LOCALE
+            boolean fermetureGlobaleExiste = fermetureRepository
+                    .existsByDateFermetureAndPorteeAndSiteIsNull(
+                            request.dateFermeture(),
+                            PorteeFermeture.GLOBALE
+                    );
+
+            if (fermetureGlobaleExiste) {
+                throw new ConfigurationMetierException(
+                        "Une fermeture globale existe déjà pour cette date."
+                );
+            }
+
+            List<Fermeture> fermeturesLocales = fermetureRepository
+                    .findByDateFermetureAndPortee(
+                            request.dateFermeture(),
+                            PorteeFermeture.LOCALE
+                    );
+
+            if (!fermeturesLocales.isEmpty()) {
+                List<String> nomsSites = fermeturesLocales.stream()
+                        .map(fermeture -> fermeture.getSite() != null
+                                ? fermeture.getSite().getNom()
+                                : "Site inconnu")
+                        .distinct()
+                        .sorted()
+                        .toList();
+
+                throw new ConfigurationMetierException(
+                        "Une fermeture locale existe déjà à cette date pour : "
+                                + String.join(", ", nomsSites)
+                                + ". Une fermeture globale n’est plus possible. "
+                                + "Créez plutôt une fermeture locale uniquement "
+                                + "pour les autres sites."
+                );
+            }
+
+            return;
+        }
+
+        boolean fermetureGlobaleExiste = fermetureRepository
+                .existsByDateFermetureAndPorteeAndSiteIsNull(
+                        request.dateFermeture(),
+                        PorteeFermeture.GLOBALE
+                );
+
+        boolean fermetureLocaleExiste = !fermetureGlobaleExiste
+                && fermetureRepository
+                .existsBySiteIdAndDateFermetureAndPortee(
+                        site.getId(),
+                        request.dateFermeture(),
+                        PorteeFermeture.LOCALE
+                );
+
+        if (fermetureGlobaleExiste) {
+            throw new ConfigurationMetierException(
+                    "Une fermeture globale existe déjà pour cette date."
             );
         }
 
-        if (existeDeja) {
+        if (fermetureLocaleExiste) {
             throw new ConfigurationMetierException(
-                    "Une fermeture existe déjà pour cette date et ce périmètre."
+                    "Une fermeture locale existe déjà pour le site "
+                            + site.getNom()
+                            + " à cette date."
             );
         }
     }

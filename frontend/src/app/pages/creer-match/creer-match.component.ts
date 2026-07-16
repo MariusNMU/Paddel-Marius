@@ -26,9 +26,11 @@ import { enumLabel } from '../../shared/enum-label.util';
         <ul>
           <li>Un match dure <strong>{{ facade.dureeMatchLibelle() }}</strong>.</li>
           <li>Un match coûte <strong>{{ facade.parametresMetier()?.prixTotalMatch | number:'1.2-2' }} €</strong>.</li>
-          <li>La part théorique est de <strong>{{ facade.parametresMetier()?.montantParticipationStandard | number:'1.2-2' }} € par joueur</strong>.</li>
-          <li>Un match contient maximum <strong>{{ facade.parametresMetier()?.nombreJoueursMaximum }} joueurs</strong>.</li>
-          <li>Un organisateur avec dette active ne peut pas créer de nouveau match.</li>
+          <li>En créant le match, le membre devient automatiquement son organisateur et son premier participant.</li>
+          <li>Sa participation initiale est de <strong>{{ facade.parametresMetier()?.montantParticipationStandard | number:'1.2-2' }} €</strong> et reste à payer après la création.</li>
+          <li>Le match doit atteindre <strong>{{ facade.parametresMetier()?.nombreJoueursMaximum }} joueurs payants</strong>. S'il n'est pas entièrement payé, l'organisateur devra payer le solde restant.</li>
+          <li>Tant qu'une dette reste ouverte, l'organisateur ne peut pas créer un nouveau match.</li>
+          <li>Lorsqu'il paie sa participation dans un autre match, ses dettes ouvertes sont ajoutées au montant total débité.</li>
         </ul>
       </div>
 
@@ -116,9 +118,33 @@ import { enumLabel } from '../../shared/enum-label.util';
           <h3>Résumé avant création</h3>
 
           <p><strong>Prix total :</strong> {{ facade.parametresMetier()?.prixTotalMatch | number:'1.2-2' }} €</p>
-          <p><strong>Part par joueur :</strong> {{ facade.parametresMetier()?.montantParticipationStandard | number:'1.2-2' }} €</p>
+          <p><strong>Participation initiale de l'organisateur :</strong> {{ facade.parametresMetier()?.montantParticipationStandard | number:'1.2-2' }} €</p>
           <p><strong>Type :</strong> {{ enumLabel(facade.modeCreation()) }}</p>
           <p><strong>Début demandé :</strong> {{ facade.dateHeureDebut() }}</p>
+        </div>
+
+        <div class="bloc-info engagement-financier">
+          <h3>Engagement financier de l'organisateur</h3>
+
+          <p>
+            En validant, tu deviens automatiquement le premier participant de ce match.
+            Ta participation initiale de
+            <strong>{{ facade.parametresMetier()?.montantParticipationStandard | number:'1.2-2' }} €</strong>
+            restera à payer.
+          </p>
+
+          <p>
+            Le prix total du match est de
+            <strong>{{ facade.parametresMetier()?.prixTotalMatch | number:'1.2-2' }} €</strong>.
+            Si le match n'est pas entièrement payé par
+            {{ facade.parametresMetier()?.nombreJoueursMaximum }} joueurs,
+            tu devras payer le solde restant.
+          </p>
+
+          <p>
+            Une dette ouverte bloque toute nouvelle création de match. Si tu paies ensuite
+            comme joueur dans un autre match, cette dette sera ajoutée au montant total débité.
+          </p>
         </div>
 
         <button type="submit" [disabled]="
@@ -137,6 +163,12 @@ import { enumLabel } from '../../shared/enum-label.util';
 
       <div *ngIf="facade.matchCree() as matchCree" class="resultat match-card">
         <h3>Match créé avec succès</h3>
+
+        <p>
+          Tu es automatiquement inscrit comme organisateur. Ta participation initiale de
+          <strong>{{ facade.parametresMetier()?.montantParticipationStandard | number:'1.2-2' }} €</strong>
+          est en attente de paiement.
+        </p>
 
         <div class="resume-grid">
           <p><strong>ID match</strong><br>{{ matchCree.matchId }}</p>
@@ -199,6 +231,11 @@ import { enumLabel } from '../../shared/enum-label.util';
     .match-card {
       border-color: #93c5fd;
       background: #f8fbff;
+    }
+
+    .engagement-financier {
+      border-color: #f59e0b;
+      background: #fffbeb;
     }
 
     .resume-grid {

@@ -95,6 +95,11 @@ class AdminFermetureServiceTest {
                 PorteeFermeture.GLOBALE
         )).thenReturn(false);
 
+        when(fermetureRepository.findByDateFermetureAndPortee(
+                dateFermeture,
+                PorteeFermeture.LOCALE
+        )).thenReturn(List.of());
+
         when(fermetureRepository.save(any(Fermeture.class)))
                 .thenAnswer(invocation -> {
                     Fermeture fermeture = invocation.getArgument(0);
@@ -339,7 +344,119 @@ class AdminFermetureServiceTest {
         );
 
         assertEquals(
-                "Une fermeture existe déjà pour cette date et ce périmètre.",
+                "Une fermeture globale existe déjà pour cette date.",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void creerFermeture_shouldRejectLocalClosureWhenGlobalClosureExists() {
+        LocalDate dateFermeture = LocalDate.of(2026, 7, 21);
+        Site site = creerSite(1001L);
+
+        CreerFermetureRequest request = new CreerFermetureRequest(
+                dateFermeture,
+                PorteeFermeture.LOCALE,
+                1001L,
+                "Chevauchement local"
+        );
+
+        when(siteRepository.findById(1001L))
+                .thenReturn(Optional.of(site));
+
+        when(fermetureRepository.existsByDateFermetureAndPorteeAndSiteIsNull(
+                dateFermeture,
+                PorteeFermeture.GLOBALE
+        )).thenReturn(true);
+
+        ConfigurationMetierException exception = assertThrows(
+                ConfigurationMetierException.class,
+                () -> adminFermetureService.creerFermeture(request)
+        );
+
+        assertEquals(
+                "Une fermeture globale existe déjà pour cette date.",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void creerFermeture_shouldRejectGlobalClosureWhenLocalClosureExists() {
+        LocalDate dateFermeture = LocalDate.of(2026, 7, 21);
+        Site site = creerSite(1001L);
+
+        Fermeture fermetureLocale = Fermeture.builder()
+                .dateFermeture(dateFermeture)
+                .portee(PorteeFermeture.LOCALE)
+                .site(site)
+                .motif("Maintenance locale")
+                .build();
+
+        CreerFermetureRequest request = new CreerFermetureRequest(
+                dateFermeture,
+                PorteeFermeture.GLOBALE,
+                null,
+                "Chevauchement global"
+        );
+
+        when(fermetureRepository.existsByDateFermetureAndPorteeAndSiteIsNull(
+                dateFermeture,
+                PorteeFermeture.GLOBALE
+        )).thenReturn(false);
+
+        when(fermetureRepository.findByDateFermetureAndPortee(
+                dateFermeture,
+                PorteeFermeture.LOCALE
+        )).thenReturn(List.of(fermetureLocale));
+
+        ConfigurationMetierException exception = assertThrows(
+                ConfigurationMetierException.class,
+                () -> adminFermetureService.creerFermeture(request)
+        );
+
+        assertEquals(
+                "Une fermeture locale existe déjà à cette date pour : "
+                        + "Padel 1001. Une fermeture globale n’est plus possible. "
+                        + "Créez plutôt une fermeture locale uniquement "
+                        + "pour les autres sites.",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void creerFermeture_shouldRejectDuplicateLocalClosureForSameSite() {
+        LocalDate dateFermeture = LocalDate.of(2026, 7, 21);
+        Site site = creerSite(1001L);
+
+        CreerFermetureRequest request = new CreerFermetureRequest(
+                dateFermeture,
+                PorteeFermeture.LOCALE,
+                1001L,
+                "Doublon local"
+        );
+
+        when(siteRepository.findById(1001L))
+                .thenReturn(Optional.of(site));
+
+        when(fermetureRepository.existsByDateFermetureAndPorteeAndSiteIsNull(
+                dateFermeture,
+                PorteeFermeture.GLOBALE
+        )).thenReturn(false);
+
+        when(fermetureRepository.existsBySiteIdAndDateFermetureAndPortee(
+                1001L,
+                dateFermeture,
+                PorteeFermeture.LOCALE
+        )).thenReturn(true);
+
+        ConfigurationMetierException exception = assertThrows(
+                ConfigurationMetierException.class,
+                () -> adminFermetureService.creerFermeture(request)
+        );
+
+        assertEquals(
+                "Une fermeture locale existe déjà pour le site "
+                        + "Padel 1001 à cette date.",
                 exception.getMessage()
         );
     }

@@ -143,6 +143,28 @@ describe('CreerMatchComponent', () => {
     expect(facade.creerMatch).toHaveBeenCalled();
   });
 
+  it('doit expliquer l engagement financier de l organisateur', () => {
+    const contenu = fixture.nativeElement.textContent;
+
+    expect(contenu).toContain(
+      "Engagement financier de l'organisateur"
+    );
+    expect(contenu).toContain(
+      'tu deviens automatiquement le premier participant'
+    );
+    expect(contenu).toContain('15.00 €');
+    expect(contenu).toContain('60.00 €');
+    expect(contenu).toContain(
+      'tu devras payer le solde restant'
+    );
+    expect(contenu).toContain(
+      'Une dette ouverte bloque toute nouvelle création de match'
+    );
+    expect(contenu).toContain(
+      'ajoutée au montant total débité'
+    );
+  });
+
   it('doit déléguer l invitation à la façade', () => {
     component.inviterJoueur();
 

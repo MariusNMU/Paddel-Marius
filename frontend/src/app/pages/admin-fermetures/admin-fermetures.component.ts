@@ -1,21 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import {
-  CreerFermetureRequest,
-  FermetureAdminResponse,
-  PorteeFermeture
-} from '../../models/fermeture.model';
-import { SiteResponse } from '../../models/site.model';
-import { AdminFermetureApiService } from '../../services/admin-fermeture-api.service';
-import { SiteApiService } from '../../services/site-api.service';
-import { extraireMessageErreur } from '../../shared/api-error.util';
+import { AdminFermeturesFacadeService } from '../../services/admin-fermetures-facade.service';
 import { enumLabel } from '../../shared/enum-label.util';
 
 @Component({
   selector: 'app-admin-fermetures',
   standalone: true,
   imports: [CommonModule, FormsModule],
+  providers: [AdminFermeturesFacadeService],
   template: `
     <section class="page">
       <h2>Jours de fermeture</h2>
@@ -25,12 +18,32 @@ import { enumLabel } from '../../shared/enum-label.util';
         Le backend bloque ensuite les disponibilités et annule les matches à venir concernés.
       </p>
 
+      @if (facade.admin(); as admin) {
+        <div class="bloc-info">
+          <h3>Administrateur connecté</h3>
+          <p>
+            <strong>{{ admin.prenom }} {{ admin.nom }}</strong>
+            — rôle {{ enumLabel(admin.roleAdministrateur) }}
+          </p>
+
+          @if (admin.roleAdministrateur === 'SITE') {
+            <p><strong>Site géré :</strong> {{ facade.nomSiteSelectionne() }}</p>
+          }
+        </div>
+      }
+
       <div class="bloc-info">
         <h3>Règles métier</h3>
 
         <ul>
-          <li><strong>Fermeture globale :</strong> tous les sites sont fermés.</li>
-          <li><strong>Fermeture locale :</strong> seul le site sélectionné est fermé.</li>
+          <li>
+            <strong>Administrateur global :</strong>
+            fermeture de tous les sites ou d’un site sélectionné.
+          </li>
+          <li>
+            <strong>Administrateur de site :</strong>
+            fermeture locale de son propre site uniquement.
+          </li>
           <li>Les matches à venir sur les terrains concernés sont annulés.</li>
           <li>Les disponibilités du jour fermé deviennent indisponibles.</li>
         </ul>
@@ -42,29 +55,40 @@ import { enumLabel } from '../../shared/enum-label.util';
           id="dateFermeture"
           name="dateFermeture"
           type="date"
-          [(ngModel)]="dateFermeture"
+          [ngModel]="facade.dateFermeture()"
+          (ngModelChange)="facade.modifierDateFermeture($event)"
           required
         />
 
-        <label for="portee">Portée</label>
-        <select
-          id="portee"
-          name="portee"
-          [(ngModel)]="portee"
-        >
-          <option value="GLOBALE">Globale — tous les sites</option>
-          <option value="LOCALE">Locale — un site précis</option>
-        </select>
+        @if (facade.estAdminGlobal()) {
+          <label for="portee">Portée</label>
+          <select
+            id="portee"
+            name="portee"
+            [ngModel]="facade.portee()"
+            (ngModelChange)="facade.modifierPortee($event)"
+          >
+            <option value="">Choisir une portée</option>
+            <option value="GLOBALE">Globale — tous les sites</option>
+            <option value="LOCALE">Locale — un site précis</option>
+          </select>
+        } @else if (facade.admin()) {
+          <div class="bloc-info">
+            <p><strong>Portée :</strong> Locale</p>
+            <p><strong>Site :</strong> {{ facade.nomSiteSelectionne() }}</p>
+          </div>
+        }
 
-        @if (portee === 'LOCALE') {
+        @if (facade.portee() === 'LOCALE' && facade.estAdminGlobal()) {
           <label for="siteId">Site concerné</label>
           <select
             id="siteId"
             name="siteId"
-            [(ngModel)]="siteId"
-            [disabled]="chargementSites || sites.length === 0"
+            [ngModel]="facade.siteId()"
+            (ngModelChange)="facade.modifierSiteId($event)"
+            [disabled]="facade.chargementSites() || facade.sites().length === 0"
           >
-            <option *ngFor="let site of sites" [ngValue]="site.siteId">
+            <option *ngFor="let site of facade.sites()" [ngValue]="site.siteId">
               {{ site.nom }} ({{ site.siteId }})
             </option>
           </select>
@@ -75,35 +99,52 @@ import { enumLabel } from '../../shared/enum-label.util';
           id="motif"
           name="motif"
           type="text"
-          [(ngModel)]="motif"
+          [ngModel]="facade.motif()"
+          (ngModelChange)="facade.modifierMotif($event)"
           maxlength="255"
         />
 
         <div class="bloc-info">
           <h3>Résumé avant validation</h3>
 
-          <p><strong>Date :</strong> {{ dateFermeture || 'Non renseignée' }}</p>
-          <p><strong>Portée :</strong> {{ enumLabel(portee) }}</p>
+          <p>
+            <strong>Date :</strong>
+            {{ facade.dateFermeture() || 'Non renseignée' }}
+          </p>
+          <p>
+            <strong>Portée :</strong>
+            {{ enumLabel(facade.portee()) }}
+          </p>
 
-          @if (portee === 'LOCALE') {
-            <p><strong>Site :</strong> {{ nomSiteSelectionne() }}</p>
+          @if (facade.portee() === 'LOCALE') {
+            <p><strong>Site :</strong> {{ facade.nomSiteSelectionne() }}</p>
           }
 
-          <p><strong>Motif :</strong> {{ motif || 'Aucun motif renseigné' }}</p>
+          <p>
+            <strong>Motif :</strong>
+            {{ facade.motif() || 'Aucun motif renseigné' }}
+          </p>
         </div>
 
-        <button type="submit" [disabled]="chargement || chargementSites">
-          {{ chargement ? 'Création...' : 'Créer la fermeture' }}
+        <button
+          type="submit"
+          [disabled]="
+            facade.chargementCreation()
+            || facade.chargementSites()
+            || !facade.admin()
+          "
+        >
+          {{ facade.chargementCreation() ? 'Création...' : 'Créer la fermeture' }}
         </button>
       </form>
 
-      @if (messageErreur) {
+      @if (facade.messageErreur()) {
         <p class="erreur">
-          {{ messageErreur }}
+          {{ facade.messageErreur() }}
         </p>
       }
 
-      @if (fermetureCreee) {
+      @if (facade.fermetureCreee(); as fermetureCreee) {
         <div class="resultat">
           <h3>Fermeture créée avec succès</h3>
 
@@ -113,6 +154,14 @@ import { enumLabel } from '../../shared/enum-label.util';
             <p><strong>Portée</strong><br>{{ enumLabel(fermetureCreee.portee) }}</p>
             <p><strong>Site</strong><br>{{ fermetureCreee.nomSite || 'Tous les sites' }}</p>
             <p><strong>Matches annulés</strong><br>{{ fermetureCreee.nombreMatchesAnnules }}</p>
+            <p>
+              <strong>Remboursements crédités</strong><br>
+              {{ fermetureCreee.nombreRemboursementsCredites }}
+            </p>
+            <p>
+              <strong>Montant total remboursé</strong><br>
+              {{ fermetureCreee.montantTotalRembourse | number:'1.2-2' }} €
+            </p>
           </div>
         </div>
       }
@@ -137,112 +186,17 @@ import { enumLabel } from '../../shared/enum-label.util';
 })
 export class AdminFermeturesComponent implements OnInit {
   readonly enumLabel = enumLabel;
-  sites: SiteResponse[] = [];
-
-  dateFermeture = '';
-  portee: PorteeFermeture | '' = '';
-  siteId: number | null = null;
-  motif = '';
-
-  chargementSites = false;
-  chargement = false;
-  messageErreur = '';
-  fermetureCreee: FermetureAdminResponse | null = null;
 
   constructor(
-    private readonly adminFermetureApiService: AdminFermetureApiService,
-    private readonly siteApiService: SiteApiService,
-    private readonly changeDetectorRef: ChangeDetectorRef
+    readonly facade: AdminFermeturesFacadeService
   ) {
   }
 
   ngOnInit(): void {
-    this.chargerSites();
-  }
-
-  private chargerSites(): void {
-    this.messageErreur = '';
-    this.chargementSites = true;
-
-    this.siteApiService.listerSitesActifs().subscribe({
-      next: (sites) => {
-        this.sites = sites;
-
-        const siteSelectionExiste = this.siteId !== null
-          && this.sites.some(site => site.siteId === this.siteId);
-
-        if (!siteSelectionExiste) {
-          this.siteId = this.sites.length > 0
-            ? this.sites[0].siteId
-            : null;
-        }
-
-        this.chargementSites = false;
-        this.changeDetectorRef.detectChanges();
-      },
-      error: (error) => {
-        this.messageErreur = extraireMessageErreur(error);
-        this.sites = [];
-        this.siteId = null;
-        this.chargementSites = false;
-        this.changeDetectorRef.detectChanges();
-      }
-    });
+    this.facade.initialiser();
   }
 
   creerFermeture(): void {
-    this.messageErreur = '';
-    this.fermetureCreee = null;
-
-    if (!this.dateFermeture) {
-      this.messageErreur = 'La date de fermeture est obligatoire.';
-      this.changeDetectorRef.detectChanges();
-      return;
-    }
-
-    if (!this.portee) {
-      this.messageErreur = 'La portée de fermeture est obligatoire.';
-      this.changeDetectorRef.detectChanges();
-      return;
-    }
-
-    if (this.portee === 'LOCALE' && !this.siteId) {
-      this.messageErreur = 'Le site est obligatoire pour une fermeture locale.';
-      this.changeDetectorRef.detectChanges();
-      return;
-    }
-
-    const request: CreerFermetureRequest = {
-      dateFermeture: this.dateFermeture,
-      portee: this.portee,
-      siteId: this.portee === 'LOCALE' ? Number(this.siteId) : null,
-      motif: this.motif.trim()
-    };
-
-    this.chargement = true;
-    this.changeDetectorRef.detectChanges();
-
-    this.adminFermetureApiService.creerFermeture(request).subscribe({
-      next: (response) => {
-        this.fermetureCreee = response;
-        this.chargement = false;
-        this.changeDetectorRef.detectChanges();
-      },
-      error: (error) => {
-        this.messageErreur = extraireMessageErreur(error);
-        this.chargement = false;
-        this.changeDetectorRef.detectChanges();
-      }
-    });
-  }
-
-  nomSiteSelectionne(): string {
-    const site = this.sites.find(site => site.siteId === Number(this.siteId));
-
-    if (!site) {
-      return 'Site inconnu';
-    }
-
-    return `${site.nom} (${site.siteId})`;
+    this.facade.creerFermeture();
   }
 }

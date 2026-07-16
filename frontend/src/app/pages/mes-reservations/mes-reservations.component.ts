@@ -2,8 +2,10 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { finalize, timeout } from 'rxjs';
+import { PaiementResponse } from '../../models/paiement.model';
 import { ReservationJoueurResponse } from '../../models/reservation.model';
 import { AuthContextService } from '../../services/auth-context.service';
+import { PaiementApiService } from '../../services/paiement-api.service';
 import { ReservationApiService } from '../../services/reservation-api.service';
 import { extraireMessageErreur } from '../../shared/api-error.util';
 import { enumLabel } from '../../shared/enum-label.util';
@@ -53,6 +55,33 @@ import { enumLabel } from '../../shared/enum-label.util';
         <p class="erreur">
           {{ messageErreur() }}
         </p>
+      }
+
+      @if (messageSucces()) {
+        <p class="succes">
+          {{ messageSucces() }}
+        </p>
+      }
+
+      @if (dernierPaiement(); as paiement) {
+        <div class="resultat">
+          <h3>Paiement enregistré</h3>
+
+          <div class="resume-grid">
+            <p>
+              <strong>Participation</strong><br>
+              {{ paiement.montant | number:'1.2-2' }} €
+            </p>
+            <p>
+              <strong>Dettes réglées</strong><br>
+              {{ (paiement.montantDettesReglees ?? 0) | number:'1.2-2' }} €
+            </p>
+            <p>
+              <strong>Total débité</strong><br>
+              {{ (paiement.montantTotalDebite ?? paiement.montant) | number:'1.2-2' }} €
+            </p>
+          </div>
+        </div>
       }
 
       @if (reservations().length === 0 && rechercheEffectuee() && !chargement() && !messageErreur()) {
@@ -112,6 +141,20 @@ import { enumLabel } from '../../shared/enum-label.util';
               <p class="badge-attention">
                 Participation en attente de paiement.
               </p>
+
+              @if (reservation.etatCycle !== 'ANNULE') {
+                <button
+                  type="button"
+                  (click)="payerParticipation(reservation)"
+                  [disabled]="paiementEnCoursParticipationId() !== null"
+                >
+                  {{
+                    paiementEnCoursParticipationId() === reservation.participationId
+                      ? 'Paiement...'
+                      : 'Payer ma participation'
+                  }}
+                </button>
+              }
             }
 
             @if (reservation.statutParticipation === 'CONFIRMEE') {
@@ -198,13 +241,17 @@ import { enumLabel } from '../../shared/enum-label.util';
 export class MesReservationsComponent implements OnInit {
   readonly reservations = signal<ReservationJoueurResponse[]>([]);
   readonly messageErreur = signal('');
+  readonly messageSucces = signal('');
   readonly chargement = signal(false);
   readonly rechercheEffectuee = signal(false);
+  readonly paiementEnCoursParticipationId = signal<number | null>(null);
+  readonly dernierPaiement = signal<PaiementResponse | null>(null);
   readonly enumLabel = enumLabel;
 
   constructor(
     private readonly authContextService: AuthContextService,
-    private readonly reservationApiService: ReservationApiService
+    private readonly reservationApiService: ReservationApiService,
+    private readonly paiementApiService: PaiementApiService
   ) {
   }
 
@@ -220,6 +267,8 @@ export class MesReservationsComponent implements OnInit {
 
   chargerReservations(): void {
     this.messageErreur.set('');
+    this.messageSucces.set('');
+    this.dernierPaiement.set(null);
     this.reservations.set([]);
     this.rechercheEffectuee.set(true);
 
@@ -243,6 +292,49 @@ export class MesReservationsComponent implements OnInit {
         },
         error: (error) => {
           this.messageErreur.set(extraireMessageErreur(error));
+        }
+      });
+  }
+
+  payerParticipation(reservation: ReservationJoueurResponse): void {
+    this.messageErreur.set('');
+    this.messageSucces.set('');
+    this.dernierPaiement.set(null);
+    this.paiementEnCoursParticipationId.set(
+      reservation.participationId
+    );
+
+    this.paiementApiService
+      .payerParticipationStandard(reservation.participationId)
+      .pipe(
+        timeout(10000),
+        finalize(() => {
+          this.paiementEnCoursParticipationId.set(null);
+        })
+      )
+      .subscribe({
+        next: (response) => {
+          this.dernierPaiement.set(response);
+          this.messageSucces.set(
+            'Participation payée avec succès.'
+          );
+
+          this.reservations.update(reservations =>
+            reservations.map(reservationActuelle =>
+              reservationActuelle.participationId
+                === reservation.participationId
+                ? {
+                  ...reservationActuelle,
+                  statutParticipation: 'CONFIRMEE'
+                }
+                : reservationActuelle
+            )
+          );
+        },
+        error: (error) => {
+          this.messageErreur.set(
+            extraireMessageErreur(error)
+          );
         }
       });
   }

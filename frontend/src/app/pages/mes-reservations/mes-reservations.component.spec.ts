@@ -3,8 +3,10 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { AuthJoueurResponse } from '../../models/auth.model';
+import { PaiementResponse } from '../../models/paiement.model';
 import { ReservationJoueurResponse } from '../../models/reservation.model';
 import { AuthContextService } from '../../services/auth-context.service';
+import { PaiementApiService } from '../../services/paiement-api.service';
 import { ReservationApiService } from '../../services/reservation-api.service';
 import { MesReservationsComponent } from './mes-reservations.component';
 
@@ -18,6 +20,10 @@ describe('MesReservationsComponent', () => {
 
   let reservationApiService: {
     consulterMesReservations: ReturnType<typeof vi.fn>;
+  };
+
+  let paiementApiService: {
+    payerParticipationStandard: ReturnType<typeof vi.fn>;
   };
 
   const joueur: AuthJoueurResponse = {
@@ -49,6 +55,21 @@ describe('MesReservationsComponent', () => {
     prixTotal: 60
   };
 
+  const paiement: PaiementResponse = {
+    paiementId: 4101,
+    participationId: 3101,
+    membreId: 2001,
+    matriculeMembre: 'G1001',
+    montant: 15,
+    montantDettesReglees: 30,
+    montantTotalDebite: 45,
+    naturePaiement: 'PARTICIPATION',
+    statutPaiement: 'PAYE',
+    statutParticipation: 'CONFIRMEE',
+    dateHeurePaiement: '2026-06-01T12:00:00',
+    dateConfirmationParticipation: '2026-06-01T12:00:00'
+  };
+
   beforeEach(async () => {
     authContextService = {
       joueur: vi.fn(() => null)
@@ -58,12 +79,17 @@ describe('MesReservationsComponent', () => {
       consulterMesReservations: vi.fn()
     };
 
+    paiementApiService = {
+      payerParticipationStandard: vi.fn(() => of(paiement))
+    };
+
     await TestBed.configureTestingModule({
       imports: [MesReservationsComponent],
       providers: [
         provideRouter([]),
         { provide: AuthContextService, useValue: authContextService },
-        { provide: ReservationApiService, useValue: reservationApiService }
+        { provide: ReservationApiService, useValue: reservationApiService },
+        { provide: PaiementApiService, useValue: paiementApiService }
       ]
     }).compileComponents();
 
@@ -116,6 +142,76 @@ describe('MesReservationsComponent', () => {
     expect(component.chargement()).toBe(false);
   });
 
+  it('doit payer une participation en attente', () => {
+    const reservationEnAttente: ReservationJoueurResponse = {
+      ...reservation,
+      statutParticipation: 'EN_ATTENTE_PAIEMENT'
+    };
+
+    component.reservations.set([reservationEnAttente]);
+
+    component.payerParticipation(reservationEnAttente);
+
+    expect(
+      paiementApiService.payerParticipationStandard
+    ).toHaveBeenCalledWith(3101);
+    expect(component.dernierPaiement()).toEqual(paiement);
+    expect(component.messageSucces()).toBe(
+      'Participation payée avec succès.'
+    );
+    expect(component.reservations()[0].statutParticipation)
+      .toBe('CONFIRMEE');
+    expect(component.paiementEnCoursParticipationId()).toBeNull();
+  });
+
+  it('doit afficher la participation, les dettes et le total débité', () => {
+    const reservationEnAttente: ReservationJoueurResponse = {
+      ...reservation,
+      statutParticipation: 'EN_ATTENTE_PAIEMENT'
+    };
+
+    component.reservations.set([reservationEnAttente]);
+    component.payerParticipation(reservationEnAttente);
+    fixture.detectChanges();
+
+    const contenu = fixture.nativeElement.textContent;
+
+    expect(contenu).toContain('Paiement enregistré');
+    expect(contenu).toContain('Participation');
+    expect(contenu).toContain('15.00');
+    expect(contenu).toContain('Dettes réglées');
+    expect(contenu).toContain('30.00');
+    expect(contenu).toContain('Total débité');
+    expect(contenu).toContain('45.00');
+  });
+
+  it('doit afficher une erreur si le paiement échoue', () => {
+    const reservationEnAttente: ReservationJoueurResponse = {
+      ...reservation,
+      statutParticipation: 'EN_ATTENTE_PAIEMENT'
+    };
+
+    paiementApiService.payerParticipationStandard.mockReturnValue(
+      throwError(() => new HttpErrorResponse({
+        status: 409,
+        error: {
+          message: 'Cette participation possède déjà un paiement.'
+        }
+      }))
+    );
+
+    component.reservations.set([reservationEnAttente]);
+    component.payerParticipation(reservationEnAttente);
+
+    expect(component.messageErreur()).toBe(
+      'Cette participation possède déjà un paiement.'
+    );
+    expect(component.dernierPaiement()).toBeNull();
+    expect(component.paiementEnCoursParticipationId()).toBeNull();
+    expect(component.reservations()[0].statutParticipation)
+      .toBe('EN_ATTENTE_PAIEMENT');
+  });
+
   it('doit charger automatiquement les réservations au démarrage si un joueur est connecté', () => {
     TestBed.resetTestingModule();
 
@@ -132,7 +228,8 @@ describe('MesReservationsComponent', () => {
       providers: [
         provideRouter([]),
         { provide: AuthContextService, useValue: authContextService },
-        { provide: ReservationApiService, useValue: reservationApiService }
+        { provide: ReservationApiService, useValue: reservationApiService },
+        { provide: PaiementApiService, useValue: paiementApiService }
       ]
     });
 

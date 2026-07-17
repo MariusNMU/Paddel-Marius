@@ -1,4 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import {
+  signal,
+  type Signal,
+  type WritableSignal
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import {
   afterEach,
@@ -10,6 +15,7 @@ import {
 } from 'vitest';
 import {
   of,
+  Subject,
   throwError
 } from 'rxjs';
 import { AuthAdminResponse } from '../models/auth.model';
@@ -36,9 +42,12 @@ describe(
         ReturnType<typeof vi.fn>;
     };
 
+    let adminSignal:
+      WritableSignal<AuthAdminResponse | null>;
+
     let authContextService: {
       admin:
-        ReturnType<typeof vi.fn>;
+        Signal<AuthAdminResponse | null>;
     };
 
     const adminGlobal:
@@ -122,9 +131,13 @@ describe(
           vi.fn(() => of(sites))
       };
 
+      adminSignal =
+        signal<AuthAdminResponse | null>(
+          adminGlobal
+        );
+
       authContextService = {
-        admin:
-          vi.fn(() => adminGlobal)
+        admin: adminSignal.asReadonly()
       };
 
       TestBed.configureTestingModule({
@@ -194,9 +207,7 @@ describe(
     it(
       'doit limiter un admin SITE à son propre site',
       () => {
-        authContextService
-          .admin
-          .mockReturnValue(adminSite);
+        adminSignal.set(adminSite);
 
         service.initialiser();
         service.modifierSiteId(1002);
@@ -287,9 +298,7 @@ describe(
     it(
       'doit charger uniquement les statistiques du site autorisé',
       () => {
-        authContextService
-          .admin
-          .mockReturnValue(adminSite);
+        adminSignal.set(adminSite);
 
         service.initialiser();
         service.modifierSiteId(1002);
@@ -439,9 +448,7 @@ describe(
     it(
       'doit refuser le chargement sans administrateur connecté',
       () => {
-        authContextService
-          .admin
-          .mockReturnValue(null);
+        adminSignal.set(null);
 
         service.initialiser();
         service.chargerStatistiques();
@@ -461,6 +468,96 @@ describe(
           adminStatsApiService
             .consulterStatistiques
         ).not.toHaveBeenCalled();
+      }
+    );
+
+    it(
+      'doit se resynchroniser quand la session admin change',
+      () => {
+        service.initialiser();
+        service.chargerStatistiques();
+
+        expect(service.statistiques())
+          .toEqual(statistiques);
+
+        adminSignal.set(adminSite);
+        TestBed.tick();
+
+        expect(service.admin())
+          .toEqual(adminSite);
+
+        expect(service.estAdminGlobal())
+          .toBe(false);
+
+        expect(service.siteId())
+          .toBe(1001);
+
+        expect(service.sites())
+          .toEqual([]);
+
+        expect(service.statistiques())
+          .toBeNull();
+
+        adminSignal.set(null);
+        TestBed.tick();
+
+        expect(service.admin())
+          .toBeNull();
+
+        expect(service.siteId())
+          .toBeNull();
+
+        expect(service.sites())
+          .toEqual([]);
+
+        expect(service.statistiques())
+          .toBeNull();
+
+        expect(
+          service.messageErreur()
+        ).toBe(
+          'Tu dois te connecter comme admin avant de consulter les statistiques.'
+        );
+      }
+    );
+
+    it(
+      'doit ignorer une réponse statistique de l ancienne session',
+      () => {
+        const anciennesStatistiques$ =
+          new Subject<StatistiquesAdminResponse>();
+
+        adminStatsApiService
+          .consulterStatistiques
+          .mockReturnValue(
+            anciennesStatistiques$
+          );
+
+        service.initialiser();
+        service.chargerStatistiques();
+
+        expect(service.chargement())
+          .toBe(true);
+
+        adminSignal.set(adminSite);
+        TestBed.tick();
+
+        expect(service.chargement())
+          .toBe(false);
+
+        expect(service.statistiques())
+          .toBeNull();
+
+        anciennesStatistiques$.next({
+          ...statistiques,
+          nombreMatches: 99
+        });
+
+        expect(service.statistiques())
+          .toBeNull();
+
+        expect(service.siteId())
+          .toBe(1001);
       }
     );
   }

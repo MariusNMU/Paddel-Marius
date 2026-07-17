@@ -1,54 +1,21 @@
-﻿import { Component, OnInit, signal } from '@angular/core';
+import {
+  Component,
+  OnInit
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { AdminStatsApiService } from '../../services/admin-stats-api.service';
-import { AuthContextService } from '../../services/auth-context.service';
-import { SiteApiService } from '../../services/site-api.service';
-import { SiteResponse } from '../../models/site.model';
-import { StatistiquesAdminResponse } from '../../models/statistique.model';
-import { extraireMessageErreur } from '../../shared/api-error.util';
-
-function dateIsoDansJours(decalageJours: number): string {
-  const date = new Date();
-  date.setDate(date.getDate() + decalageJours);
-
-  const annee = date.getFullYear();
-  const mois = String(date.getMonth() + 1).padStart(2, '0');
-  const jour = String(date.getDate()).padStart(2, '0');
-
-  return `${annee}-${mois}-${jour}`;
-}
-
-function premierJourMoisCourant(): string {
-  const date = new Date();
-  date.setDate(1);
-
-  const annee = date.getFullYear();
-  const mois = String(date.getMonth() + 1).padStart(2, '0');
-
-  return `${annee}-${mois}-01`;
-}
-
-function dernierJourMoisCourant(): string {
-  const date = new Date();
-  date.setMonth(date.getMonth() + 1, 0);
-
-  const annee = date.getFullYear();
-  const mois = String(date.getMonth() + 1).padStart(2, '0');
-  const jour = String(date.getDate()).padStart(2, '0');
-
-  return `${annee}-${mois}-${jour}`;
-}
+import { AdminStatistiquesFacadeService } from '../../services/admin-statistiques-facade.service';
 
 @Component({
   selector: 'app-admin-statistiques',
   standalone: true,
   imports: [FormsModule, RouterLink],
+  providers: [AdminStatistiquesFacadeService],
   template: `
     <section class="page">
       <h2>Statistiques admin</h2>
 
-      @if (!authContextService.adminConnecte()) {
+      @if (!facade.admin()) {
         <p class="erreur">
           Tu dois te connecter comme admin avant de consulter les statistiques.
         </p>
@@ -86,7 +53,8 @@ function dernierJourMoisCourant(): string {
             id="dateDebut"
             name="dateDebut"
             type="date"
-            [(ngModel)]="dateDebut"
+            [ngModel]="facade.dateDebut()"
+            (ngModelChange)="facade.modifierDateDebut($event)"
             required
           >
 
@@ -95,36 +63,52 @@ function dernierJourMoisCourant(): string {
             id="dateFin"
             name="dateFin"
             type="date"
-            [(ngModel)]="dateFin"
+            [ngModel]="facade.dateFin()"
+            (ngModelChange)="facade.modifierDateFin($event)"
             required
           >
 
-          <label for="siteId">Vue</label>
-          <select
-            id="siteId"
-            name="siteId"
-            [(ngModel)]="siteId"
-            [disabled]="chargementSites()"
-          >
-            <option [ngValue]="null">Tous les sites</option>
+          @if (facade.estAdminGlobal()) {
+            <label for="siteId">Vue</label>
 
-            @for (site of sites; track site.siteId) {
-              <option [ngValue]="site.siteId">
-                {{ site.nom }} ({{ site.siteId }})
+            <select
+              id="siteId"
+              name="siteId"
+              [ngModel]="facade.siteId()"
+              (ngModelChange)="facade.modifierSiteId($event)"
+              [disabled]="facade.chargementSites()"
+            >
+              <option [ngValue]="null">
+                Tous les sites
               </option>
-            }
-          </select>
 
-          <button type="submit" [disabled]="chargement() || chargementSites()">
-            {{ chargement() ? 'Chargement...' : 'Charger les statistiques' }}
+              @for (
+                site of facade.sites();
+                track site.siteId
+              ) {
+                <option [ngValue]="site.siteId">
+                  {{ site.nom }} ({{ site.siteId }})
+                </option>
+              }
+            </select>
+          } @else if (facade.admin(); as admin) {
+            <div class="bloc-info">
+              <strong>Vue limitée à ton site :</strong>
+              {{ admin.nomSite || 'Site' }}
+              ({{ admin.siteId }})
+            </div>
+          }
+
+          <button type="submit" [disabled]="facade.chargement() || facade.chargementSites()">
+            {{ facade.chargement() ? 'Chargement...' : 'Charger les statistiques' }}
           </button>
         </form>
 
-        @if (messageErreur()) {
-          <p class="erreur">{{ messageErreur() }}</p>
+        @if (facade.messageErreur()) {
+          <p class="erreur">{{ facade.messageErreur() }}</p>
         }
 
-        @if (statistiques(); as stats) {
+        @if (facade.statistiques(); as stats) {
           <div class="bloc-info">
             <h3>Vue affichée</h3>
 
@@ -281,102 +265,31 @@ function dernierJourMoisCourant(): string {
     }
   `]
 })
-export class AdminStatistiquesComponent implements OnInit {
-  sites: SiteResponse[] = [];
-
-  dateDebut = dateIsoDansJours(-14);
-  dateFin = dateIsoDansJours(14);
-  siteId: number | null = null;
-
-  readonly chargementSites = signal(false);
-  readonly chargement = signal(false);
-  readonly messageErreur = signal<string | null>(null);
-  readonly statistiques = signal<StatistiquesAdminResponse | null>(null);
+export class AdminStatistiquesComponent
+  implements OnInit {
 
   constructor(
-    private readonly adminStatsApiService: AdminStatsApiService,
-    private readonly siteApiService: SiteApiService,
-    readonly authContextService: AuthContextService
+    readonly facade:
+    AdminStatistiquesFacadeService
   ) {
   }
 
   ngOnInit(): void {
-    this.chargerSites();
+    this.facade.initialiser();
   }
 
-  private chargerSites(): void {
-    this.chargementSites.set(true);
-
-    this.siteApiService.listerSitesActifs().subscribe({
-      next: sites => {
-        this.sites = sites;
-
-        const siteSelectionExiste = this.siteId === null
-          || this.sites.some(site => site.siteId === this.siteId);
-
-        if (!siteSelectionExiste) {
-          this.siteId = null;
-        }
-
-        this.chargementSites.set(false);
-      },
-      error: error => {
-        this.messageErreur.set(extraireMessageErreur(error));
-        this.sites = [];
-        this.siteId = null;
-        this.chargementSites.set(false);
-      }
-    });
-  }
-
-  selectionnerPeriode(periode: 'moisCourant' | 'prochainsJours' | 'demo'): void {
-    if (periode === 'moisCourant') {
-      this.dateDebut = premierJourMoisCourant();
-      this.dateFin = dernierJourMoisCourant();
-    }
-
-    if (periode === 'prochainsJours') {
-      this.dateDebut = dateIsoDansJours(0);
-      this.dateFin = dateIsoDansJours(7);
-    }
-
-    if (periode === 'demo') {
-      this.dateDebut = dateIsoDansJours(-14);
-      this.dateFin = dateIsoDansJours(14);
-    }
-
-    this.messageErreur.set(null);
-    this.statistiques.set(null);
+  selectionnerPeriode(
+    periode:
+      'moisCourant'
+      | 'prochainsJours'
+      | 'demo'
+  ): void {
+    this.facade.selectionnerPeriode(
+      periode
+    );
   }
 
   chargerStatistiques(): void {
-    this.messageErreur.set(null);
-    this.statistiques.set(null);
-
-    if (!this.dateDebut || !this.dateFin) {
-      this.messageErreur.set('Les dates de début et de fin sont obligatoires.');
-      return;
-    }
-
-    const siteIdParam = this.siteId === null || this.siteId === undefined
-      ? undefined
-      : Number(this.siteId);
-
-    this.chargement.set(true);
-
-    this.adminStatsApiService.consulterStatistiques(
-      this.dateDebut,
-      this.dateFin,
-      siteIdParam
-    ).subscribe({
-      next: statistiques => {
-        this.statistiques.set(statistiques);
-        this.chargement.set(false);
-      },
-      error: error => {
-        this.messageErreur.set(extraireMessageErreur(error));
-        this.chargement.set(false);
-      }
-    });
+    this.facade.chargerStatistiques();
   }
 }

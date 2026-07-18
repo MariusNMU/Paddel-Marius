@@ -1,17 +1,19 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit, signal } from '@angular/core';
+import {
+  Component,
+  OnInit
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { finalize, timeout } from 'rxjs';
-import { DetteResponse } from '../../models/dette.model';
-import { AuthContextService } from '../../services/auth-context.service';
-import { DetteApiService } from '../../services/dette-api.service';
-import { extraireMessageErreur } from '../../shared/api-error.util';
+import { MesDettesFacadeService } from '../../services/mes-dettes-facade.service';
 import { enumLabel } from '../../shared/enum-label.util';
 
 @Component({
   selector: 'app-mes-dettes',
   standalone: true,
   imports: [CommonModule, FormsModule],
+  providers: [
+    MesDettesFacadeService
+  ],
   template: `
     <section class="page">
       <h2>Mes dettes</h2>
@@ -21,7 +23,7 @@ import { enumLabel } from '../../shared/enum-label.util';
         Une dette ouverte bloque la création d'une nouvelle réservation.
       </p>
 
-      <ng-container *ngIf="authContext.joueur() as joueur; else aucunJoueurConnecte">
+      <ng-container *ngIf="facade.joueur() as joueur; else aucunJoueurConnecte">
         <div class="bloc-info">
           <h3>Joueur connecté</h3>
 
@@ -34,20 +36,20 @@ import { enumLabel } from '../../shared/enum-label.util';
             Seules les dettes de ce joueur peuvent être consultées depuis cet écran.
           </p>
 
-          <button type="button" (click)="chargerDettes()" [disabled]="chargement()">
-            {{ chargement() ? 'Chargement...' : 'Actualiser mes dettes' }}
+          <button type="button" (click)="facade.chargerDettes()" [disabled]="facade.chargement()">
+            {{ facade.chargement() ? 'Chargement...' : 'Actualiser mes dettes' }}
           </button>
         </div>
 
-        <p *ngIf="messageErreur()" class="erreur">
-          {{ messageErreur() }}
+        <p *ngIf="facade.messageErreur()" class="erreur">
+          {{ facade.messageErreur() }}
         </p>
 
-        <p *ngIf="messageSucces()" class="succes">
-          {{ messageSucces() }}
+        <p *ngIf="facade.messageSucces()" class="succes">
+          {{ facade.messageSucces() }}
         </p>
 
-        <div *ngIf="rechercheEffectuee() && !messageErreur()" class="bloc-info">
+        <div *ngIf="facade.rechercheEffectuee() && !facade.messageErreur()" class="bloc-info">
           <h3>Résumé</h3>
 
           <div class="resume-grid">
@@ -58,25 +60,25 @@ import { enumLabel } from '../../shared/enum-label.util';
 
             <p>
               <strong>Dettes ouvertes</strong><br>
-              {{ dettes().length }}
+              {{ facade.dettes().length }}
             </p>
 
             <p>
               <strong>Total restant</strong><br>
-              {{ totalMontantRestant() | number:'1.2-2' }} €
+              {{ facade.totalMontantRestant() | number:'1.2-2' }} €
             </p>
           </div>
         </div>
 
-        <div *ngIf="dettes().length === 0 && rechercheEffectuee() && !messageErreur()" class="resultat">
+        <div *ngIf="facade.dettes().length === 0 && facade.rechercheEffectuee() && !facade.messageErreur()" class="resultat">
           <h3>Aucune dette ouverte</h3>
           <p>
             Ce joueur ne présente actuellement aucune dette ouverte.
           </p>
         </div>
 
-        <div *ngIf="dettes().length > 0" class="dettes-grid">
-          <article *ngFor="let dette of dettes()" class="dette-card">
+        <div *ngIf="facade.dettes().length > 0" class="dettes-grid">
+          <article *ngFor="let dette of facade.dettes()" class="dette-card">
             <h3>Dette {{ dette.detteId }}</h3>
 
             <div class="resume-grid">
@@ -111,16 +113,34 @@ import { enumLabel } from '../../shared/enum-label.util';
                 type="number"
                 min="0"
                 step="0.01"
-                [(ngModel)]="montantsPaiement[dette.detteId]"
+                [ngModel]="
+                  facade.montantPaiement(
+                    dette.detteId
+                  )
+                "
+                (ngModelChange)="
+                  facade.modifierMontantPaiement(
+                    dette.detteId,
+                    $event
+                  )
+                "
                 [name]="'montantDette' + dette.detteId"
               />
 
               <button
                 type="button"
-                (click)="payerDette(dette)"
-                [disabled]="paiementEnCoursDetteId() === dette.detteId"
+                (click)="facade.payerDette(dette)"
+                [disabled]="
+                  facade.paiementEnCoursDetteId()
+                    !== null
+                "
               >
-                {{ paiementEnCoursDetteId() === dette.detteId ? 'Paiement...' : 'Payer cette dette' }}
+                {{
+                  facade.paiementEnCoursDetteId()
+                    === dette.detteId
+                    ? 'Paiement...'
+                    : 'Payer cette dette'
+                }}
               </button>
             </div>
           </article>
@@ -188,114 +208,17 @@ import { enumLabel } from '../../shared/enum-label.util';
     }
   `]
 })
-export class MesDettesComponent implements OnInit {
+export class MesDettesComponent
+  implements OnInit {
   readonly enumLabel = enumLabel;
-  readonly dettes = signal<DetteResponse[]>([]);
-  readonly chargement = signal(false);
-  readonly rechercheEffectuee = signal(false);
-  readonly paiementEnCoursDetteId = signal<number | null>(null);
-  readonly messageErreur = signal('');
-  readonly messageSucces = signal('');
-
-  montantsPaiement: Record<number, number> = {};
 
   constructor(
-    private readonly detteApiService: DetteApiService,
-    readonly authContext: AuthContextService
+    readonly facade:
+      MesDettesFacadeService
   ) {
   }
 
   ngOnInit(): void {
-    if (this.authContext.joueur()) {
-      this.chargerDettes();
-    }
-  }
-
-  totalMontantRestant(): number {
-    return this.dettes().reduce(
-      (total, dette) => total + dette.montantRestant,
-      0
-    );
-  }
-
-  chargerDettes(conserverMessageSucces = false): void {
-    this.messageErreur.set('');
-
-    if (!conserverMessageSucces) {
-      this.messageSucces.set('');
-    }
-
-    this.dettes.set([]);
-    this.rechercheEffectuee.set(false);
-
-    const joueur = this.authContext.joueur();
-
-    if (!joueur) {
-      this.messageErreur.set('Aucun joueur connecté. Connecte-toi d’abord pour consulter tes dettes.');
-      return;
-    }
-
-    this.chargement.set(true);
-
-    this.detteApiService.consulterDettesOuvertes(joueur.matricule)
-      .pipe(
-        timeout(10000),
-        finalize(() => this.chargement.set(false))
-      )
-      .subscribe({
-        next: (dettes) => {
-          this.dettes.set(dettes);
-          this.rechercheEffectuee.set(true);
-
-          const montants: Record<number, number> = {};
-
-          for (const dette of dettes) {
-            montants[dette.detteId] = dette.montantRestant;
-          }
-
-          this.montantsPaiement = montants;
-        },
-        error: (error) => {
-          this.messageErreur.set(extraireMessageErreur(error));
-        }
-      });
-  }
-
-  payerDette(dette: DetteResponse): void {
-    this.messageErreur.set('');
-    this.messageSucces.set('');
-
-    const montant = this.montantsPaiement[dette.detteId];
-
-    if (!montant || montant <= 0) {
-      this.messageErreur.set('Le montant du paiement doit être supérieur à 0.');
-      return;
-    }
-
-    this.paiementEnCoursDetteId.set(dette.detteId);
-
-    this.detteApiService.payerDette(dette.detteId, { montant })
-      .pipe(
-        timeout(10000),
-        finalize(() => this.paiementEnCoursDetteId.set(null))
-      )
-      .subscribe({
-        next: (response) => {
-          this.messageSucces.set(
-            `Paiement réussi : dette ${response.detteId} payée pour ${response.montant} €.`
-          );
-
-          this.dettes.update(dettesOuvertes =>
-            dettesOuvertes.filter(detteOuverte => detteOuverte.detteId !== response.detteId)
-          );
-
-          delete this.montantsPaiement[response.detteId];
-
-          this.rechercheEffectuee.set(true);
-        },
-        error: (error) => {
-          this.messageErreur.set(extraireMessageErreur(error));
-        }
-      });
+    this.facade.initialiser();
   }
 }

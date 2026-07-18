@@ -1,37 +1,38 @@
-﻿import { Component, signal } from '@angular/core';
+﻿import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { AdminTraitementVeilleApiService } from '../../services/admin-traitement-veille-api.service';
-import { AuthContextService } from '../../services/auth-context.service';
-import { TraitementVeilleResponse } from '../../models/traitement-veille.model';
-import { extraireMessageErreur } from '../../shared/api-error.util';
-
-function dateIsoDansJours(decalageJours: number): string {
-  const date = new Date();
-  date.setDate(date.getDate() + decalageJours);
-
-  const annee = date.getFullYear();
-  const mois = String(date.getMonth() + 1).padStart(2, '0');
-  const jour = String(date.getDate()).padStart(2, '0');
-
-  return `${annee}-${mois}-${jour}`;
-}
+import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitement-veille-facade.service';
 
 @Component({
   selector: 'app-admin-traitement-veille',
   standalone: true,
   imports: [FormsModule, RouterLink],
+  providers: [
+    AdminTraitementVeilleFacadeService
+  ],
   template: `
     <section class="page">
       <h2>Traitement de veille</h2>
 
-      @if (!authContextService.adminConnecte()) {
+      @if (!facade.adminConnecte()) {
         <p class="erreur">
           Tu dois te connecter comme admin avant de lancer le traitement de veille.
         </p>
 
         <p>
-          <a routerLink="/admin/login">Connexion admin</a>
+          <a routerLink="/admin/login">
+            Connexion admin
+          </a>
+        </p>
+      } @else if (!facade.estAdminGlobal()) {
+        <p class="erreur">
+          Cette action est réservée aux administrateurs globaux.
+        </p>
+
+        <p>
+          <a routerLink="/admin/dashboard">
+            Retour dashboard admin
+          </a>
         </p>
       } @else {
         <p>
@@ -44,10 +45,18 @@ function dateIsoDansJours(decalageJours: number): string {
           <h3>Ce que fait le traitement</h3>
 
           <ul>
-            <li>Il analyse les matches du lendemain par rapport à la date choisie.</li>
-            <li>Un match privé incomplet peut devenir public.</li>
-            <li>Une participation non payée peut être libérée.</li>
-            <li>Une pénalité peut être créée pour l'organisateur responsable.</li>
+            <li>
+              Il analyse les matches du lendemain par rapport à la date choisie.
+            </li>
+            <li>
+              Un match privé incomplet peut devenir public.
+            </li>
+            <li>
+              Une participation non payée peut être libérée.
+            </li>
+            <li>
+              Une pénalité peut être créée pour l'organisateur responsable.
+            </li>
           </ul>
         </div>
 
@@ -55,73 +64,112 @@ function dateIsoDansJours(decalageJours: number): string {
           <h3>Dates rapides de démonstration</h3>
 
           <div class="actions">
-            <button type="button" (click)="selectionnerDateRelative(0)">
+            <button
+              type="button"
+              (click)="facade.selectionnerDateRelative(0)"
+            >
               Aujourd'hui
             </button>
 
-            <button type="button" (click)="selectionnerDateRelative(2)">
+            <button
+              type="button"
+              (click)="facade.selectionnerDateRelative(2)"
+            >
               Avant match démo public
             </button>
 
-            <button type="button" (click)="selectionnerDateRelative(3)">
+            <button
+              type="button"
+              (click)="facade.selectionnerDateRelative(3)"
+            >
               Avant match démo privé
             </button>
           </div>
         </div>
 
-        <form (ngSubmit)="lancerTraitement()" class="formulaire">
-          <label for="dateTraitement">Date de traitement</label>
+        <form
+          (ngSubmit)="facade.lancerTraitement()"
+          class="formulaire"
+        >
+          <label for="dateTraitement">
+            Date de traitement
+          </label>
+
           <input
             id="dateTraitement"
             name="dateTraitement"
             type="date"
-            [(ngModel)]="dateTraitement"
+            [ngModel]="facade.dateTraitement()"
+            (ngModelChange)="facade.selectionnerDate($event)"
             required
           >
 
-          <button type="submit" [disabled]="chargement()">
-            {{ chargement() ? 'Traitement...' : 'Lancer le traitement de veille' }}
+          <button
+            type="submit"
+            [disabled]="facade.chargement()"
+          >
+            {{
+              facade.chargement()
+                ? 'Traitement...'
+                : 'Lancer le traitement de veille'
+            }}
           </button>
         </form>
 
-        @if (messageErreur()) {
-          <p class="erreur">{{ messageErreur() }}</p>
+        @if (facade.messageErreur()) {
+          <p class="erreur">
+            {{ facade.messageErreur() }}
+          </p>
         }
 
-        @if (resultat(); as traitement) {
+        @if (facade.resultat(); as traitement) {
           <div class="bloc-info">
             <h3>Vue affichée</h3>
 
             <p>
               Date de traitement :
-              <strong>{{ traitement.dateTraitement }}</strong>
+              <strong>
+                {{ traitement.dateTraitement }}
+              </strong>
             </p>
 
             <p>
               Matches analysés pour le :
-              <strong>{{ traitement.dateMatchTraitee }}</strong>
+              <strong>
+                {{ traitement.dateMatchTraitee }}
+              </strong>
             </p>
           </div>
 
           <div class="traitement-grid">
             <article class="traitement-card">
               <span>Matches analysés</span>
-              <strong>{{ traitement.matchesAnalyses }}</strong>
+              <strong>
+                {{ traitement.matchesAnalyses }}
+              </strong>
             </article>
 
             <article class="traitement-card">
               <span>Passés publics</span>
-              <strong>{{ traitement.matchesPassesPublics }}</strong>
+              <strong>
+                {{ traitement.matchesPassesPublics }}
+              </strong>
             </article>
 
             <article class="traitement-card">
               <span>Participations libérées</span>
-              <strong>{{ traitement.participationsLiberees }}</strong>
+              <strong>
+                {{ traitement.participationsLiberees }}
+              </strong>
             </article>
 
-            <article class="traitement-card warning">
+            <article
+              class="traitement-card warning"
+            >
               <span>Pénalités créées</span>
-              <strong>{{ traitement.penalitesCreees }}</strong>
+              <strong>
+                {{ traitement.penalitesCreees }}
+              </strong>
             </article>
           </div>
 
@@ -132,27 +180,39 @@ function dateIsoDansJours(decalageJours: number): string {
               <tbody>
               <tr>
                 <th>Date de traitement</th>
-                <td>{{ traitement.dateTraitement }}</td>
+                <td>
+                  {{ traitement.dateTraitement }}
+                </td>
               </tr>
               <tr>
                 <th>Date des matches traités</th>
-                <td>{{ traitement.dateMatchTraitee }}</td>
+                <td>
+                  {{ traitement.dateMatchTraitee }}
+                </td>
               </tr>
               <tr>
                 <th>Matches analysés</th>
-                <td>{{ traitement.matchesAnalyses }}</td>
+                <td>
+                  {{ traitement.matchesAnalyses }}
+                </td>
               </tr>
               <tr>
                 <th>Matches passés publics</th>
-                <td>{{ traitement.matchesPassesPublics }}</td>
+                <td>
+                  {{ traitement.matchesPassesPublics }}
+                </td>
               </tr>
               <tr>
                 <th>Participations libérées</th>
-                <td>{{ traitement.participationsLiberees }}</td>
+                <td>
+                  {{ traitement.participationsLiberees }}
+                </td>
               </tr>
               <tr>
                 <th>Pénalités créées</th>
-                <td>{{ traitement.penalitesCreees }}</td>
+                <td>
+                  {{ traitement.penalitesCreees }}
+                </td>
               </tr>
               </tbody>
             </table>
@@ -160,7 +220,9 @@ function dateIsoDansJours(decalageJours: number): string {
         }
 
         <p>
-          <a routerLink="/admin/dashboard">Retour dashboard admin</a>
+          <a routerLink="/admin/dashboard">
+            Retour dashboard admin
+          </a>
         </p>
       }
     </section>
@@ -168,7 +230,11 @@ function dateIsoDansJours(decalageJours: number): string {
   styles: [`
     .traitement-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      grid-template-columns:
+        repeat(
+          auto-fit,
+          minmax(190px, 1fr)
+        );
       gap: 14px;
       margin: 20px 0;
     }
@@ -178,7 +244,9 @@ function dateIsoDansJours(decalageJours: number): string {
       border: 1px solid #bfdbfe;
       border-radius: 12px;
       background: #ffffff;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+      box-shadow:
+        0 4px 12px
+        rgba(15, 23, 42, 0.06);
     }
 
     .traitement-card span {
@@ -201,48 +269,9 @@ function dateIsoDansJours(decalageJours: number): string {
   `]
 })
 export class AdminTraitementVeilleComponent {
-  dateTraitement = dateIsoDansJours(0);
-
-  readonly chargement = signal(false);
-  readonly messageErreur = signal<string | null>(null);
-  readonly resultat = signal<TraitementVeilleResponse | null>(null);
-
   constructor(
-    private readonly traitementVeilleApiService: AdminTraitementVeilleApiService,
-    readonly authContextService: AuthContextService
+    readonly facade:
+    AdminTraitementVeilleFacadeService
   ) {
-  }
-
-  selectionnerDate(date: string): void {
-    this.dateTraitement = date;
-    this.messageErreur.set(null);
-    this.resultat.set(null);
-  }
-
-  selectionnerDateRelative(decalageJours: number): void {
-    this.selectionnerDate(dateIsoDansJours(decalageJours));
-  }
-
-  lancerTraitement(): void {
-    this.messageErreur.set(null);
-    this.resultat.set(null);
-
-    if (!this.dateTraitement) {
-      this.messageErreur.set('La date de traitement est obligatoire.');
-      return;
-    }
-
-    this.chargement.set(true);
-
-    this.traitementVeilleApiService.traiterVeille(this.dateTraitement).subscribe({
-      next: resultat => {
-        this.resultat.set(resultat);
-        this.chargement.set(false);
-      },
-      error: error => {
-        this.messageErreur.set(extraireMessageErreur(error));
-        this.chargement.set(false);
-      }
-    });
   }
 }

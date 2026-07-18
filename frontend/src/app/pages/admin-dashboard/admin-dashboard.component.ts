@@ -57,14 +57,23 @@ import { enumLabel } from '../../shared/enum-label.util';
               <a routerLink="/admin/statistiques">Ouvrir les statistiques</a>
             </article>
 
-            <article class="admin-action-card">
-              <h4>Traitement de veille</h4>
-              <p>
-                Lancer le traitement manuel qui analyse les matches du lendemain,
-                libère les places non payées et applique les règles de pénalité.
-              </p>
-              <a routerLink="/admin/traitement-veille">Lancer le traitement</a>
-            </article>
+            @if (
+              admin.roleAdministrateur
+                === 'GLOBAL'
+            ) {
+              <article class="admin-action-card">
+                <h4>Traitement de veille</h4>
+
+                <p>
+                  Lancer le traitement manuel qui analyse les matches du lendemain,
+                  libère les places non payées et applique les règles de pénalité.
+                </p>
+
+                <a routerLink="/admin/traitement-veille">
+                  Lancer le traitement
+                </a>
+              </article>
+            }
           </div>
         </div>
 

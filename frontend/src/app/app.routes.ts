@@ -18,6 +18,7 @@ import { AdminMembresComponent } from './pages/admin-membres/admin-membres.compo
 import { InvitationsRecuesComponent } from './pages/invitations-recues/invitations-recues.component';
 import { joueurGuard } from './guards/joueur.guard';
 import { adminGuard } from './guards/admin.guard';
+import { adminGlobalGuard } from './guards/admin-global.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'accueil', pathMatch: 'full' },
@@ -76,8 +77,9 @@ export const routes: Routes = [
   },
   {
     path: 'admin/traitement-veille',
-    component: AdminTraitementVeilleComponent,
-    canActivate: [adminGuard]
+    component:
+      AdminTraitementVeilleComponent,
+    canActivate: [adminGlobalGuard]
   },
   {
     path: 'admin/fermetures',

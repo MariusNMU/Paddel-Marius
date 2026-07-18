@@ -1,96 +1,264 @@
+import {
+  signal,
+  type Signal
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
-import { of } from 'rxjs';
+import { provideRouter } from '@angular/router';
 import { App } from './app';
-import { AuthContextService } from './services/auth-context.service';
-import { InvitationApiService } from './services/invitation-api.service';
+import { AppShellFacadeService } from './services/app-shell-facade.service';
 
 describe('App', () => {
-  let authContextService: {
-    joueur: ReturnType<typeof vi.fn>;
-    joueurConnecte: ReturnType<typeof vi.fn>;
-    adminConnecte: ReturnType<typeof vi.fn>;
-    deconnecterJoueur: ReturnType<typeof vi.fn>;
-    deconnecterAdmin: ReturnType<typeof vi.fn>;
-  };
+  let nombreInvitationsSignal:
+    ReturnType<typeof signal<number>>;
 
-  let invitationApiService: {
-    compterInvitationsRecues: ReturnType<typeof vi.fn>;
+  let facade: {
+    nombreInvitationsRecues:
+      Signal<number>;
+    joueurConnecte:
+      ReturnType<typeof vi.fn>;
+    adminConnecte:
+      ReturnType<typeof vi.fn>;
+    estAdminGlobal:
+      ReturnType<typeof vi.fn>;
+    initialiser:
+      ReturnType<typeof vi.fn>;
+    deconnecterJoueur:
+      ReturnType<typeof vi.fn>;
+    deconnecterAdmin:
+      ReturnType<typeof vi.fn>;
   };
 
   beforeEach(async () => {
-    authContextService = {
-      joueur: vi.fn(() => null),
-      joueurConnecte: vi.fn(() => false),
-      adminConnecte: vi.fn(() => false),
-      deconnecterJoueur: vi.fn(),
-      deconnecterAdmin: vi.fn()
-    };
+    nombreInvitationsSignal =
+      signal(0);
 
-    invitationApiService = {
-      compterInvitationsRecues: vi.fn(() => of(0))
+    facade = {
+      nombreInvitationsRecues:
+        nombreInvitationsSignal
+          .asReadonly(),
+
+      joueurConnecte:
+        vi.fn(() => false),
+
+      adminConnecte:
+        vi.fn(() => false),
+
+      estAdminGlobal:
+        vi.fn(() => false),
+
+      initialiser:
+        vi.fn(),
+
+      deconnecterJoueur:
+        vi.fn(),
+
+      deconnecterAdmin:
+        vi.fn()
     };
 
     await TestBed.configureTestingModule({
       imports: [App],
       providers: [
         provideRouter([]),
-        { provide: AuthContextService, useValue: authContextService },
-        { provide: InvitationApiService, useValue: invitationApiService }
+        {
+          provide:
+          AppShellFacadeService,
+          useValue:
+          facade
+        }
       ]
-    }).compileComponents();
+    })
+      .overrideComponent(App, {
+        set: {
+          providers: [
+            {
+              provide:
+              AppShellFacadeService,
+              useValue:
+              facade
+            }
+          ]
+        }
+      })
+      .compileComponents();
   });
 
   it('doit créer l application', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
+    const fixture =
+      TestBed.createComponent(App);
 
-    expect(app).toBeTruthy();
+    expect(fixture.componentInstance)
+      .toBeTruthy();
   });
 
-  it('doit afficher le titre Padel Marius', async () => {
-    const fixture = TestBed.createComponent(App);
+  it(
+    'doit initialiser la façade',
+    () => {
+      const fixture =
+        TestBed.createComponent(App);
 
-    fixture.detectChanges();
-    await fixture.whenStable();
+      fixture.detectChanges();
 
-    const compiled = fixture.nativeElement as HTMLElement;
+      expect(facade.initialiser)
+        .toHaveBeenCalledTimes(1);
+    }
+  );
 
-    expect(compiled.querySelector('h1')?.textContent).toContain('Padel Marius');
-  });
+  it(
+    'doit afficher le titre Padel Marius',
+    () => {
+      const fixture =
+        TestBed.createComponent(App);
 
-  it('doit garder le compteur d invitations à zéro si aucun joueur n est connecté', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
+      fixture.detectChanges();
 
-    expect(app.nombreInvitationsRecues).toBe(0);
-    expect(invitationApiService.compterInvitationsRecues).not.toHaveBeenCalled();
-  });
+      const compiled =
+        fixture.nativeElement as HTMLElement;
 
-  it('doit déconnecter le joueur et revenir à l accueil', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
+      expect(
+        compiled
+          .querySelector('h1')
+          ?.textContent
+      ).toContain('Padel Marius');
+    }
+  );
 
-    const router = TestBed.inject(Router);
-    const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+  it(
+    'doit afficher le compteur du joueur connecté',
+    () => {
+      facade.joueurConnecte
+        .mockReturnValue(true);
 
-    app.deconnecterJoueur();
+      nombreInvitationsSignal.set(2);
 
-    expect(authContextService.deconnecterJoueur).toHaveBeenCalled();
-    expect(app.nombreInvitationsRecues).toBe(0);
-    expect(navigateSpy).toHaveBeenCalledWith(['/accueil']);
-  });
+      const fixture =
+        TestBed.createComponent(App);
 
-  it('doit déconnecter l admin et revenir à l accueil', () => {
-    const fixture = TestBed.createComponent(App);
-    const app = fixture.componentInstance;
+      fixture.detectChanges();
 
-    const router = TestBed.inject(Router);
-    const navigateSpy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+      const texte =
+        fixture.nativeElement
+          .textContent as string;
 
-    app.deconnecterAdmin();
+      expect(texte)
+        .toContain('Invitations reçues');
 
-    expect(authContextService.deconnecterAdmin).toHaveBeenCalled();
-    expect(navigateSpy).toHaveBeenCalledWith(['/accueil']);
-  });
+      expect(texte)
+        .toContain('(2)');
+    }
+  );
+
+  it(
+    'doit masquer le traitement de veille à l admin SITE',
+    () => {
+      facade.adminConnecte
+        .mockReturnValue(true);
+
+      facade.estAdminGlobal
+        .mockReturnValue(false);
+
+      const fixture =
+        TestBed.createComponent(App);
+
+      fixture.detectChanges();
+
+      const texte =
+        fixture.nativeElement
+          .textContent as string;
+
+      expect(texte)
+        .not.toContain(
+          'Traitement de veille'
+        );
+    }
+  );
+
+  it(
+    'doit afficher le traitement de veille à l admin GLOBAL',
+    () => {
+      facade.adminConnecte
+        .mockReturnValue(true);
+
+      facade.estAdminGlobal
+        .mockReturnValue(true);
+
+      const fixture =
+        TestBed.createComponent(App);
+
+      fixture.detectChanges();
+
+      const texte =
+        fixture.nativeElement
+          .textContent as string;
+
+      expect(texte)
+        .toContain(
+          'Traitement de veille'
+        );
+    }
+  );
+
+  it(
+    'doit déléguer la déconnexion joueur à la façade',
+    () => {
+      facade.joueurConnecte
+        .mockReturnValue(true);
+
+      const fixture =
+        TestBed.createComponent(App);
+
+      fixture.detectChanges();
+
+      const boutons =
+        Array.from(
+          fixture.nativeElement
+            .querySelectorAll('button')
+        ) as HTMLButtonElement[];
+
+      const bouton =
+        boutons.find(element =>
+          element.textContent?.includes(
+            'Déconnecter joueur'
+          )
+        );
+
+      bouton?.click();
+
+      expect(
+        facade.deconnecterJoueur
+      ).toHaveBeenCalled();
+    }
+  );
+
+  it(
+    'doit déléguer la déconnexion admin à la façade',
+    () => {
+      facade.adminConnecte
+        .mockReturnValue(true);
+
+      const fixture =
+        TestBed.createComponent(App);
+
+      fixture.detectChanges();
+
+      const boutons =
+        Array.from(
+          fixture.nativeElement
+            .querySelectorAll('button')
+        ) as HTMLButtonElement[];
+
+      const bouton =
+        boutons.find(element =>
+          element.textContent?.includes(
+            'Déconnecter admin'
+          )
+        );
+
+      bouton?.click();
+
+      expect(
+        facade.deconnecterAdmin
+      ).toHaveBeenCalled();
+    }
+  );
 });

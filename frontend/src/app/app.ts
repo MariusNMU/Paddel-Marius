@@ -1,51 +1,35 @@
-﻿import { Component } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { AuthContextService } from './services/auth-context.service';
-import { InvitationApiService } from './services/invitation-api.service';
+﻿import {
+  Component,
+  OnInit
+} from '@angular/core';
+import {
+  RouterLink,
+  RouterLinkActive,
+  RouterOutlet
+} from '@angular/router';
+import { AppShellFacadeService } from './services/app-shell-facade.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive
+  ],
+  providers: [
+    AppShellFacadeService
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App {
-  nombreInvitationsRecues = 0;
-
+export class App implements OnInit {
   constructor(
-    readonly authContextService: AuthContextService,
-    private readonly invitationApiService: InvitationApiService,
-    private readonly router: Router
+    readonly facade:
+    AppShellFacadeService
   ) {
-    this.chargerNombreInvitations();
   }
 
-  chargerNombreInvitations(): void {
-    const joueur = this.authContextService.joueur();
-
-    if (!joueur) {
-      this.nombreInvitationsRecues = 0;
-      return;
-    }
-
-    this.invitationApiService.compterInvitationsRecues(joueur.matricule).subscribe({
-      next: (count) => {
-        this.nombreInvitationsRecues = count;
-      },
-      error: () => {
-        this.nombreInvitationsRecues = 0;
-      }
-    });
-  }
-
-  deconnecterJoueur(): void {
-    this.authContextService.deconnecterJoueur();
-    this.nombreInvitationsRecues = 0;
-    void this.router.navigate(['/accueil']);
-  }
-
-  deconnecterAdmin(): void {
-    this.authContextService.deconnecterAdmin();
-    void this.router.navigate(['/accueil']);
+  ngOnInit(): void {
+    this.facade.initialiser();
   }
 }

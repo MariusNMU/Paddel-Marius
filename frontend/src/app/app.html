@@ -18,83 +18,144 @@
 
       <p class="menu-title">Joueur</p>
 
-      <a routerLink="/inscription-joueur" routerLinkActive="active">
+      <a
+        routerLink="/inscription-joueur"
+        routerLinkActive="active"
+      >
         Inscription joueur
       </a>
 
-      <a routerLink="/joueur" routerLinkActive="active">
+      <a
+        routerLink="/joueur"
+        routerLinkActive="active"
+      >
         Connexion joueur
       </a>
 
-      @if (authContextService.joueurConnecte()) {
-        <a routerLink="/joueur/disponibilites" routerLinkActive="active">
+      @if (facade.joueurConnecte()) {
+        <a
+          routerLink="/joueur/disponibilites"
+          routerLinkActive="active"
+        >
           Organiser un match
         </a>
 
-        <a routerLink="/joueur/matches-publics" routerLinkActive="active">
+        <a
+          routerLink="/joueur/matches-publics"
+          routerLinkActive="active"
+        >
           Rejoindre un match public
         </a>
 
-        <a routerLink="/joueur/mes-reservations" routerLinkActive="active">
+        <a
+          routerLink="/joueur/mes-reservations"
+          routerLinkActive="active"
+        >
           Mes réservations
         </a>
 
         <a
           routerLink="/joueur/invitations-recues"
           routerLinkActive="active"
-          [class.invitation-alerte]="nombreInvitationsRecues > 0"
+          [class.invitation-alerte]="
+            facade.nombreInvitationsRecues() > 0
+          "
         >
           Invitations reçues
-          @if (nombreInvitationsRecues > 0) {
-            <span>({{ nombreInvitationsRecues }})</span>
+
+          @if (
+            facade.nombreInvitationsRecues() > 0
+            ) {
+            <span>
+              ({{
+                facade.nombreInvitationsRecues()
+              }})
+            </span>
           }
         </a>
 
-        <a routerLink="/joueur/mes-dettes" routerLinkActive="active">
+        <a
+          routerLink="/joueur/mes-dettes"
+          routerLinkActive="active"
+        >
           Mes dettes
         </a>
 
-        <a routerLink="/joueur/historique-transactions" routerLinkActive="active">
+        <a
+          routerLink="/joueur/historique-transactions"
+          routerLinkActive="active"
+        >
           Historique des transactions
         </a>
 
-        <a routerLink="/joueur/mon-solde" routerLinkActive="active">
+        <a
+          routerLink="/joueur/mon-solde"
+          routerLinkActive="active"
+        >
           Mon solde
         </a>
 
-        <button type="button" class="menu-button" (click)="deconnecterJoueur()">
+        <button
+          type="button"
+          class="menu-button"
+          (click)="facade.deconnecterJoueur()"
+        >
           Déconnecter joueur
         </button>
       }
 
       <p class="menu-title">Admin</p>
 
-      <a routerLink="/admin/login" routerLinkActive="active">
+      <a
+        routerLink="/admin/login"
+        routerLinkActive="active"
+      >
         Connexion admin
       </a>
 
-      @if (authContextService.adminConnecte()) {
-        <a routerLink="/admin/dashboard" routerLinkActive="active">
+      @if (facade.adminConnecte()) {
+        <a
+          routerLink="/admin/dashboard"
+          routerLinkActive="active"
+        >
           Dashboard admin
         </a>
 
-        <a routerLink="/admin/membres" routerLinkActive="active">
+        <a
+          routerLink="/admin/membres"
+          routerLinkActive="active"
+        >
           Statistiques membres
         </a>
 
-        <a routerLink="/admin/statistiques" routerLinkActive="active">
+        <a
+          routerLink="/admin/statistiques"
+          routerLinkActive="active"
+        >
           Statistiques
         </a>
 
-        <a routerLink="/admin/traitement-veille" routerLinkActive="active">
-          Traitement de veille
-        </a>
+        @if (facade.estAdminGlobal()) {
+          <a
+            routerLink="/admin/traitement-veille"
+            routerLinkActive="active"
+          >
+            Traitement de veille
+          </a>
+        }
 
-        <a routerLink="/admin/fermetures" routerLinkActive="active">
+        <a
+          routerLink="/admin/fermetures"
+          routerLinkActive="active"
+        >
           Jours de fermeture
         </a>
 
-        <button type="button" class="menu-button" (click)="deconnecterAdmin()">
+        <button
+          type="button"
+          class="menu-button"
+          (click)="facade.deconnecterAdmin()"
+        >
           Déconnecter admin
         </button>
       }

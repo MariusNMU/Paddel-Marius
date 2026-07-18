@@ -1,244 +1,365 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import {
+  signal,
+  WritableSignal
+} from '@angular/core';
+import {
+  ComponentFixture,
+  TestBed
+} from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
 import { AuthJoueurResponse } from '../../models/auth.model';
 import { PaiementResponse } from '../../models/paiement.model';
 import { ReservationJoueurResponse } from '../../models/reservation.model';
-import { AuthContextService } from '../../services/auth-context.service';
-import { PaiementApiService } from '../../services/paiement-api.service';
-import { ReservationApiService } from '../../services/reservation-api.service';
+import { MesReservationsFacadeService } from '../../services/mes-reservations-facade.service';
 import { MesReservationsComponent } from './mes-reservations.component';
 
-describe('MesReservationsComponent', () => {
-  let fixture: ComponentFixture<MesReservationsComponent>;
-  let component: MesReservationsComponent;
+describe(
+  'MesReservationsComponent',
+  () => {
+    let fixture:
+      ComponentFixture<MesReservationsComponent>;
 
-  let authContextService: {
-    joueur: ReturnType<typeof vi.fn>;
-  };
+    let component:
+      MesReservationsComponent;
 
-  let reservationApiService: {
-    consulterMesReservations: ReturnType<typeof vi.fn>;
-  };
+    let facade: {
+      initialiser:
+        ReturnType<typeof vi.fn>;
 
-  let paiementApiService: {
-    payerParticipationStandard: ReturnType<typeof vi.fn>;
-  };
+      chargerReservations:
+        ReturnType<typeof vi.fn>;
 
-  const joueur: AuthJoueurResponse = {
-    membreId: 2001,
-    matricule: 'G1001',
-    nom: 'Dupont',
-    prenom: 'Marie',
-    categorieMembre: 'GLOBAL',
-    siteRattachementId: null,
-    nomSiteRattachement: null,
-    actif: true
-  };
+      payerParticipation:
+        ReturnType<typeof vi.fn>;
 
-  const reservation: ReservationJoueurResponse = {
-    participationId: 3101,
-    matchId: 3001,
-    siteId: 1001,
-    nomSite: 'Padel Bruxelles',
-    terrainId: 1101,
-    numeroTerrain: 'T1',
-    dateHeureDebut: '2026-06-20T09:00:00',
-    dateHeureFin: '2026-06-20T10:30:00',
-    roleParticipation: 'ORGANISATEUR',
-    modeEntree: 'CREATION',
-    statutParticipation: 'CONFIRMEE',
-    modeCreation: 'PUBLIC',
-    visibiliteCourante: 'PUBLIC',
-    etatCycle: 'A_VENIR',
-    prixTotal: 60
-  };
+      joueur:
+        WritableSignal<AuthJoueurResponse | null>;
 
-  const paiement: PaiementResponse = {
-    paiementId: 4101,
-    participationId: 3101,
-    membreId: 2001,
-    matriculeMembre: 'G1001',
-    montant: 15,
-    montantDettesReglees: 30,
-    montantTotalDebite: 45,
-    naturePaiement: 'PARTICIPATION',
-    statutPaiement: 'PAYE',
-    statutParticipation: 'CONFIRMEE',
-    dateHeurePaiement: '2026-06-01T12:00:00',
-    dateConfirmationParticipation: '2026-06-01T12:00:00'
-  };
+      reservations:
+        WritableSignal<
+          ReservationJoueurResponse[]
+        >;
 
-  beforeEach(async () => {
-    authContextService = {
-      joueur: vi.fn(() => null)
+      messageErreur:
+        WritableSignal<string>;
+
+      messageSucces:
+        WritableSignal<string>;
+
+      chargement:
+        WritableSignal<boolean>;
+
+      rechercheEffectuee:
+        WritableSignal<boolean>;
+
+      paiementEnCoursParticipationId:
+        WritableSignal<number | null>;
+
+      dernierPaiement:
+        WritableSignal<PaiementResponse | null>;
     };
 
-    reservationApiService = {
-      consulterMesReservations: vi.fn()
+    const joueur: AuthJoueurResponse = {
+      membreId: 2001,
+      matricule: 'G1001',
+      nom: 'Dupont',
+      prenom: 'Marie',
+      categorieMembre: 'GLOBAL',
+      siteRattachementId: null,
+      nomSiteRattachement: null,
+      actif: true
     };
 
-    paiementApiService = {
-      payerParticipationStandard: vi.fn(() => of(paiement))
+    const reservation:
+      ReservationJoueurResponse = {
+      participationId: 3101,
+      matchId: 3001,
+      siteId: 1001,
+      nomSite: 'Padel Bruxelles',
+      terrainId: 1101,
+      numeroTerrain: 'T1',
+      dateHeureDebut:
+        '2026-06-20T09:00:00',
+      dateHeureFin:
+        '2026-06-20T10:30:00',
+      roleParticipation:
+        'ORGANISATEUR',
+      modeEntree: 'CREATION',
+      statutParticipation:
+        'EN_ATTENTE_PAIEMENT',
+      modeCreation: 'PUBLIC',
+      visibiliteCourante: 'PUBLIC',
+      etatCycle: 'A_VENIR',
+      prixTotal: 60
     };
 
-    await TestBed.configureTestingModule({
-      imports: [MesReservationsComponent],
-      providers: [
-        provideRouter([]),
-        { provide: AuthContextService, useValue: authContextService },
-        { provide: ReservationApiService, useValue: reservationApiService },
-        { provide: PaiementApiService, useValue: paiementApiService }
-      ]
-    }).compileComponents();
-
-    fixture = TestBed.createComponent(MesReservationsComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
-  it('doit créer le composant', () => {
-    expect(component).toBeTruthy();
-  });
-
-  it('doit afficher une erreur si aucun joueur n est connecté', () => {
-    authContextService.joueur.mockReturnValue(null);
-
-    component.chargerReservations();
-
-    expect(component.messageErreur()).toBe('Aucun joueur connecté.');
-    expect(reservationApiService.consulterMesReservations).not.toHaveBeenCalled();
-  });
-
-  it('doit charger les réservations du joueur connecté', () => {
-    authContextService.joueur.mockReturnValue(joueur);
-    reservationApiService.consulterMesReservations.mockReturnValue(of([reservation]));
-
-    component.chargerReservations();
-
-    expect(reservationApiService.consulterMesReservations).toHaveBeenCalledWith('G1001');
-    expect(component.reservations()).toEqual([reservation]);
-    expect(component.rechercheEffectuee()).toBe(true);
-    expect(component.chargement()).toBe(false);
-    expect(component.messageErreur()).toBe('');
-  });
-
-  it('doit afficher une erreur si le chargement des réservations échoue', () => {
-    authContextService.joueur.mockReturnValue(joueur);
-    reservationApiService.consulterMesReservations.mockReturnValue(
-      throwError(() => new HttpErrorResponse({
-        status: 500,
-        error: {
-          message: 'Erreur backend réservations.'
-        }
-      }))
-    );
-
-    component.chargerReservations();
-
-    expect(component.messageErreur()).toBe('Erreur backend réservations.');
-    expect(component.reservations()).toEqual([]);
-    expect(component.chargement()).toBe(false);
-  });
-
-  it('doit payer une participation en attente', () => {
-    const reservationEnAttente: ReservationJoueurResponse = {
-      ...reservation,
-      statutParticipation: 'EN_ATTENTE_PAIEMENT'
+    const paiement:
+      PaiementResponse = {
+      paiementId: 4101,
+      participationId: 3101,
+      membreId: 2001,
+      matriculeMembre: 'G1001',
+      montant: 15,
+      montantDettesReglees: 30,
+      montantTotalDebite: 45,
+      naturePaiement: 'PARTICIPATION',
+      statutPaiement: 'PAYE',
+      statutParticipation: 'CONFIRMEE',
+      dateHeurePaiement:
+        '2026-06-01T12:00:00',
+      dateConfirmationParticipation:
+        '2026-06-01T12:00:00'
     };
 
-    component.reservations.set([reservationEnAttente]);
+    beforeEach(async () => {
+      facade = {
+        initialiser: vi.fn(),
+        chargerReservations: vi.fn(),
+        payerParticipation: vi.fn(),
 
-    component.payerParticipation(reservationEnAttente);
+        joueur:
+          signal<AuthJoueurResponse | null>(
+            null
+          ),
 
-    expect(
-      paiementApiService.payerParticipationStandard
-    ).toHaveBeenCalledWith(3101);
-    expect(component.dernierPaiement()).toEqual(paiement);
-    expect(component.messageSucces()).toBe(
-      'Participation payée avec succès.'
-    );
-    expect(component.reservations()[0].statutParticipation)
-      .toBe('CONFIRMEE');
-    expect(component.paiementEnCoursParticipationId()).toBeNull();
-  });
+        reservations:
+          signal<
+            ReservationJoueurResponse[]
+          >([]),
 
-  it('doit afficher la participation, les dettes et le total débité', () => {
-    const reservationEnAttente: ReservationJoueurResponse = {
-      ...reservation,
-      statutParticipation: 'EN_ATTENTE_PAIEMENT'
-    };
+        messageErreur: signal(''),
+        messageSucces: signal(''),
+        chargement: signal(false),
+        rechercheEffectuee: signal(false),
 
-    component.reservations.set([reservationEnAttente]);
-    component.payerParticipation(reservationEnAttente);
-    fixture.detectChanges();
+        paiementEnCoursParticipationId:
+          signal<number | null>(null),
 
-    const contenu = fixture.nativeElement.textContent;
+        dernierPaiement:
+          signal<PaiementResponse | null>(
+            null
+          )
+      };
 
-    expect(contenu).toContain('Paiement enregistré');
-    expect(contenu).toContain('Participation');
-    expect(contenu).toContain('15.00');
-    expect(contenu).toContain('Dettes réglées');
-    expect(contenu).toContain('30.00');
-    expect(contenu).toContain('Total débité');
-    expect(contenu).toContain('45.00');
-  });
+      await TestBed
+        .configureTestingModule({
+          imports: [
+            MesReservationsComponent
+          ],
+          providers: [
+            provideRouter([])
+          ]
+        })
+        .overrideComponent(
+          MesReservationsComponent,
+          {
+            set: {
+              providers: [
+                {
+                  provide:
+                  MesReservationsFacadeService,
+                  useValue:
+                  facade
+                }
+              ]
+            }
+          }
+        )
+        .compileComponents();
 
-  it('doit afficher une erreur si le paiement échoue', () => {
-    const reservationEnAttente: ReservationJoueurResponse = {
-      ...reservation,
-      statutParticipation: 'EN_ATTENTE_PAIEMENT'
-    };
+      fixture = TestBed.createComponent(
+        MesReservationsComponent
+      );
 
-    paiementApiService.payerParticipationStandard.mockReturnValue(
-      throwError(() => new HttpErrorResponse({
-        status: 409,
-        error: {
-          message: 'Cette participation possède déjà un paiement.'
-        }
-      }))
-    );
+      component =
+        fixture.componentInstance;
 
-    component.reservations.set([reservationEnAttente]);
-    component.payerParticipation(reservationEnAttente);
-
-    expect(component.messageErreur()).toBe(
-      'Cette participation possède déjà un paiement.'
-    );
-    expect(component.dernierPaiement()).toBeNull();
-    expect(component.paiementEnCoursParticipationId()).toBeNull();
-    expect(component.reservations()[0].statutParticipation)
-      .toBe('EN_ATTENTE_PAIEMENT');
-  });
-
-  it('doit charger automatiquement les réservations au démarrage si un joueur est connecté', () => {
-    TestBed.resetTestingModule();
-
-    authContextService = {
-      joueur: vi.fn(() => joueur)
-    };
-
-    reservationApiService = {
-      consulterMesReservations: vi.fn(() => of([reservation]))
-    };
-
-    TestBed.configureTestingModule({
-      imports: [MesReservationsComponent],
-      providers: [
-        provideRouter([]),
-        { provide: AuthContextService, useValue: authContextService },
-        { provide: ReservationApiService, useValue: reservationApiService },
-        { provide: PaiementApiService, useValue: paiementApiService }
-      ]
+      fixture.detectChanges();
     });
 
-    const nouvelleFixture = TestBed.createComponent(MesReservationsComponent);
-    const nouveauComposant = nouvelleFixture.componentInstance;
+    it(
+      'doit créer le composant et initialiser la façade',
+      () => {
+        expect(component).toBeTruthy();
 
-    nouvelleFixture.detectChanges();
+        expect(facade.initialiser)
+          .toHaveBeenCalled();
+      }
+    );
 
-    expect(reservationApiService.consulterMesReservations).toHaveBeenCalledWith('G1001');
-    expect(nouveauComposant.reservations()).toEqual([reservation]);
-  });
-});
+    it(
+      'doit afficher l absence de joueur connecté',
+      () => {
+        const contenu =
+          fixture.nativeElement
+            .textContent as string;
+
+        expect(contenu)
+          .toContain(
+            'Aucun joueur connecté'
+          );
+      }
+    );
+
+    it(
+      'doit afficher le joueur et ses réservations',
+      () => {
+        facade.joueur.set(joueur);
+
+        facade.reservations.set([
+          reservation
+        ]);
+
+        fixture.detectChanges();
+
+        const contenu =
+          fixture.nativeElement
+            .textContent as string;
+
+        expect(contenu)
+          .toContain('G1001');
+
+        expect(contenu)
+          .toContain('Dupont');
+
+        expect(contenu)
+          .toContain('Marie');
+
+        expect(contenu)
+          .toContain('Match #3001');
+
+        expect(contenu)
+          .toContain('Padel Bruxelles');
+
+        expect(contenu)
+          .toContain(
+            'Participation en attente de paiement.'
+          );
+      }
+    );
+
+    it(
+      'doit déléguer l actualisation à la façade',
+      () => {
+        facade.joueur.set(joueur);
+        fixture.detectChanges();
+
+        const boutons =
+          Array.from(
+            fixture.nativeElement
+              .querySelectorAll('button')
+          ) as HTMLButtonElement[];
+
+        const boutonActualiser =
+          boutons.find(
+            bouton =>
+              bouton.textContent
+                ?.includes(
+                  'Actualiser mes réservations'
+                )
+          );
+
+        boutonActualiser?.click();
+
+        expect(
+          facade.chargerReservations
+        ).toHaveBeenCalled();
+      }
+    );
+
+    it(
+      'doit déléguer le paiement à la façade',
+      () => {
+        facade.joueur.set(joueur);
+
+        facade.reservations.set([
+          reservation
+        ]);
+
+        fixture.detectChanges();
+
+        const boutons =
+          Array.from(
+            fixture.nativeElement
+              .querySelectorAll('button')
+          ) as HTMLButtonElement[];
+
+        const boutonPaiement =
+          boutons.find(
+            bouton =>
+              bouton.textContent
+                ?.includes(
+                  'Payer ma participation'
+                )
+          );
+
+        boutonPaiement?.click();
+
+        expect(
+          facade.payerParticipation
+        ).toHaveBeenCalledWith(
+          reservation
+        );
+      }
+    );
+
+    it(
+      'doit afficher le détail du paiement',
+      () => {
+        facade.joueur.set(joueur);
+        facade.dernierPaiement.set(
+          paiement
+        );
+
+        facade.messageSucces.set(
+          'Participation payée avec succès.'
+        );
+
+        fixture.detectChanges();
+
+        const contenu =
+          fixture.nativeElement
+            .textContent as string;
+
+        expect(contenu)
+          .toContain(
+            'Paiement enregistré'
+          );
+
+        expect(contenu)
+          .toContain('15.00');
+
+        expect(contenu)
+          .toContain('30.00');
+
+        expect(contenu)
+          .toContain('45.00');
+
+        expect(contenu)
+          .toContain(
+            'Participation payée avec succès.'
+          );
+      }
+    );
+
+    it(
+      'doit afficher l erreur de la façade',
+      () => {
+        facade.messageErreur.set(
+          'Erreur backend réservations.'
+        );
+
+        fixture.detectChanges();
+
+        const contenu =
+          fixture.nativeElement
+            .textContent as string;
+
+        expect(contenu)
+          .toContain(
+            'Erreur backend réservations.'
+          );
+      }
+    );
+  }
+);

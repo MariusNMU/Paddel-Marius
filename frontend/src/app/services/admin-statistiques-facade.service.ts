@@ -1,8 +1,14 @@
-import { Injectable, signal } from '@angular/core';
+import {
+  effect,
+  Injectable,
+  signal
+} from '@angular/core';
 import {
   catchError,
   EMPTY,
   finalize,
+  Subject,
+  takeUntil,
   tap
 } from 'rxjs';
 import { AuthAdminResponse } from '../models/auth.model';
@@ -14,13 +20,17 @@ import { AuthContextService } from './auth-context.service';
 import { SiteApiService } from './site-api.service';
 
 export type PeriodeStatistiques =
-  'moisCourant' | 'prochainsJours' | 'demo';
+  'moisCourant'
+  | 'prochainsJours'
+  | 'demo';
 
 function dateIso(date: Date): string {
   const annee = date.getFullYear();
+
   const mois = String(
     date.getMonth() + 1
   ).padStart(2, '0');
+
   const jour = String(
     date.getDate()
   ).padStart(2, '0');
@@ -32,6 +42,7 @@ function dateIsoDansJours(
   decalageJours: number
 ): string {
   const date = new Date();
+
   date.setDate(
     date.getDate() + decalageJours
   );
@@ -48,6 +59,7 @@ function premierJourMoisCourant(): string {
 
 function dernierJourMoisCourant(): string {
   const date = new Date();
+
   date.setMonth(
     date.getMonth() + 1,
     0
@@ -58,53 +70,54 @@ function dernierJourMoisCourant(): string {
 
 @Injectable()
 export class AdminStatistiquesFacadeService {
-  private readonly adminSignal =
-    signal<AuthAdminResponse | null>(null);
-
   private readonly sitesSignal =
     signal<SiteResponse[]>([]);
 
-  private readonly dateDebutSignal = signal('');
-  private readonly dateFinSignal = signal('');
+  private readonly dateDebutSignal =
+    signal('');
+  private readonly dateFinSignal =
+    signal('');
   private readonly siteIdSignal =
     signal<number | null>(null);
 
   private readonly chargementSitesSignal =
     signal(false);
-
   private readonly chargementSignal =
     signal(false);
-
   private readonly messageErreurSignal =
     signal('');
 
   private readonly statistiquesSignal =
-    signal<StatistiquesAdminResponse | null>(null);
+    signal<StatistiquesAdminResponse | null>(
+      null
+    );
 
-  readonly admin =
-    this.adminSignal.asReadonly();
+  private readonly changementSession$ =
+    new Subject<void>();
+
+  private parcoursInitialise = false;
+  private adminObserve:
+    AuthAdminResponse | null | undefined =
+    undefined;
+
+  get admin() {
+    return this.authContextService.admin;
+  }
 
   readonly sites =
     this.sitesSignal.asReadonly();
-
   readonly dateDebut =
     this.dateDebutSignal.asReadonly();
-
   readonly dateFin =
     this.dateFinSignal.asReadonly();
-
   readonly siteId =
     this.siteIdSignal.asReadonly();
-
   readonly chargementSites =
     this.chargementSitesSignal.asReadonly();
-
   readonly chargement =
     this.chargementSignal.asReadonly();
-
   readonly messageErreur =
     this.messageErreurSignal.asReadonly();
-
   readonly statistiques =
     this.statistiquesSignal.asReadonly();
 
@@ -116,43 +129,34 @@ export class AdminStatistiquesFacadeService {
     private readonly authContextService:
     AuthContextService
   ) {
+    effect(() => {
+      const admin =
+        this.authContextService.admin();
+
+      if (
+        !this.parcoursInitialise
+        || admin === this.adminObserve
+      ) {
+        return;
+      }
+
+      this.adminObserve = admin;
+      this.synchroniserAvecAdmin(admin);
+    });
   }
 
   initialiser(): void {
-    this.reinitialiserParcours();
-    this.appliquerPeriodeDemo();
-
     const admin =
       this.authContextService.admin();
 
-    this.adminSignal.set(admin);
+    this.parcoursInitialise = true;
+    this.adminObserve = admin;
 
-    if (!admin) {
-      this.messageErreurSignal.set(
-        'Tu dois te connecter comme admin avant de consulter les statistiques.'
-      );
-      return;
-    }
-
-    if (
-      admin.roleAdministrateur === 'SITE'
-    ) {
-      this.siteIdSignal.set(admin.siteId);
-
-      if (admin.siteId === null) {
-        this.messageErreurSignal.set(
-          'Aucun site n’est associé à cet administrateur.'
-        );
-      }
-
-      return;
-    }
-
-    this.chargerSites();
+    this.synchroniserAvecAdmin(admin);
   }
 
   estAdminGlobal(): boolean {
-    return this.adminSignal()
+    return this.admin()
       ?.roleAdministrateur === 'GLOBAL';
   }
 
@@ -173,7 +177,7 @@ export class AdminStatistiquesFacadeService {
   modifierSiteId(
     siteId: number | null
   ): void {
-    const admin = this.adminSignal();
+    const admin = this.admin();
 
     if (
       admin?.roleAdministrateur === 'SITE'
@@ -225,7 +229,7 @@ export class AdminStatistiquesFacadeService {
   chargerStatistiques(): void {
     this.reinitialiserResultat();
 
-    const admin = this.adminSignal();
+    const admin = this.admin();
     const dateDebut =
       this.dateDebutSignal();
     const dateFin =
@@ -294,10 +298,44 @@ export class AdminStatistiquesFacadeService {
           return EMPTY;
         }),
         finalize(() => {
-          this.chargementSignal.set(false);
-        })
+          this.chargementSignal.set(
+            false
+          );
+        }),
+        takeUntil(this.changementSession$)
       )
       .subscribe();
+  }
+
+  private synchroniserAvecAdmin(
+    admin: AuthAdminResponse | null
+  ): void {
+    this.changementSession$.next();
+    this.reinitialiserParcours();
+    this.appliquerPeriodeDemo();
+
+    if (!admin) {
+      this.messageErreurSignal.set(
+        'Tu dois te connecter comme admin avant de consulter les statistiques.'
+      );
+      return;
+    }
+
+    if (
+      admin.roleAdministrateur === 'SITE'
+    ) {
+      this.siteIdSignal.set(admin.siteId);
+
+      if (admin.siteId === null) {
+        this.messageErreurSignal.set(
+          'Aucun site n’est associé à cet administrateur.'
+        );
+      }
+
+      return;
+    }
+
+    this.chargerSites();
   }
 
   private chargerSites(): void {
@@ -337,7 +375,8 @@ export class AdminStatistiquesFacadeService {
           this.chargementSitesSignal.set(
             false
           );
-        })
+        }),
+        takeUntil(this.changementSession$)
       )
       .subscribe();
   }
@@ -358,7 +397,6 @@ export class AdminStatistiquesFacadeService {
   }
 
   private reinitialiserParcours(): void {
-    this.adminSignal.set(null);
     this.sitesSignal.set([]);
     this.dateDebutSignal.set('');
     this.dateFinSignal.set('');

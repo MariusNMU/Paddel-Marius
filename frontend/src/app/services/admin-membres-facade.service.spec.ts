@@ -1,6 +1,15 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import {
+  signal,
+  type Signal,
+  type WritableSignal
+} from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { of, throwError } from 'rxjs';
+import {
+  of,
+  Subject,
+  throwError
+} from 'rxjs';
 import { AuthAdminResponse } from '../models/auth.model';
 import { MembreResponse } from '../models/membre.model';
 import { SiteResponse } from '../models/site.model';
@@ -21,8 +30,11 @@ describe('AdminMembresFacadeService', () => {
     listerSitesActifs: ReturnType<typeof vi.fn>;
   };
 
+  let adminSignal:
+    WritableSignal<AuthAdminResponse | null>;
+
   let authContextService: {
-    admin: ReturnType<typeof vi.fn>;
+    admin: Signal<AuthAdminResponse | null>;
   };
 
   const adminGlobal: AuthAdminResponse = {
@@ -86,8 +98,13 @@ describe('AdminMembresFacadeService', () => {
       listerSitesActifs: vi.fn(() => of(sites))
     };
 
+    adminSignal =
+      signal<AuthAdminResponse | null>(
+        adminGlobal
+      );
+
     authContextService = {
-      admin: vi.fn(() => adminGlobal)
+      admin: adminSignal.asReadonly()
     };
 
     TestBed.configureTestingModule({
@@ -134,7 +151,7 @@ describe('AdminMembresFacadeService', () => {
   });
 
   it('doit limiter un admin SITE à son propre site', () => {
-    authContextService.admin.mockReturnValue(adminSite);
+    adminSignal.set(adminSite);
 
     service.initialiser();
 
@@ -189,7 +206,7 @@ describe('AdminMembresFacadeService', () => {
   });
 
   it('doit refuser l action globale à un admin SITE', () => {
-    authContextService.admin.mockReturnValue(adminSite);
+    adminSignal.set(adminSite);
     service.initialiser();
 
     service.afficherTousLesMembres();
@@ -245,7 +262,7 @@ describe('AdminMembresFacadeService', () => {
   });
 
   it('doit refuser le chargement sans administrateur connecté', () => {
-    authContextService.admin.mockReturnValue(null);
+    adminSignal.set(null);
 
     service.initialiser();
 
@@ -260,5 +277,81 @@ describe('AdminMembresFacadeService', () => {
     expect(
       adminMembreApiService.listerTousLesMembres
     ).not.toHaveBeenCalled();
+  });
+
+  it('doit se resynchroniser quand la session admin change', () => {
+    service.initialiser();
+
+    adminSignal.set(adminSite);
+    TestBed.tick();
+
+    expect(service.admin()).toEqual(adminSite);
+    expect(service.estAdminGlobal()).toBe(false);
+    expect(service.siteId()).toBe(1001);
+    expect(service.sites()).toEqual([]);
+    expect(service.membres()).toEqual([
+      membreSite
+    ]);
+
+    expect(
+      adminMembreApiService
+        .listerMembresParSite
+    ).toHaveBeenCalledWith(1001);
+
+    adminSignal.set(null);
+    TestBed.tick();
+
+    expect(service.admin()).toBeNull();
+    expect(service.siteId()).toBeNull();
+    expect(service.sites()).toEqual([]);
+    expect(service.membres()).toEqual([]);
+    expect(service.titreResultat()).toBe(
+      'Membres'
+    );
+
+    expect(service.messageErreur()).toBe(
+      'Connecte-toi comme administrateur pour consulter les membres.'
+    );
+  });
+
+  it('doit ignorer une réponse de l ancienne session', () => {
+    const anciensMembres$ =
+      new Subject<MembreResponse[]>();
+
+    const membreAncienneSession:
+      MembreResponse = {
+      ...membreSite,
+      membreId: 9999,
+      matricule: 'ANCIENNE'
+    };
+
+    adminMembreApiService
+      .listerTousLesMembres
+      .mockReturnValue(anciensMembres$);
+
+    service.initialiser();
+
+    expect(
+      service.chargementMembres()
+    ).toBe(true);
+
+    adminSignal.set(adminSite);
+    TestBed.tick();
+
+    expect(service.membres()).toEqual([
+      membreSite
+    ]);
+
+    anciensMembres$.next([
+      membreAncienneSession
+    ]);
+
+    expect(service.membres()).toEqual([
+      membreSite
+    ]);
+
+    expect(service.titreResultat()).toBe(
+      'Membres rattachés au site Padel Bruxelles'
+    );
   });
 });

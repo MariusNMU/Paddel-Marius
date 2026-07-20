@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AuthContextService } from '../../services/auth-context.service';
+import { AuthFacadeService } from '../../services/auth-facade.service';
 import { enumLabel } from '../../shared/enum-label.util';
 
 @Component({
@@ -11,7 +11,7 @@ import { enumLabel } from '../../shared/enum-label.util';
     <section class="page">
       <h2>Dashboard admin</h2>
 
-      @if (authContextService.admin(); as admin) {
+      @if (authFacade.admin(); as admin) {
         <div class="dashboard-header">
           <div>
             <h3>Administrateur connecté</h3>
@@ -198,10 +198,13 @@ import { enumLabel } from '../../shared/enum-label.util';
 })
 export class AdminDashboardComponent {
   readonly enumLabel = enumLabel;
-  constructor(readonly authContextService: AuthContextService) {
+
+  constructor(
+    readonly authFacade: AuthFacadeService
+  ) {
   }
 
   deconnecter(): void {
-    this.authContextService.deconnecterAdmin();
+    this.authFacade.deconnecterAdmin();
   }
 }

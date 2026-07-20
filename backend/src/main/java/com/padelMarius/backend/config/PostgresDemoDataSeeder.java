@@ -44,6 +44,7 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
         insererDettes(dateReference);
         insererPenalites(dateReference);
         insererPaiements(dateReference);
+        reconcilierDettesPayees();
 
         synchroniserSequences();
     }
@@ -949,6 +950,31 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 "PAYE",
                 3304L,
                 null
+        );
+    }
+
+    private void reconcilierDettesPayees() {
+        jdbcTemplate.update("""
+                UPDATE dette d
+                SET montant_restant = :montantRestant,
+                    date_reglement = COALESCE(
+                        d.date_reglement,
+                        p.date_heure_paiement
+                    ),
+                    statut_dette = :statutDetteReglee
+                FROM paiement p
+                WHERE p.dette_id = d.id
+                  AND p.statut_paiement = :statutPaiementPaye
+                  AND (
+                      d.montant_restant <> :montantRestant
+                      OR d.date_reglement IS NULL
+                      OR d.statut_dette <> :statutDetteReglee
+                  )
+                """,
+                new MapSqlParameterSource()
+                        .addValue("montantRestant", BigDecimal.ZERO)
+                        .addValue("statutDetteReglee", "REGLEE")
+                        .addValue("statutPaiementPaye", "PAYE")
         );
     }
 

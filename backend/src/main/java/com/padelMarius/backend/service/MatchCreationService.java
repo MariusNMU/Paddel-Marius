@@ -190,6 +190,13 @@ public class MatchCreationService {
         boolean participationOrganisateurEnAttentePaiement =
                 participationRepository.findByMembreId(organisateur.getId())
                         .stream()
+                        .filter(participation ->
+                                participation.getMatch() != null
+                        )
+                        .filter(participation ->
+                                participation.getMatch().getEtatCycle()
+                                        != EtatCycleMatch.ANNULE
+                        )
                         .anyMatch(participation ->
                                 participation.getRoleParticipation()
                                         == RoleParticipation.ORGANISATEUR

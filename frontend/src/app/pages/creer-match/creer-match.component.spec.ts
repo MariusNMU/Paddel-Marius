@@ -158,7 +158,8 @@ describe('CreerMatchComponent', () => {
       'tu devras payer le solde restant'
     );
     expect(contenu).toContain(
-      'Une dette ouverte bloque toute nouvelle création de match'
+      "Une participation d'organisateur en attente de paiement "
+      + 'ou une dette ouverte bloque toute nouvelle création de match'
     );
     expect(contenu).toContain(
       'ajoutée au montant total débité'

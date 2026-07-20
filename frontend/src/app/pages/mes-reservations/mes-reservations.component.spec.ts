@@ -239,6 +239,55 @@ describe(
     );
 
     it(
+      'doit afficher une annulation administrative sans demander de paiement',
+      () => {
+        facade.joueur.set(joueur);
+
+        facade.reservations.set([
+          {
+            ...reservation,
+            etatCycle: 'ANNULE'
+          }
+        ]);
+
+        fixture.detectChanges();
+
+        const contenu =
+          fixture.nativeElement
+            .textContent as string;
+
+        expect(contenu)
+          .toContain(
+            'Match annulé à la suite d\'une fermeture administrative.'
+          );
+
+        expect(contenu)
+          .toContain(
+            'Aucun paiement n\'est requis pour cette réservation.'
+          );
+
+        expect(contenu)
+          .toContain(
+            'Annulée'
+          );
+
+        expect(contenu)
+          .not.toContain(
+            'Participation en attente de paiement.'
+          );
+
+        expect(contenu)
+          .not.toContain(
+            'Payer ma participation'
+          );
+
+        expect(
+          facade.payerParticipation
+        ).not.toHaveBeenCalled();
+      }
+    );
+
+    it(
       'doit déléguer l actualisation à la façade',
       () => {
         facade.joueur.set(joueur);

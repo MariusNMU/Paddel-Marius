@@ -18,6 +18,22 @@ public record InscriptionMembreRequest(
         @NotNull(message = "La catégorie du membre est obligatoire.")
         CategorieMembre categorieMembre,
 
-        Long siteRattachementId
+        Long siteRattachementId,
+
+        @NotBlank(message = "Le mot de passe est obligatoire.")
+        @Size(
+                min = 12,
+                max = 72,
+                message = "Le mot de passe doit contenir entre 12 et 72 caractères."
+        )
+        String motDePasse,
+
+        @NotBlank(message = "La confirmation du mot de passe est obligatoire.")
+        @Size(
+                min = 12,
+                max = 72,
+                message = "La confirmation doit contenir entre 12 et 72 caractères."
+        )
+        String confirmationMotDePasse
 ) {
 }

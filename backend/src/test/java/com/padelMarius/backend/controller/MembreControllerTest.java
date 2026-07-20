@@ -47,7 +47,9 @@ class MembreControllerTest {
                   "nom": "Durand",
                   "prenom": "Alice",
                   "categorieMembre": "GLOBAL",
-                  "siteRattachementId": null
+                  "siteRattachementId": null,
+                  "motDePasse": "MotDePasse2026!",
+                  "confirmationMotDePasse": "MotDePasse2026!"
                 }
                 """;
 
@@ -85,7 +87,9 @@ class MembreControllerTest {
                   "nom": "",
                   "prenom": "Alice",
                   "categorieMembre": "GLOBAL",
-                  "siteRattachementId": null
+                  "siteRattachementId": null,
+                  "motDePasse": "MotDePasse2026!",
+                  "confirmationMotDePasse": "MotDePasse2026!"
                 }
                 """;
 
@@ -101,7 +105,9 @@ class MembreControllerTest {
                 {
                   "nom": "Durand",
                   "prenom": "Alice",
-                  "siteRattachementId": null
+                  "siteRattachementId": null,
+                  "motDePasse": "MotDePasse2026!",
+                  "confirmationMotDePasse": "MotDePasse2026!"
                 }
                 """;
 
@@ -109,6 +115,34 @@ class MembreControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void inscrireMembre_shouldReturnBadRequest_whenPasswordIsTooShort()
+            throws Exception {
+        String json = """
+                {
+                  "nom": "Durand",
+                  "prenom": "Alice",
+                  "categorieMembre": "GLOBAL",
+                  "siteRattachementId": null,
+                  "motDePasse": "court",
+                  "confirmationMotDePasse": "MotDePasse2026!"
+                }
+                """;
+
+        mockMvc.perform(post("/api/membres/inscription")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code")
+                        .value("VALIDATION_INVALIDE"))
+                .andExpect(jsonPath("$.message")
+                        .value(
+                                "Le champ 'motDePasse' est invalide : "
+                                        + "Le mot de passe doit contenir "
+                                        + "entre 12 et 72 caractères."
+                        ));
     }
 
     @Test

@@ -30,6 +30,12 @@ export class InscriptionJoueurFacadeService {
   private readonly prenomSignal =
     signal('');
 
+  private readonly motDePasseSignal =
+    signal('');
+
+  private readonly confirmationMotDePasseSignal =
+    signal('');
+
   private readonly categorieMembreSignal =
     signal<CategorieMembre>('GLOBAL');
 
@@ -56,6 +62,13 @@ export class InscriptionJoueurFacadeService {
 
   readonly prenom =
     this.prenomSignal.asReadonly();
+
+  readonly motDePasse =
+    this.motDePasseSignal.asReadonly();
+
+  readonly confirmationMotDePasse =
+    this.confirmationMotDePasseSignal
+      .asReadonly();
 
   readonly categorieMembre =
     this.categorieMembreSignal.asReadonly();
@@ -95,6 +108,26 @@ export class InscriptionJoueurFacadeService {
 
   modifierPrenom(prenom: string): void {
     this.prenomSignal.set(prenom);
+    this.reinitialiserResultat();
+  }
+
+  modifierMotDePasse(
+    motDePasse: string
+  ): void {
+    this.motDePasseSignal.set(
+      motDePasse
+    );
+
+    this.reinitialiserResultat();
+  }
+
+  modifierConfirmationMotDePasse(
+    confirmationMotDePasse: string
+  ): void {
+    this.confirmationMotDePasseSignal.set(
+      confirmationMotDePasse
+    );
+
     this.reinitialiserResultat();
   }
 
@@ -157,9 +190,45 @@ export class InscriptionJoueurFacadeService {
     const nom = this.nomSignal().trim();
     const prenom = this.prenomSignal().trim();
 
+    const motDePasse =
+      this.motDePasseSignal();
+
+    const confirmationMotDePasse =
+      this.confirmationMotDePasseSignal();
+
     if (!nom || !prenom) {
       this.messageErreurSignal.set(
         'Le nom et le prénom sont obligatoires.'
+      );
+      return;
+    }
+
+    if (
+      !motDePasse.trim()
+      || !confirmationMotDePasse.trim()
+    ) {
+      this.messageErreurSignal.set(
+        'Le mot de passe et sa confirmation sont obligatoires.'
+      );
+      return;
+    }
+
+    if (
+      motDePasse.length < 12
+      || motDePasse.length > 72
+    ) {
+      this.messageErreurSignal.set(
+        'Le mot de passe doit contenir entre 12 et 72 caractères.'
+      );
+      return;
+    }
+
+    if (
+      motDePasse
+      !== confirmationMotDePasse
+    ) {
+      this.messageErreurSignal.set(
+        'Les mots de passe ne correspondent pas.'
       );
       return;
     }
@@ -195,7 +264,9 @@ export class InscriptionJoueurFacadeService {
       siteRattachementId:
         categorieMembre === 'SITE'
           ? siteRattachement!.siteId
-          : null
+          : null,
+      motDePasse,
+      confirmationMotDePasse
     };
 
     this.chargementSignal.set(true);
@@ -208,6 +279,10 @@ export class InscriptionJoueurFacadeService {
           this.membreCreeSignal.set(
             membreCree
           );
+
+          this.motDePasseSignal.set('');
+          this.confirmationMotDePasseSignal
+            .set('');
         }),
         catchError(error => {
           this.messageErreurSignal.set(
@@ -290,6 +365,9 @@ export class InscriptionJoueurFacadeService {
     this.sitesSignal.set([]);
     this.nomSignal.set('');
     this.prenomSignal.set('');
+    this.motDePasseSignal.set('');
+    this.confirmationMotDePasseSignal
+      .set('');
     this.categorieMembreSignal.set(
       'GLOBAL'
     );

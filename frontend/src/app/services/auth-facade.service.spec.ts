@@ -125,7 +125,8 @@ describe('AuthFacadeService', () => {
       throwError(() => new HttpErrorResponse({
         status: 401,
         error: {
-          message: 'Joueur introuvable ou inactif.'
+          message:
+            'Identifiant ou mot de passe invalide.'
         }
       }))
     );
@@ -133,7 +134,7 @@ describe('AuthFacadeService', () => {
     service.connecterJoueur('TEST001', 'motdepasse-test');
 
     expect(service.messageErreurJoueur()).toBe(
-      'Joueur introuvable ou inactif.'
+      'Identifiant ou mot de passe invalide.'
     );
     expect(authContextService.definirJoueur).not.toHaveBeenCalled();
     expect(service.chargementJoueur()).toBe(false);
@@ -168,7 +169,8 @@ describe('AuthFacadeService', () => {
       throwError(() => new HttpErrorResponse({
         status: 401,
         error: {
-          message: 'Identifiants administrateur invalides.'
+          message:
+            'Identifiant ou mot de passe invalide.'
         }
       }))
     );
@@ -176,7 +178,7 @@ describe('AuthFacadeService', () => {
     service.connecterAdmin('admin-test', 'motdepasse-test');
 
     expect(service.messageErreurAdmin()).toBe(
-      'Identifiants administrateur invalides.'
+      'Identifiant ou mot de passe invalide.'
     );
     expect(authContextService.definirAdmin).not.toHaveBeenCalled();
     expect(router.navigate).not.toHaveBeenCalled();

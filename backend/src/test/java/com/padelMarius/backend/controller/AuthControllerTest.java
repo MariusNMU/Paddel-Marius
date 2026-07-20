@@ -7,7 +7,6 @@ import com.padelMarius.backend.dto.auth.ConnexionJoueurRequest;
 import com.padelMarius.backend.entity.CategorieMembre;
 import com.padelMarius.backend.entity.RoleAdministrateur;
 import com.padelMarius.backend.exception.AuthentificationException;
-import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.service.AuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +31,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 @Import(ApiExceptionHandler.class)
 class AuthControllerTest {
+
+    private static final String MESSAGE_IDENTIFIANTS_INVALIDES =
+            "Identifiant ou mot de passe invalide.";
 
     @Autowired
     private MockMvc mockMvc;
@@ -111,7 +113,7 @@ class AuthControllerTest {
     void shouldReturn401_whenPlayerCredentialsAreInvalid() throws Exception {
         when(authService.authentifierJoueur(any(ConnexionJoueurRequest.class)))
                 .thenThrow(new AuthentificationException(
-                        "Identifiants joueur invalides."
+                        MESSAGE_IDENTIFIANTS_INVALIDES
                 ));
 
         mockMvc.perform(post("/api/auth/joueur")
@@ -121,39 +123,45 @@ class AuthControllerTest {
                                   "matricule": "G9999",
                                   "motDePasse": "mauvais"
                                 }
-                                """))
+                """))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("AUTHENTIFICATION_INVALIDE"))
-                .andExpect(jsonPath("$.message").value(
-                        "Identifiants joueur invalides."
-                ));
+                .andExpect(jsonPath("$.code")
+                        .value("AUTHENTIFICATION_INVALIDE"))
+                .andExpect(jsonPath("$.message")
+                        .value(MESSAGE_IDENTIFIANTS_INVALIDES));
     }
 
     @Test
-    void shouldReturn409_whenPlayerIsInactive() throws Exception {
-        when(authService.authentifierJoueur(any(ConnexionJoueurRequest.class)))
-                .thenThrow(new ConfigurationMetierException(
-                        "Le membre est inactif."
-                ));
+    void shouldReturn401_whenPlayerIsInactive()
+            throws Exception {
+        when(authService.authentifierJoueur(
+                any(ConnexionJoueurRequest.class)
+        )).thenThrow(new AuthentificationException(
+                MESSAGE_IDENTIFIANTS_INVALIDES
+        ));
 
         mockMvc.perform(post("/api/auth/joueur")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "matricule": "G0001",
+                                  "matricule": "G9999",
                                   "motDePasse": "password"
                                 }
                                 """))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("CONFIGURATION_METIER_INVALIDE"))
-                .andExpect(jsonPath("$.message").value("Le membre est inactif."));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code")
+                        .value("AUTHENTIFICATION_INVALIDE"))
+                .andExpect(jsonPath("$.message")
+                        .value(
+                                MESSAGE_IDENTIFIANTS_INVALIDES
+                        ));
     }
 
     @Test
     void shouldReturn401_whenAdminCredentialsAreInvalid() throws Exception {
         when(authService.authentifierAdmin(any(ConnexionAdminRequest.class)))
                 .thenThrow(new AuthentificationException(
-                        "Identifiants administrateur invalides."
+                        MESSAGE_IDENTIFIANTS_INVALIDES
                 ));
 
         mockMvc.perform(post("/api/auth/admin")
@@ -163,12 +171,12 @@ class AuthControllerTest {
                                   "login": "admin-global",
                                   "motDePasse": "mauvais"
                                 }
-                                """))
+                """))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("AUTHENTIFICATION_INVALIDE"))
-                .andExpect(jsonPath("$.message").value(
-                        "Identifiants administrateur invalides."
-                ));
+                .andExpect(jsonPath("$.code")
+                        .value("AUTHENTIFICATION_INVALIDE"))
+                .andExpect(jsonPath("$.message")
+                        .value(MESSAGE_IDENTIFIANTS_INVALIDES));
     }
 
     @Test

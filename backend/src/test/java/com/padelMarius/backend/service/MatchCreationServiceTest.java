@@ -316,6 +316,65 @@ class MatchCreationServiceTest {
     }
 
     @Test
+    void creerMatchDevraitRefuserQuandParticipationOrganisateurEnAttentePaiement() {
+        Scenario scenario = configurerCasValideSansDetteNiPenalite();
+
+        CreerMatchRequest request = new CreerMatchRequest(
+                scenario.terrain().getId(),
+                scenario.organisateur().getMatricule(),
+                scenario.dateHeureDebut(),
+                ModeCreation.PRIVE
+        );
+
+        when(detteRepository.existsByMembreResponsableIdAndStatutDette(
+                20L,
+                StatutDette.OUVERTE
+        )).thenReturn(false);
+
+        when(penaliteRepository.findByMembreIdAndStatutPenalite(
+                20L,
+                StatutPenalite.ACTIVE
+        )).thenReturn(List.of());
+
+        PadelMatch matchExistant = PadelMatch.builder()
+                .terrain(scenario.terrain())
+                .dateHeureDebut(LocalDateTime.of(2026, 5, 19, 9, 0))
+                .dateHeureFin(LocalDateTime.of(2026, 5, 19, 10, 30))
+                .etatCycle(EtatCycleMatch.A_VENIR)
+                .build();
+
+        Participation participationEnAttente = Participation.builder()
+                .match(matchExistant)
+                .membre(scenario.organisateur())
+                .roleParticipation(RoleParticipation.ORGANISATEUR)
+                .modeEntree(ModeEntreeParticipation.CREATION)
+                .statutParticipation(
+                        StatutParticipation.EN_ATTENTE_PAIEMENT
+                )
+                .dateAffectation(LocalDateTime.of(2026, 5, 14, 12, 0))
+                .build();
+
+        when(participationRepository.findByMembreId(20L))
+                .thenReturn(List.of(participationEnAttente));
+
+        ConfigurationMetierException exception = assertThrows(
+                ConfigurationMetierException.class,
+                () -> matchCreationService.creerMatch(request)
+        );
+
+        assertEquals(
+                "L'organisateur doit payer sa participation au match "
+                        + "déjà organisé avant d'en créer un nouveau.",
+                exception.getMessage()
+        );
+
+        verifyNoInteractions(disponibiliteService);
+        verify(padelMatchRepository, never()).save(any(PadelMatch.class));
+        verify(participationRepository, never())
+                .save(any(Participation.class));
+    }
+
+    @Test
     void shouldThrowWhenOrganisateurHasActivePenalty() {
         Scenario scenario = configurerCasValideSansDetteNiPenalite();
 

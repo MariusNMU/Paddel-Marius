@@ -34,7 +34,6 @@ public class MatchCreationService {
     private final DisponibiliteService disponibiliteService;
     private final ReglesReservationMembreService reglesReservationMembreService;
     private final Clock clock;
-    private final DetteService detteService;
 
     @Transactional
     public MatchResponse creerMatch(CreerMatchRequest request) {
@@ -65,7 +64,9 @@ public class MatchCreationService {
 
         verifierAbsenceDetteOuverte(organisateur);
         verifierAbsencePenaliteActive(organisateur);
-        verifierAbsenceMatchOrganiseNonRegle(organisateur);
+        verifierAbsenceParticipationOrganisateurEnAttentePaiement(
+                organisateur
+        );
 
         LocalDateTime dateHeureFin = dateHeureDebut.plus(DUREE_MATCH);
 
@@ -183,31 +184,25 @@ public class MatchCreationService {
         }
     }
 
-    private void verifierAbsenceMatchOrganiseNonRegle(Membre organisateur) {
-        List<Participation> participations = participationRepository.findByMembreId(organisateur.getId());
+    private void verifierAbsenceParticipationOrganisateurEnAttentePaiement(
+            Membre organisateur
+    ) {
+        boolean participationOrganisateurEnAttentePaiement =
+                participationRepository.findByMembreId(organisateur.getId())
+                        .stream()
+                        .anyMatch(participation ->
+                                participation.getRoleParticipation()
+                                        == RoleParticipation.ORGANISATEUR
+                                && participation.getStatutParticipation()
+                                        == StatutParticipation.EN_ATTENTE_PAIEMENT
+                        );
 
-        boolean matchOrganiseNonRegle = participations.stream()
-                .filter(participation -> participation.getRoleParticipation() == RoleParticipation.ORGANISATEUR)
-                .filter(participation -> participation.getStatutParticipation() != StatutParticipation.LIBEREE)
-                .map(Participation::getMatch)
-                .filter(Objects::nonNull)
-                .filter(match -> match.getEtatCycle() == EtatCycleMatch.A_VENIR
-                        || match.getEtatCycle() == EtatCycleMatch.DEMARRE)
-                .anyMatch(this::matchNonTotalementPaye);
-
-        if (matchOrganiseNonRegle) {
+        if (participationOrganisateurEnAttentePaiement) {
             throw new ConfigurationMetierException(
-                    "L'organisateur a déjà un match organisé non totalement payé."
+                    "L'organisateur doit payer sa participation au match "
+                            + "déjà organisé avant d'en créer un nouveau."
             );
         }
-    }
-
-    private boolean matchNonTotalementPaye(PadelMatch match) {
-        boolean detteOuverte = detteRepository.findByMatchId(match.getId())
-                .filter(dette -> dette.getStatutDette() == StatutDette.OUVERTE)
-                .isPresent();
-
-        return detteOuverte;
     }
 
     private void verifierDisponibiliteTerrain(

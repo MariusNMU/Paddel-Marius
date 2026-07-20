@@ -226,10 +226,13 @@ import { enumLabel } from '../../shared/enum-label.util';
                 <strong>Participation</strong>
                 <br>
                 {{
-                  enumLabel(
-                    reservation
-                      .statutParticipation
-                  )
+                  reservation.etatCycle
+                    === 'ANNULE'
+                    ? 'Annulée'
+                    : enumLabel(
+                        reservation
+                          .statutParticipation
+                      )
                 }}
               </p>
 
@@ -280,11 +283,12 @@ import { enumLabel } from '../../shared/enum-label.util';
                 === 'ANNULE'
             ) {
               <p class="badge-attention">
-                Match annulé.
+                Match annulé à la suite d'une
+                fermeture administrative.
+                Aucun paiement n'est requis
+                pour cette réservation.
               </p>
-            }
-
-            @if (
+            } @else if (
               reservation.statutParticipation
                 === 'EN_ATTENTE_PAIEMENT'
             ) {
@@ -293,38 +297,36 @@ import { enumLabel } from '../../shared/enum-label.util';
                 paiement.
               </p>
 
-              @if (
-                reservation.etatCycle
-                  !== 'ANNULE'
-              ) {
-                <button
-                  type="button"
-                  (click)="
-                    facade
-                      .payerParticipation(
-                        reservation
-                      )
-                  "
-                  [disabled]="
-                    facade
-                      .paiementEnCoursParticipationId()
-                      !== null
-                  "
-                >
-                  {{
-                    facade
-                      .paiementEnCoursParticipationId()
-                      === reservation
-                        .participationId
-                      ? 'Paiement...'
-                      : 'Payer ma participation'
-                  }}
-                </button>
-              }
+              <button
+                type="button"
+                (click)="
+                  facade
+                    .payerParticipation(
+                      reservation
+                    )
+                "
+                [disabled]="
+                  facade
+                    .paiementEnCoursParticipationId()
+                    !== null
+                "
+              >
+                {{
+                  facade
+                    .paiementEnCoursParticipationId()
+                    === reservation
+                      .participationId
+                    ? 'Paiement...'
+                    : 'Payer ma participation'
+                }}
+              </button>
             }
 
             @if (
-              reservation.statutParticipation
+              reservation.etatCycle
+                !== 'ANNULE'
+              && reservation
+                .statutParticipation
                 === 'CONFIRMEE'
             ) {
               <p class="badge-ok">

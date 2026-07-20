@@ -375,6 +375,84 @@ class MatchCreationServiceTest {
     }
 
     @Test
+    void creerMatchDevraitIgnorerParticipationEnAttentePourMatchAnnule() {
+        Scenario scenario = configurerCasValideSansDetteNiPenalite();
+
+        CreerMatchRequest request = new CreerMatchRequest(
+                scenario.terrain().getId(),
+                scenario.organisateur().getMatricule(),
+                scenario.dateHeureDebut(),
+                ModeCreation.PRIVE
+        );
+
+        when(detteRepository.existsByMembreResponsableIdAndStatutDette(
+                20L,
+                StatutDette.OUVERTE
+        )).thenReturn(false);
+
+        when(penaliteRepository.findByMembreIdAndStatutPenalite(
+                20L,
+                StatutPenalite.ACTIVE
+        )).thenReturn(List.of());
+
+        PadelMatch matchAnnule = PadelMatch.builder()
+                .terrain(scenario.terrain())
+                .dateHeureDebut(LocalDateTime.of(2026, 5, 19, 9, 0))
+                .dateHeureFin(LocalDateTime.of(2026, 5, 19, 10, 30))
+                .etatCycle(EtatCycleMatch.ANNULE)
+                .build();
+
+        Participation participationEnAttente = Participation.builder()
+                .match(matchAnnule)
+                .membre(scenario.organisateur())
+                .roleParticipation(RoleParticipation.ORGANISATEUR)
+                .modeEntree(ModeEntreeParticipation.CREATION)
+                .statutParticipation(
+                        StatutParticipation.EN_ATTENTE_PAIEMENT
+                )
+                .dateAffectation(LocalDateTime.of(2026, 5, 14, 12, 0))
+                .build();
+
+        when(participationRepository.findByMembreId(20L))
+                .thenReturn(List.of(participationEnAttente));
+
+        when(disponibiliteService.consulterDisponibilites(
+                scenario.site().getId(),
+                scenario.dateHeureDebut().toLocalDate()
+        )).thenReturn(
+                new DisponibilitesResponse(
+                        scenario.site().getId(),
+                        scenario.site().getNom(),
+                        scenario.dateHeureDebut().toLocalDate(),
+                        false,
+                        null,
+                        List.of()
+                )
+        );
+
+        ConfigurationMetierException exception = assertThrows(
+                ConfigurationMetierException.class,
+                () -> matchCreationService.creerMatch(request)
+        );
+
+        assertEquals(
+                "Le terrain n'est pas disponible sur le créneau demandé.",
+                exception.getMessage()
+        );
+
+        verify(disponibiliteService).consulterDisponibilites(
+                scenario.site().getId(),
+                scenario.dateHeureDebut().toLocalDate()
+        );
+
+        verify(padelMatchRepository, never())
+                .save(any(PadelMatch.class));
+
+        verify(participationRepository, never())
+                .save(any(Participation.class));
+    }
+
+    @Test
     void shouldThrowWhenOrganisateurHasActivePenalty() {
         Scenario scenario = configurerCasValideSansDetteNiPenalite();
 

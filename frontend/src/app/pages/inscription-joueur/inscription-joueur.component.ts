@@ -82,6 +82,51 @@ import { enumLabel } from '../../shared/enum-label.util';
           required
         >
 
+        <label for="motDePasse">
+          Mot de passe
+        </label>
+
+        <input
+          id="motDePasse"
+          name="motDePasse"
+          type="password"
+          autocomplete="new-password"
+          [ngModel]="facade.motDePasse()"
+          (ngModelChange)="
+            facade.modifierMotDePasse($event)
+          "
+          required
+          minlength="12"
+          maxlength="72"
+        >
+
+        <p class="aide">
+          Entre 12 et 72 caractères.
+        </p>
+
+        <label for="confirmationMotDePasse">
+          Confirmer le mot de passe
+        </label>
+
+        <input
+          id="confirmationMotDePasse"
+          name="confirmationMotDePasse"
+          type="password"
+          autocomplete="new-password"
+          [ngModel]="
+            facade.confirmationMotDePasse()
+          "
+          (ngModelChange)="
+            facade
+              .modifierConfirmationMotDePasse(
+                $event
+              )
+          "
+          required
+          minlength="12"
+          maxlength="72"
+        >
+
         <label for="categorieMembre">
           Catégorie
         </label>
@@ -269,7 +314,9 @@ import { enumLabel } from '../../shared/enum-label.util';
             connecter avec le matricule
             <strong>
               {{ membreCree.matricule }}
-            </strong>.
+            </strong>
+            et le mot de passe qu’il vient
+            de choisir.
           </p>
 
           <a

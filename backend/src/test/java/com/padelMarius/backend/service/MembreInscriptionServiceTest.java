@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -58,7 +59,9 @@ class MembreInscriptionServiceTest {
                 "Durand",
                 "Alice",
                 CategorieMembre.GLOBAL,
-                null
+                null,
+                "MotDePasse2026!",
+                "MotDePasse2026!"
         );
 
         when(membreRepository.findByMatriculeStartingWith("G"))
@@ -81,7 +84,7 @@ class MembreInscriptionServiceTest {
         ArgumentCaptor<Membre> membreCaptor = ArgumentCaptor.forClass(Membre.class);
         verify(membreRepository).save(membreCaptor.capture());
         assertTrue(passwordEncoder.matches(
-                "password",
+                "MotDePasse2026!",
                 membreCaptor.getValue().getMotDePasseHash()
         ));
         assertTrue(membreCaptor.getValue().getMotDePasseHash().startsWith("$2"));
@@ -101,7 +104,9 @@ class MembreInscriptionServiceTest {
                 "Petit",
                 "Nina",
                 CategorieMembre.LIBRE,
-                null
+                null,
+                "MotDePasse2026!",
+                "MotDePasse2026!"
         );
 
         when(membreRepository.findByMatriculeStartingWith("L"))
@@ -135,7 +140,9 @@ class MembreInscriptionServiceTest {
                 "Martin",
                 "Luc",
                 CategorieMembre.SITE,
-                1001L
+                1001L,
+                "MotDePasse2026!",
+                "MotDePasse2026!"
         );
 
         when(siteRepository.findById(1001L))
@@ -174,7 +181,9 @@ class MembreInscriptionServiceTest {
                 "Martin",
                 "Luc",
                 CategorieMembre.SITE,
-                null
+                null,
+                "MotDePasse2026!",
+                "MotDePasse2026!"
         );
 
         ConfigurationMetierException exception = assertThrows(
@@ -194,7 +203,9 @@ class MembreInscriptionServiceTest {
                 "Martin",
                 "Luc",
                 CategorieMembre.SITE,
-                9999L
+                9999L,
+                "MotDePasse2026!",
+                "MotDePasse2026!"
         );
 
         when(siteRepository.findById(9999L))
@@ -209,6 +220,36 @@ class MembreInscriptionServiceTest {
                 "Site introuvable avec l'id 9999",
                 exception.getMessage()
         );
+    }
+
+    @Test
+    void inscrireMembre_shouldRejectDifferentPasswords() {
+        InscriptionMembreRequest request =
+                new InscriptionMembreRequest(
+                        "Durand",
+                        "Alice",
+                        CategorieMembre.GLOBAL,
+                        null,
+                        "MotDePasse2026!",
+                        "AutreMotDePasse2026!"
+                );
+
+        ConfigurationMetierException exception =
+                assertThrows(
+                        ConfigurationMetierException.class,
+                        () -> membreInscriptionService
+                                .inscrireMembre(request)
+                );
+
+        assertEquals(
+                "Les mots de passe ne correspondent pas.",
+                exception.getMessage()
+        );
+
+        verify(
+                membreRepository,
+                never()
+        ).save(any(Membre.class));
     }
 
     private Site creerSite(Long id, String nom) {

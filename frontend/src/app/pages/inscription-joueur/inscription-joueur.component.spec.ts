@@ -34,6 +34,12 @@ describe(
       modifierPrenom:
         ReturnType<typeof vi.fn>;
 
+      modifierMotDePasse:
+        ReturnType<typeof vi.fn>;
+
+      modifierConfirmationMotDePasse:
+        ReturnType<typeof vi.fn>;
+
       modifierCategorieMembre:
         ReturnType<typeof vi.fn>;
 
@@ -53,6 +59,12 @@ describe(
         WritableSignal<string>;
 
       prenom:
+        WritableSignal<string>;
+
+      motDePasse:
+        WritableSignal<string>;
+
+      confirmationMotDePasse:
         WritableSignal<string>;
 
       categorieMembre:
@@ -98,6 +110,11 @@ describe(
         initialiser: vi.fn(),
         modifierNom: vi.fn(),
         modifierPrenom: vi.fn(),
+        modifierMotDePasse: vi.fn(),
+
+        modifierConfirmationMotDePasse:
+          vi.fn(),
+
         modifierCategorieMembre:
           vi.fn(),
 
@@ -115,6 +132,10 @@ describe(
         sites: signal([site]),
         nom: signal(''),
         prenom: signal(''),
+        motDePasse: signal(''),
+
+        confirmationMotDePasse:
+          signal(''),
 
         categorieMembre:
           signal<CategorieMembre>(
@@ -182,6 +203,35 @@ describe(
 
         expect(facade.initialiser)
           .toHaveBeenCalled();
+      }
+    );
+
+    it(
+      'doit afficher les champs de mot de passe',
+      () => {
+        const motDePasse =
+          fixture.nativeElement
+            .querySelector(
+              '#motDePasse'
+            ) as HTMLInputElement;
+
+        const confirmation =
+          fixture.nativeElement
+            .querySelector(
+              '#confirmationMotDePasse'
+            ) as HTMLInputElement;
+
+        expect(motDePasse)
+          .not.toBeNull();
+
+        expect(motDePasse.type)
+          .toBe('password');
+
+        expect(confirmation)
+          .not.toBeNull();
+
+        expect(confirmation.type)
+          .toBe('password');
       }
     );
 

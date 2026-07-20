@@ -23,11 +23,8 @@ import com.padelMarius.backend.security.JwtService;
 @RequiredArgsConstructor
 public class AuthService {
 
-    private static final String MESSAGE_IDENTIFIANTS_ADMIN_INVALIDES =
-            "Identifiants administrateur invalides.";
-
-    private static final String MESSAGE_IDENTIFIANTS_JOUEUR_INVALIDES =
-            "Identifiants joueur invalides.";
+    private static final String MESSAGE_IDENTIFIANTS_INVALIDES =
+            "Identifiant ou mot de passe invalide.";
 
     private final MembreRepository membreRepository;
     private final AdministrateurRepository administrateurRepository;
@@ -35,7 +32,9 @@ public class AuthService {
     private final JwtService jwtService;
 
     @Transactional(readOnly = true)
-    public AuthJoueurResponse authentifierJoueur(ConnexionJoueurRequest request) {
+    public AuthJoueurResponse authentifierJoueur(
+            ConnexionJoueurRequest request
+    ) {
         if (request == null
                 || !StringUtils.hasText(request.matricule())
                 || !StringUtils.hasText(request.motDePasse())) {
@@ -48,22 +47,17 @@ public class AuthService {
 
         Membre membre = membreRepository.findByMatricule(matricule)
                 .orElseThrow(() -> new AuthentificationException(
-                        MESSAGE_IDENTIFIANTS_JOUEUR_INVALIDES
+                        MESSAGE_IDENTIFIANTS_INVALIDES
                 ));
 
-        if (!membre.isActif()) {
-            throw new ConfigurationMetierException("Le membre est inactif.");
-        }
-
-        if (!StringUtils.hasText(membre.getMotDePasseHash())) {
-            throw new ConfigurationMetierException(
-                    "Le mot de passe joueur n'est pas configuré."
-            );
-        }
-
-        if (!passwordEncoder.matches(request.motDePasse(), membre.getMotDePasseHash())) {
+        if (!membre.isActif()
+                || !StringUtils.hasText(membre.getMotDePasseHash())
+                || !passwordEncoder.matches(
+                        request.motDePasse(),
+                        membre.getMotDePasseHash()
+                )) {
             throw new AuthentificationException(
-                    MESSAGE_IDENTIFIANTS_JOUEUR_INVALIDES
+                    MESSAGE_IDENTIFIANTS_INVALIDES
             );
         }
 
@@ -71,7 +65,9 @@ public class AuthService {
     }
 
     @Transactional(readOnly = true)
-    public AuthAdminResponse authentifierAdmin(ConnexionAdminRequest request) {
+    public AuthAdminResponse authentifierAdmin(
+            ConnexionAdminRequest request
+    ) {
         if (request == null
                 || !StringUtils.hasText(request.login())
                 || !StringUtils.hasText(request.motDePasse())) {
@@ -82,24 +78,22 @@ public class AuthService {
 
         String login = request.login().trim();
 
-        Administrateur administrateur = administrateurRepository.findByEmailOuLogin(login)
-                .orElseThrow(() -> new AuthentificationException(
-                        MESSAGE_IDENTIFIANTS_ADMIN_INVALIDES
-                ));
+        Administrateur administrateur =
+                administrateurRepository.findByEmailOuLogin(login)
+                        .orElseThrow(() -> new AuthentificationException(
+                                MESSAGE_IDENTIFIANTS_INVALIDES
+                        ));
 
-        if (!administrateur.isActif()) {
-            throw new ConfigurationMetierException("L'administrateur est inactif.");
-        }
-
-        if (!StringUtils.hasText(administrateur.getMotDePasseHash())) {
-            throw new ConfigurationMetierException(
-                    "Le mot de passe administrateur n'est pas configuré."
-            );
-        }
-
-        if (!passwordEncoder.matches(request.motDePasse(), administrateur.getMotDePasseHash())) {
+        if (!administrateur.isActif()
+                || !StringUtils.hasText(
+                        administrateur.getMotDePasseHash()
+                )
+                || !passwordEncoder.matches(
+                        request.motDePasse(),
+                        administrateur.getMotDePasseHash()
+                )) {
             throw new AuthentificationException(
-                    MESSAGE_IDENTIFIANTS_ADMIN_INVALIDES
+                    MESSAGE_IDENTIFIANTS_INVALIDES
             );
         }
 

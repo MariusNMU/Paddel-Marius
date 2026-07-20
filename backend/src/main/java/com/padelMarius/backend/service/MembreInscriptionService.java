@@ -22,14 +22,14 @@ import static com.padelMarius.backend.config.ReglesMetier.SOLDE_INITIAL_JOUEUR;
 @RequiredArgsConstructor
 public class MembreInscriptionService {
 
-    private static final String MOT_DE_PASSE_INITIAL = "password";
-
     private final MembreRepository membreRepository;
     private final SiteRepository siteRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
     public MembreResponse inscrireMembre(InscriptionMembreRequest request) {
+        verifierConfirmationMotDePasse(request);
+
         Site siteRattachement = trouverSiteRattachementSiNecessaire(request);
 
         String matricule = genererMatricule(request.categorieMembre());
@@ -41,13 +41,26 @@ public class MembreInscriptionService {
                 .categorieMembre(request.categorieMembre())
                 .siteRattachement(siteRattachement)
                 .actif(true)
-                .motDePasseHash(passwordEncoder.encode(MOT_DE_PASSE_INITIAL))
+                .motDePasseHash(passwordEncoder.encode(request.motDePasse()))
                 .soldeCredit(SOLDE_INITIAL_JOUEUR)
                 .build();
 
         Membre membreSauvegarde = membreRepository.save(membre);
 
         return convertirEnResponse(membreSauvegarde);
+    }
+
+    private void verifierConfirmationMotDePasse(
+            InscriptionMembreRequest request
+    ) {
+        if (request.motDePasse() == null
+                || !request.motDePasse().equals(
+                        request.confirmationMotDePasse()
+                )) {
+            throw new ConfigurationMetierException(
+                    "Les mots de passe ne correspondent pas."
+            );
+        }
     }
 
     private Site trouverSiteRattachementSiNecessaire(InscriptionMembreRequest request) {

@@ -10,7 +10,6 @@ import com.padelMarius.backend.entity.Membre;
 import com.padelMarius.backend.entity.RoleAdministrateur;
 import com.padelMarius.backend.entity.Site;
 import com.padelMarius.backend.exception.AuthentificationException;
-import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.repository.AdministrateurRepository;
 import com.padelMarius.backend.repository.MembreRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +32,9 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
+
+    private static final String MESSAGE_IDENTIFIANTS_INVALIDES =
+            "Identifiant ou mot de passe invalide.";
 
     @Mock
     private MembreRepository membreRepository;
@@ -107,7 +109,7 @@ class AuthServiceTest {
         );
 
         assertEquals(
-                "Identifiants joueur invalides.",
+                MESSAGE_IDENTIFIANTS_INVALIDES,
                 exception.getMessage()
         );
 
@@ -127,14 +129,20 @@ class AuthServiceTest {
         when(membreRepository.findByMatricule("G0001"))
                 .thenReturn(Optional.of(membre));
 
-        ConfigurationMetierException exception = assertThrows(
-                ConfigurationMetierException.class,
+        AuthentificationException exception = assertThrows(
+                AuthentificationException.class,
                 () -> authService.authentifierJoueur(
-                        new ConnexionJoueurRequest("G0001", "password")
+                        new ConnexionJoueurRequest(
+                                "G0001",
+                                "password"
+                        )
                 )
         );
 
-        assertEquals("Le membre est inactif.", exception.getMessage());
+        assertEquals(
+                MESSAGE_IDENTIFIANTS_INVALIDES,
+                exception.getMessage()
+        );
 
         verifyNoInteractions(administrateurRepository);
     }
@@ -160,7 +168,7 @@ class AuthServiceTest {
         );
 
         assertEquals(
-                "Identifiants joueur invalides.",
+                MESSAGE_IDENTIFIANTS_INVALIDES,
                 exception.getMessage()
         );
 
@@ -248,7 +256,7 @@ class AuthServiceTest {
         );
 
         assertEquals(
-                "Identifiants administrateur invalides.",
+                MESSAGE_IDENTIFIANTS_INVALIDES,
                 exception.getMessage()
         );
 
@@ -277,7 +285,7 @@ class AuthServiceTest {
         );
 
         assertEquals(
-                "Identifiants administrateur invalides.",
+                MESSAGE_IDENTIFIANTS_INVALIDES,
                 exception.getMessage()
         );
 
@@ -298,14 +306,17 @@ class AuthServiceTest {
         when(administrateurRepository.findByEmailOuLogin("admin-global"))
                 .thenReturn(Optional.of(administrateur));
 
-        ConfigurationMetierException exception = assertThrows(
-                ConfigurationMetierException.class,
+        AuthentificationException exception = assertThrows(
+                AuthentificationException.class,
                 () -> authService.authentifierAdmin(
                         new ConnexionAdminRequest("admin-global", "secret")
                 )
         );
 
-        assertEquals("L'administrateur est inactif.", exception.getMessage());
+        assertEquals(
+                MESSAGE_IDENTIFIANTS_INVALIDES,
+                exception.getMessage()
+        );
 
         verifyNoInteractions(membreRepository);
     }
@@ -324,15 +335,15 @@ class AuthServiceTest {
         when(administrateurRepository.findByEmailOuLogin("admin-global"))
                 .thenReturn(Optional.of(administrateur));
 
-        ConfigurationMetierException exception = assertThrows(
-                ConfigurationMetierException.class,
+        AuthentificationException exception = assertThrows(
+                AuthentificationException.class,
                 () -> authService.authentifierAdmin(
                         new ConnexionAdminRequest("admin-global", "secret")
                 )
         );
 
         assertEquals(
-                "Le mot de passe administrateur n'est pas configuré.",
+                MESSAGE_IDENTIFIANTS_INVALIDES,
                 exception.getMessage()
         );
 

@@ -214,12 +214,79 @@ describe(
     );
 
     it(
+      'doit refuser un mot de passe trop court',
+      () => {
+        service.initialiser();
+        service.modifierNom('Dupont');
+        service.modifierPrenom('Marie');
+
+        service.modifierMotDePasse(
+          'court'
+        );
+
+        service
+          .modifierConfirmationMotDePasse(
+            'court'
+          );
+
+        service.envoyerDemande();
+
+        expect(service.messageErreur())
+          .toBe(
+            'Le mot de passe doit contenir entre 12 et 72 caractères.'
+          );
+
+        expect(
+          membreApiService.inscrireMembre
+        ).not.toHaveBeenCalled();
+      }
+    );
+
+    it(
+      'doit refuser deux mots de passe différents',
+      () => {
+        service.initialiser();
+        service.modifierNom('Dupont');
+        service.modifierPrenom('Marie');
+
+        service.modifierMotDePasse(
+          'MotDePasse2026!'
+        );
+
+        service
+          .modifierConfirmationMotDePasse(
+            'AutreMotDePasse2026!'
+          );
+
+        service.envoyerDemande();
+
+        expect(service.messageErreur())
+          .toBe(
+            'Les mots de passe ne correspondent pas.'
+          );
+
+        expect(
+          membreApiService.inscrireMembre
+        ).not.toHaveBeenCalled();
+      }
+    );
+
+    it(
       'doit refuser un site invalide pour une inscription SITE',
       () => {
         service.initialiser();
 
         service.modifierNom('Dupont');
         service.modifierPrenom('Marie');
+
+        service.modifierMotDePasse(
+          'MotDePasse2026!'
+        );
+
+        service
+          .modifierConfirmationMotDePasse(
+            'MotDePasse2026!'
+          );
 
         service.modifierCategorieMembre(
           'SITE'
@@ -255,6 +322,15 @@ describe(
           '  Marie  '
         );
 
+        service.modifierMotDePasse(
+          'MotDePasse2026!'
+        );
+
+        service
+          .modifierConfirmationMotDePasse(
+            'MotDePasse2026!'
+          );
+
         service.modifierCategorieMembre(
           'SITE'
         );
@@ -270,7 +346,10 @@ describe(
           nom: 'Dupont',
           prenom: 'Marie',
           categorieMembre: 'SITE',
-          siteRattachementId: 1002
+          siteRattachementId: 1002,
+          motDePasse: 'MotDePasse2026!',
+          confirmationMotDePasse:
+            'MotDePasse2026!'
         };
 
         expect(
@@ -298,6 +377,15 @@ describe(
         service.modifierNom('Dupont');
         service.modifierPrenom('Marie');
 
+        service.modifierMotDePasse(
+          'MotDePasse2026!'
+        );
+
+        service
+          .modifierConfirmationMotDePasse(
+            'MotDePasse2026!'
+          );
+
         service.envoyerDemande();
 
         expect(
@@ -306,7 +394,10 @@ describe(
           nom: 'Dupont',
           prenom: 'Marie',
           categorieMembre: 'GLOBAL',
-          siteRattachementId: null
+          siteRattachementId: null,
+          motDePasse: 'MotDePasse2026!',
+          confirmationMotDePasse:
+            'MotDePasse2026!'
         });
       }
     );
@@ -334,6 +425,15 @@ describe(
         service.modifierNom('Dupont');
         service.modifierPrenom('Marie');
 
+        service.modifierMotDePasse(
+          'MotDePasse2026!'
+        );
+
+        service
+          .modifierConfirmationMotDePasse(
+            'MotDePasse2026!'
+          );
+
         service.envoyerDemande();
 
         expect(service.messageErreur())
@@ -360,6 +460,15 @@ describe(
 
         service.modifierNom('Dupont');
         service.modifierPrenom('Marie');
+
+        service.modifierMotDePasse(
+          'MotDePasse2026!'
+        );
+
+        service
+          .modifierConfirmationMotDePasse(
+            'MotDePasse2026!'
+          );
 
         service.envoyerDemande();
 

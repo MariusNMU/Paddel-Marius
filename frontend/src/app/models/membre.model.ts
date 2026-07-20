@@ -5,6 +5,8 @@ export interface InscriptionMembreRequest {
   prenom: string;
   categorieMembre: CategorieMembre;
   siteRattachementId: number | null;
+  motDePasse: string;
+  confirmationMotDePasse: string;
 }
 
 export interface MembreResponse {

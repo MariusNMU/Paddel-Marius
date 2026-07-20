@@ -16,8 +16,9 @@ import { enumLabel } from '../../shared/enum-label.util';
 
       <p>
         Crée une réservation de terrain sous forme de match public ou privé.
-        Le backend vérifie les règles métier : disponibilité, dette active,
-        pénalité active, catégorie membre et conflit horaire.
+        Le backend vérifie les règles métier : disponibilité, participation
+        organisateur en attente, dette active, pénalité active, catégorie
+        membre et conflit horaire.
       </p>
 
       <div class="bloc-info">
@@ -29,7 +30,11 @@ import { enumLabel } from '../../shared/enum-label.util';
           <li>En créant le match, le membre devient automatiquement son organisateur et son premier participant.</li>
           <li>Sa participation initiale est de <strong>{{ facade.parametresMetier()?.montantParticipationStandard | number:'1.2-2' }} €</strong> et reste à payer après la création.</li>
           <li>Le match doit atteindre <strong>{{ facade.parametresMetier()?.nombreJoueursMaximum }} joueurs payants</strong>. S'il n'est pas entièrement payé, l'organisateur devra payer le solde restant.</li>
-          <li>Tant qu'une dette reste ouverte, l'organisateur ne peut pas créer un nouveau match.</li>
+          <li>
+            Tant que sa participation d'organisateur à un match est en attente
+            de paiement ou qu'une dette reste ouverte, il ne peut pas créer un
+            nouveau match.
+          </li>
           <li>Lorsqu'il paie sa participation dans un autre match, ses dettes ouvertes sont ajoutées au montant total débité.</li>
         </ul>
       </div>
@@ -142,8 +147,10 @@ import { enumLabel } from '../../shared/enum-label.util';
           </p>
 
           <p>
-            Une dette ouverte bloque toute nouvelle création de match. Si tu paies ensuite
-            comme joueur dans un autre match, cette dette sera ajoutée au montant total débité.
+            Une participation d'organisateur en attente de paiement ou une
+            dette ouverte bloque toute nouvelle création de match. Si tu paies
+            ensuite comme joueur dans un autre match, cette dette sera ajoutée
+            au montant total débité.
           </p>
         </div>
 

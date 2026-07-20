@@ -11,10 +11,12 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -128,5 +130,72 @@ class PostgresDemoDataSeederTest {
         verify(passwordEncoder).encode("secret-site");
 
         verify(jdbcOperations, atLeastOnce()).execute(anyString());
+    }
+
+    @Test
+    void run_reconcilieLesDettesDejaPayeesApresInsertionDesPaiements()
+            throws Exception {
+        seeder.run();
+
+        ArgumentCaptor<String> sqlCaptor =
+                ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<SqlParameterSource> parametresCaptor =
+                ArgumentCaptor.forClass(SqlParameterSource.class);
+
+        verify(jdbcTemplate, atLeastOnce()).update(
+                sqlCaptor.capture(),
+                parametresCaptor.capture()
+        );
+
+        List<String> requetes = sqlCaptor.getAllValues();
+        List<SqlParameterSource> parametres =
+                parametresCaptor.getAllValues();
+
+        int indexDerniereInsertionPaiement =
+                IntStream.range(0, requetes.size())
+                        .filter(index ->
+                                requetes.get(index)
+                                        .contains("INSERT INTO paiement (")
+                        )
+                        .max()
+                        .orElseThrow();
+
+        int indexReconciliationDette =
+                IntStream.range(0, requetes.size())
+                        .filter(index ->
+                                requetes.get(index)
+                                        .contains("UPDATE dette d")
+                        )
+                        .findFirst()
+                        .orElseThrow();
+
+        String requeteReconciliation =
+                requetes.get(indexReconciliationDette);
+        SqlParameterSource parametresReconciliation =
+                parametres.get(indexReconciliationDette);
+
+        assertThat(indexReconciliationDette)
+                .isGreaterThan(indexDerniereInsertionPaiement);
+
+        assertThat(requeteReconciliation).contains(
+                "UPDATE dette d",
+                "FROM paiement p",
+                "p.dette_id = d.id",
+                "p.statut_paiement = :statutPaiementPaye",
+                "date_reglement = COALESCE(",
+                "statut_dette = :statutDetteReglee"
+        );
+
+        assertThat(
+                parametresReconciliation.getValue("montantRestant")
+        ).isEqualTo(BigDecimal.ZERO);
+
+        assertThat(
+                parametresReconciliation.getValue("statutDetteReglee")
+        ).isEqualTo("REGLEE");
+
+        assertThat(
+                parametresReconciliation.getValue("statutPaiementPaye")
+        ).isEqualTo("PAYE");
     }
 }

@@ -1,14 +1,20 @@
 ﻿<div class="app-layout">
   <aside class="sidebar">
-    <div class="brand">
-      <h1>Padel Marius</h1>
-      <p>Réservation de terrains</p>
-    </div>
+    <mat-toolbar class="brand">
+      <div class="brand-content">
+        <h1>Padel Marius</h1>
+        <p>Réservation de terrains</p>
+      </div>
+    </mat-toolbar>
 
-    <nav class="menu">
+    <nav
+      class="menu"
+      aria-label="Navigation principale"
+    >
       <p class="menu-title">Navigation</p>
 
       <a
+        mat-button
         routerLink="/accueil"
         routerLinkActive="active"
         [routerLinkActiveOptions]="{ exact: true }"
@@ -19,6 +25,7 @@
       <p class="menu-title">Joueur</p>
 
       <a
+        mat-button
         routerLink="/inscription-joueur"
         routerLinkActive="active"
       >
@@ -26,6 +33,7 @@
       </a>
 
       <a
+        mat-button
         routerLink="/joueur"
         routerLinkActive="active"
       >
@@ -34,6 +42,7 @@
 
       @if (facade.joueurConnecte()) {
         <a
+          mat-button
           routerLink="/joueur/disponibilites"
           routerLinkActive="active"
         >
@@ -41,6 +50,7 @@
         </a>
 
         <a
+          mat-button
           routerLink="/joueur/matches-publics"
           routerLinkActive="active"
         >
@@ -48,6 +58,7 @@
         </a>
 
         <a
+          mat-button
           routerLink="/joueur/mes-reservations"
           routerLinkActive="active"
         >
@@ -55,26 +66,24 @@
         </a>
 
         <a
+          mat-button
           routerLink="/joueur/invitations-recues"
           routerLinkActive="active"
+          [matBadge]="facade.nombreInvitationsRecues()"
+          [matBadgeHidden]="
+            facade.nombreInvitationsRecues() === 0
+          "
+          matBadgeColor="warn"
+          matBadgePosition="above after"
           [class.invitation-alerte]="
             facade.nombreInvitationsRecues() > 0
           "
         >
           Invitations reçues
-
-          @if (
-            facade.nombreInvitationsRecues() > 0
-            ) {
-            <span>
-              ({{
-                facade.nombreInvitationsRecues()
-              }})
-            </span>
-          }
         </a>
 
         <a
+          mat-button
           routerLink="/joueur/mes-dettes"
           routerLinkActive="active"
         >
@@ -82,6 +91,7 @@
         </a>
 
         <a
+          mat-button
           routerLink="/joueur/historique-transactions"
           routerLinkActive="active"
         >
@@ -89,6 +99,7 @@
         </a>
 
         <a
+          mat-button
           routerLink="/joueur/mon-solde"
           routerLinkActive="active"
         >
@@ -96,6 +107,7 @@
         </a>
 
         <button
+          mat-stroked-button
           type="button"
           class="menu-button"
           (click)="facade.deconnecterJoueur()"
@@ -107,6 +119,7 @@
       <p class="menu-title">Admin</p>
 
       <a
+        mat-button
         routerLink="/admin/login"
         routerLinkActive="active"
       >
@@ -115,6 +128,7 @@
 
       @if (facade.adminConnecte()) {
         <a
+          mat-button
           routerLink="/admin/dashboard"
           routerLinkActive="active"
         >
@@ -122,6 +136,7 @@
         </a>
 
         <a
+          mat-button
           routerLink="/admin/membres"
           routerLinkActive="active"
         >
@@ -129,6 +144,7 @@
         </a>
 
         <a
+          mat-button
           routerLink="/admin/statistiques"
           routerLinkActive="active"
         >
@@ -137,6 +153,7 @@
 
         @if (facade.estAdminGlobal()) {
           <a
+            mat-button
             routerLink="/admin/traitement-veille"
             routerLinkActive="active"
           >
@@ -145,6 +162,7 @@
         }
 
         <a
+          mat-button
           routerLink="/admin/fermetures"
           routerLinkActive="active"
         >
@@ -152,6 +170,7 @@
         </a>
 
         <button
+          mat-stroked-button
           type="button"
           class="menu-button"
           (click)="facade.deconnecterAdmin()"

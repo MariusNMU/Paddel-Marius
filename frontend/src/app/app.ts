@@ -2,6 +2,9 @@
   Component,
   OnInit
 } from '@angular/core';
+import { MatBadgeModule } from '@angular/material/badge';
+import { MatButtonModule } from '@angular/material/button';
+import { MatToolbarModule } from '@angular/material/toolbar';
 import {
   RouterLink,
   RouterLinkActive,
@@ -14,7 +17,10 @@ import { AppShellFacadeService } from './services/app-shell-facade.service';
   imports: [
     RouterOutlet,
     RouterLink,
-    RouterLinkActive
+    RouterLinkActive,
+    MatBadgeModule,
+    MatButtonModule,
+    MatToolbarModule
   ],
   providers: [
     AppShellFacadeService

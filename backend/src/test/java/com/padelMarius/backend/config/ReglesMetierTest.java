@@ -34,6 +34,34 @@ class ReglesMetierTest {
     }
 
     @Test
+    void fenetres_de_reservation_doivent_rester_coherentes() {
+        assertEquals(
+                21,
+                ReglesMetier.FENETRE_RESERVATION_GLOBAL_JOURS
+        );
+
+        assertEquals(
+                14,
+                ReglesMetier.FENETRE_RESERVATION_SITE_JOURS
+        );
+
+        assertEquals(
+                5,
+                ReglesMetier.FENETRE_RESERVATION_LIBRE_JOURS
+        );
+
+        assertTrue(
+                ReglesMetier.FENETRE_RESERVATION_GLOBAL_JOURS
+                        > ReglesMetier.FENETRE_RESERVATION_SITE_JOURS
+        );
+
+        assertTrue(
+                ReglesMetier.FENETRE_RESERVATION_SITE_JOURS
+                        > ReglesMetier.FENETRE_RESERVATION_LIBRE_JOURS
+        );
+    }
+
+    @Test
     void valeurs_initiales_doivent_etre_strictement_positives() {
         assertTrue(ReglesMetier.SOLDE_INITIAL_JOUEUR.signum() > 0);
         assertTrue(ReglesMetier.DUREE_PENALITE_JOURS > 0);

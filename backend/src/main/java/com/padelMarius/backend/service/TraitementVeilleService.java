@@ -23,12 +23,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static com.padelMarius.backend.config.ReglesMetier.DUREE_PENALITE_JOURS;
+import static com.padelMarius.backend.config.ReglesMetier.NOMBRE_JOUEURS_MAXIMUM;
+
 @Service
 @RequiredArgsConstructor
 public class TraitementVeilleService {
 
-    private static final int NOMBRE_JOUEURS_REQUIS = 4;
-    private static final long DUREE_PENALITE_JOURS = 7L;
     private static final String TYPE_PENALITE_MATCH_PRIVE_INCOMPLET = "RESERVATION_PRIVEE_INCOMPLETE";
     private static final String MOTIF_PENALITE_MATCH_PRIVE_INCOMPLET =
             "Match privé incomplet la veille du match.";
@@ -123,7 +124,7 @@ public class TraitementVeilleService {
                 )
                 .count();
 
-        return nombreParticipantsActifs < NOMBRE_JOUEURS_REQUIS;
+        return nombreParticipantsActifs < NOMBRE_JOUEURS_MAXIMUM;
     }
 
     private void passerMatchEnPublic(PadelMatch match, LocalDateTime maintenant) {

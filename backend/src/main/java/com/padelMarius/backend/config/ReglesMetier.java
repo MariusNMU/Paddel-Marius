@@ -10,6 +10,10 @@ public final class ReglesMetier {
     public static final int NOMBRE_JOUEURS_MAXIMUM = 4;
     public static final long DUREE_PENALITE_JOURS = 7L;
 
+    public static final int FENETRE_RESERVATION_GLOBAL_JOURS = 21;
+    public static final int FENETRE_RESERVATION_SITE_JOURS = 14;
+    public static final int FENETRE_RESERVATION_LIBRE_JOURS = 5;
+
     public static final Duration DUREE_MATCH =
             Duration.ofMinutes(DUREE_MATCH_MINUTES);
 

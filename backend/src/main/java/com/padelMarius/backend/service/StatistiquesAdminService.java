@@ -27,11 +27,11 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static com.padelMarius.backend.config.ReglesMetier.NOMBRE_JOUEURS_MAXIMUM;
+
 @Service
 @RequiredArgsConstructor
 public class StatistiquesAdminService {
-
-    private static final int JOUEURS_MAX_PAR_MATCH = 4;
 
     private final SiteRepository siteRepository;
     private final PadelMatchRepository padelMatchRepository;
@@ -103,7 +103,8 @@ public class StatistiquesAdminService {
 
         long nombreParticipationsActives = compterParticipationsActives(matches);
 
-        long capaciteTheoriqueJoueurs = nombreMatches * JOUEURS_MAX_PAR_MATCH;
+        long capaciteTheoriqueJoueurs =
+                nombreMatches * NOMBRE_JOUEURS_MAXIMUM;
 
         BigDecimal tauxRemplissage = calculerTauxRemplissage(
                 nombreParticipationsActives,

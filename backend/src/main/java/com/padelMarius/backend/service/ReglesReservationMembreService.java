@@ -13,12 +13,12 @@ import java.time.LocalDateTime;
 import java.util.Locale;
 import java.util.Objects;
 
+import static com.padelMarius.backend.config.ReglesMetier.FENETRE_RESERVATION_GLOBAL_JOURS;
+import static com.padelMarius.backend.config.ReglesMetier.FENETRE_RESERVATION_LIBRE_JOURS;
+import static com.padelMarius.backend.config.ReglesMetier.FENETRE_RESERVATION_SITE_JOURS;
+
 @Service
 public class ReglesReservationMembreService {
-
-    private static final int FENETRE_GLOBAL_JOURS = 21;
-    private static final int FENETRE_SITE_JOURS = 14;
-    private static final int FENETRE_LIBRE_JOURS = 5;
 
     private final Clock clock;
 
@@ -57,18 +57,30 @@ public class ReglesReservationMembreService {
 
     private void verifierMembreGlobal(String matricule, LocalDateTime dateHeureDebut) {
         verifierPrefixe(matricule, "G", "GLOBAL");
-        verifierFenetreReservation(dateHeureDebut, FENETRE_GLOBAL_JOURS, "GLOBAL");
+        verifierFenetreReservation(
+                dateHeureDebut,
+                FENETRE_RESERVATION_GLOBAL_JOURS,
+                "GLOBAL"
+        );
     }
 
     private void verifierMembreSite(Membre membre, Terrain terrain, String matricule, LocalDateTime dateHeureDebut) {
         verifierPrefixe(matricule, "S", "SITE");
-        verifierFenetreReservation(dateHeureDebut, FENETRE_SITE_JOURS, "SITE");
+        verifierFenetreReservation(
+                dateHeureDebut,
+                FENETRE_RESERVATION_SITE_JOURS,
+                "SITE"
+        );
         verifierReservationSurSiteDeRattachement(membre, terrain);
     }
 
     private void verifierMembreLibre(String matricule, LocalDateTime dateHeureDebut) {
         verifierPrefixe(matricule, "L", "LIBRE");
-        verifierFenetreReservation(dateHeureDebut, FENETRE_LIBRE_JOURS, "LIBRE");
+        verifierFenetreReservation(
+                dateHeureDebut,
+                FENETRE_RESERVATION_LIBRE_JOURS,
+                "LIBRE"
+        );
     }
 
     private void verifierPrefixe(String matricule, String prefixeAttendu, String categorie) {

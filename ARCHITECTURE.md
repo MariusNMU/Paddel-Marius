@@ -12,7 +12,7 @@ Il répond aux attentes PDW :
 - outils, librairies et frameworks ;
 - URL Swagger ;
 - séparation frontend / backend ;
-- sécurité minimale ;
+- sécurité Spring Security et JWT ;
 - communication HTTP.
 
 ---
@@ -38,7 +38,7 @@ Il répond aux attentes PDW :
 | - repositories JPA             |
 | - entities JPA                 |
 | - DTO                          |
-| - sécurité JWT MVP             |
+| - Spring Security + JWT        |
 +---------------+----------------+
                 |
                 | JPA / SQL

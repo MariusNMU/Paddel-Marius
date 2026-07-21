@@ -44,12 +44,16 @@ Spring Boot
 Maven Wrapper
 Spring Web MVC
 Spring Data JPA
+Spring Security
+SecurityFilterChain stateless
+Filtre JWT OncePerRequestFilter
+Sécurité par rôles et @PreAuthorize
 Bean Validation
 H2 Database
 PostgreSQL Docker optionnel
 OpenAPI / Swagger
 BCrypt pour les mots de passe
-JWT MVP compatible avec signature HMAC SHA-256
+JWT avec signature HMAC SHA-256
 ```
 
 ### Frontend
@@ -176,7 +180,7 @@ Paddel-Marius/
 
 - inscription joueur ;
 - connexion joueur avec matricule et mot de passe ;
-- authentification avec token JWT MVP ;
+- authentification avec token JWT ;
 - consultation du solde crédit ;
 - consultation des disponibilités ;
 - création d'un match privé ou public ;
@@ -192,7 +196,7 @@ Paddel-Marius/
 ### Administrateur
 
 - connexion administrateur ;
-- authentification avec token JWT MVP ;
+- authentification avec token JWT ;
 - dashboard administrateur ;
 - consultation des statistiques ;
 - consultation des membres ;
@@ -230,7 +234,7 @@ Paddel-Marius/
 
 ---
 
-## 7. Authentification et sécurité MVP
+## 7. Authentification et sécurité
 
 ### Joueurs
 
@@ -243,7 +247,7 @@ mot de passe
 
 Le matricule reste l'identifiant métier principal du joueur.
 
-Le mot de passe n'est pas stocké en clair.  
+Le mot de passe n'est pas stocké en clair.
 Le backend stocke uniquement un hash BCrypt.
 
 ### Administrateurs
@@ -262,11 +266,12 @@ GLOBAL
 SITE
 ```
 
-### JWT
+### JWT et Spring Security
 
-Après connexion, le backend génère un token JWT MVP.
+Après connexion, le backend génère un JWT signé et limité dans le temps.
 
-Le frontend stocke le token dans son service d'authentification et l'ajoute aux requêtes HTTP avec un interceptor Angular.
+Le frontend conserve le token dans son contexte d'authentification et
+l'ajoute aux requêtes protégées avec un interceptor Angular.
 
 Header utilisé :
 
@@ -274,15 +279,39 @@ Header utilisé :
 Authorization: Bearer <token>
 ```
 
-### Protection minimale
+Le backend utilise une SecurityFilterChain stateless. Le
+JwtAuthenticationFilter, basé sur OncePerRequestFilter, valide le JWT et
+place l'utilisateur authentifié dans le SecurityContext.
 
-Le projet contient :
+Les routes publiques sont explicitement autorisées. Les autres routes sont
+protégées par défaut.
 
-- un service Angular d'authentification ;
-- des guards Angular pour protéger les routes joueur et administrateur ;
-- un interceptor Angular pour ajouter le token aux requêtes HTTP ;
-- une vérification backend des rôles administrateur ;
-- un stockage hashé des mots de passe avec BCrypt.
+### Autorisations et session Angular
+
+Le backend applique les autorisations définitives :
+
+- ROLE_JOUEUR pour les parcours joueur ;
+- ROLE_ADMIN pour les endpoints administrateur ;
+- ROLE_ADMIN_GLOBAL et ROLE_ADMIN_SITE pour les portées administratives ;
+- @PreAuthorize pour les contrôles métier plus précis.
+
+Les guards Angular améliorent la navigation, mais ne remplacent pas les
+contrôles du backend.
+
+AuthFacadeService orchestre les connexions et les déconnexions.
+AuthContextService conserve la session et synchronise les changements de
+localStorage entre les onglets.
+
+### Limites connues
+
+La sécurité est complète pour le périmètre du MVP, mais elle ne fournit pas :
+
+- de refresh token ;
+- de révocation serveur des JWT déjà émis ;
+- de rotation automatique du secret JWT.
+
+La valeur JWT locale est réservée à la démonstration. Un déploiement réel
+doit fournir PADEL_JWT_SECRET depuis l'environnement.
 
 ---
 
@@ -630,8 +659,9 @@ Explique :
 - les outils et frameworks structurants ;
 - Swagger / OpenAPI ;
 - CORS ;
-- sécurité MVP ;
-- JWT ;
+- sécurité Spring Security et JWT ;
+- autorisations par rôles et `@PreAuthorize` ;
+- limites connues pour un déploiement réel ;
 - tests.
 
 ### `EXPLOITATION.md`

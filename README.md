@@ -694,8 +694,9 @@ Décrit :
 - les outils et frameworks structurants ;
 - Swagger / OpenAPI ;
 - CORS ;
-- sécurité MVP ;
-- JWT ;
+- sécurité Spring Security et JWT ;
+- autorisations par rôles et `@PreAuthorize` ;
+- limites connues pour un déploiement réel ;
 - tests.
 
 ### `EXPLOITATION.md`

@@ -1,4 +1,4 @@
-﻿export type StatutDette = 'OUVERTE' | 'REGLEE';
+export type StatutDette = 'OUVERTE' | 'REGLEE';
 export type NaturePaiement = 'PARTICIPATION' | 'REGLEMENT_DETTE';
 export type StatutPaiement = 'PAYE' | 'REFUSE';
 

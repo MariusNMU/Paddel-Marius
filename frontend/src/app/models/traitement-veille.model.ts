@@ -1,4 +1,4 @@
-﻿export interface TraitementVeilleResponse {
+export interface TraitementVeilleResponse {
   dateTraitement: string;
   dateMatchTraitee: string;
   matchesAnalyses: number;

@@ -679,7 +679,7 @@ class MatchCreationServiceTest {
         when(terrainRepository.findById(10L)).thenReturn(Optional.of(terrain));
         when(membreRepository.findByMatricule("S0001")).thenReturn(Optional.of(organisateur));
         doThrow(new ConfigurationMetierException(
-                "Un membre SITE ne peut rÃƒÂ©server que sur son site de rattachement."
+                "Un membre SITE ne peut réserver que sur son site de rattachement."
         )).when(reglesReservationMembreService).verifierReglesCreationMatch(
                 organisateur,
                 terrain,

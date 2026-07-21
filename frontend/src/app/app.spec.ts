@@ -124,6 +124,23 @@ describe('App', () => {
   );
 
   it(
+    'doit utiliser la toolbar Angular Material',
+    () => {
+      const fixture =
+        TestBed.createComponent(App);
+
+      fixture.detectChanges();
+
+      const compiled =
+        fixture.nativeElement as HTMLElement;
+
+      expect(
+        compiled.querySelector('mat-toolbar')
+      ).toBeTruthy();
+    }
+  );
+
+  it(
     'doit afficher le compteur du joueur connecté',
     () => {
       facade.joueurConnecte
@@ -136,15 +153,19 @@ describe('App', () => {
 
       fixture.detectChanges();
 
-      const texte =
-        fixture.nativeElement
-          .textContent as string;
+      const compiled =
+        fixture.nativeElement as HTMLElement;
 
-      expect(texte)
+      expect(compiled.textContent)
         .toContain('Invitations reçues');
 
-      expect(texte)
-        .toContain('(2)');
+      const badge =
+        compiled.querySelector(
+          '.mat-badge-content'
+        );
+
+      expect(badge?.textContent)
+        .toContain('2');
     }
   );
 

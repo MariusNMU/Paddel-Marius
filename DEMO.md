@@ -300,7 +300,7 @@ Utiliser ce créneau pour créer un match
 Créer un match avec :
 
 ```txt
-Type : PUBLIC
+Type : Public
 Organisateur : G1001
 ```
 
@@ -310,7 +310,7 @@ Organisateur : G1001
 match créé
 réservation du terrain
 participation organisateur créée
-état du match A_VENIR
+état du match À venir
 ```
 
 Un match correspond à une réservation de terrain. Le backend vérifie les règles métier avant d'autoriser la création.
@@ -343,7 +343,7 @@ match créé
 site
 terrain
 date et heure
-rôle ORGANISATEUR
+rôle Organisateur
 statut de participation
 état du match
 ```
@@ -634,22 +634,16 @@ npm.cmd run cypress:run
 cd ..
 ```
 
-Cypress full stack.
-
-Terminal 1 :
-
-```powershell
-cd backend
-.\mvnw.cmd spring-boot:run
-```
-
-Terminal 2 :
+Cypress full stack :
 
 ```powershell
 cd frontend
 npm.cmd run cypress:run:fullstack
 cd ..
 ```
+
+Cette commande démarre automatiquement Spring Boot avec H2, Angular et
+Cypress, puis arrête les processus lancés.
 
 Les Cypress mockés valident les principaux parcours UI avec API simulée. Le Cypress full stack valide un vrai parcours Angular vers Spring Boot et H2.
 
@@ -763,19 +757,29 @@ cd backend
 
 ## 10. Sécurité
 
-```txt
-mots de passe hashés avec BCrypt
-connexion joueur par matricule + mot de passe
-connexion administrateur par login + mot de passe
-JWT renvoyé après connexion
-interceptor Angular ajoute Authorization: Bearer <token>
-guards Angular protègent les routes
-backend vérifie les rôles et l'identité sur les endpoints protégés
+```text
+mots de passe hachés avec BCrypt
+politique de mot de passe pour les nouvelles inscriptions
+connexion joueur par matricule et mot de passe
+connexion administrateur par login et mot de passe
+JWT signé et limité dans le temps
+SecurityFilterChain stateless
+filtre JWT OncePerRequestFilter
+SecurityContext Spring
+contrôles par rôles et @PreAuthorize
+guards Angular pour la navigation
+session unique synchronisée entre les onglets
+backend responsable de l'autorisation définitive
 ```
 
-Limite assumée :
+Limites assumées pour le MVP :
 
-La sécurité est adaptée au MVP. Une version production devrait ajouter Spring Security complet, refresh token, révocation de session et politique de mot de passe renforcée.
+```text
+pas de refresh token
+pas de révocation serveur d'un JWT déjà émis
+secret local de démonstration à remplacer dans un déploiement réel
+pas de migrations Flyway ou Liquibase
+```
 
 ## 11. Contrat d'erreur API
 

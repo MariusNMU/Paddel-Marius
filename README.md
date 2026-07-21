@@ -38,27 +38,33 @@ Java 21
 Spring Boot
 Spring Web MVC
 Spring Data JPA
+Spring Security
+SecurityFilterChain stateless
+Filtre JWT OncePerRequestFilter
+Sécurité par rôles et @PreAuthorize
 Bean Validation
 Maven Wrapper
 H2 Database
 PostgreSQL Docker optionnel
 OpenAPI / Swagger
 BCrypt
-JWT MVP
+JWT
 ```
 
 ### Frontend
 
 ```txt
-Angular
+Angular 21
+Angular Material
 TypeScript
 Angular Router
 Angular HttpClient
 Angular Guards
-Angular Interceptor
+Angular Interceptor JWT
+Façades Angular avec Signals et RxJS
 Vitest / Angular unit tests
 Cypress E2E mocké
-Cypress full stack
+Cypress full stack autonome avec H2
 ```
 
 ### Base de données
@@ -304,29 +310,48 @@ Un administrateur `GLOBAL` peut gérer tous les sites.
 
 Un administrateur `SITE` est limité à son site de rattachement.
 
-### 7.3. JWT
+### 7.3. JWT et Spring Security
 
-Après une connexion réussie, le backend génère un token JWT MVP.
+Après une connexion réussie, le backend génère un JWT signé et limité dans
+le temps.
 
-Le frontend stocke le token dans son service d'authentification.
+Le frontend conserve ce token dans son contexte d'authentification. Un
+interceptor Angular l'ajoute aux requêtes protégées :
 
-Un interceptor Angular ajoute le token aux requêtes HTTP.
-
-Header utilisé :
-
-```txt
+```http
 Authorization: Bearer <token>
 ```
 
-### 7.4. Protection côté frontend et backend
+Le backend utilise une SecurityFilterChain stateless. Le
+JwtAuthenticationFilter, basé sur OncePerRequestFilter, valide le JWT et
+place l'utilisateur authentifié dans le SecurityContext Spring.
 
-Le projet contient :
+Les routes publiques sont explicitement autorisées. Les autres routes sont
+protégées par défaut.
 
-- un service Angular d'authentification ;
-- des guards Angular pour protéger les routes joueur et administrateur ;
-- un interceptor Angular pour ajouter le JWT aux requêtes HTTP ;
-- une vérification backend des rôles administrateur ;
-- un stockage hashé des mots de passe avec BCrypt.
+### 7.4. Autorisations frontend et backend
+
+Le backend applique les autorisations définitives :
+
+- ROLE_JOUEUR pour les parcours joueur ;
+- ROLE_ADMIN pour les endpoints administrateur ;
+- ROLE_ADMIN_GLOBAL et ROLE_ADMIN_SITE pour les portées administratives ;
+- @PreAuthorize pour les règles nécessitant une vérification plus précise.
+
+Les guards Angular améliorent la navigation, mais ne remplacent jamais les
+contrôles du backend.
+
+AuthFacadeService orchestre les connexions et les déconnexions.
+AuthContextService conserve la session et synchronise les changements de
+localStorage entre les onglets.
+
+Lorsqu'un joueur est connecté, une connexion administrateur supprime la
+session joueur, et inversement. Deux identités différentes ne peuvent donc
+pas rester actives simultanément dans les onglets du navigateur.
+
+Les mots de passe sont hachés avec BCrypt. Une nouvelle inscription impose
+un mot de passe de 12 à 72 caractères et une confirmation identique.
+Les refus de connexion utilisent un message générique.
 
 ---
 

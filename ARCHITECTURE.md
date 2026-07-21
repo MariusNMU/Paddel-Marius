@@ -346,11 +346,11 @@ frontend/src/app/pages
 
 Responsabilités :
 
-- afficher les écrans ;
-- gérer les formulaires simples ;
-- appeler les services Angular ;
-- afficher les résultats ;
-- afficher les messages d'erreur.
+- afficher les écrans et les données exposées par les façades ;
+- lier les champs de formulaire à l'état de présentation ;
+- déléguer les actions utilisateur aux façades ;
+- afficher les chargements, erreurs et résultats exposés ;
+- ne contenir ni appel HTTP direct, ni règle métier backend.
 
 Pages principales :
 
@@ -385,24 +385,37 @@ frontend/src/app/services
 
 Responsabilités :
 
-- centraliser les appels HTTP ;
-- retourner des `Observable<T>` ;
-- éviter de mettre les appels API directement dans les templates ;
-- gérer le contexte d'authentification simple.
+- les clients API centralisent les appels HTTP et retournent des
+  `Observable<T>` ;
+- les façades possèdent l'état des parcours avec des signaux Angular ;
+- les façades orchestrent les appels API, les chargements, les erreurs et les
+  succès ;
+- `AuthContextService` conserve et synchronise la session ;
+- les composants restent limités à la présentation et aux événements
+  utilisateur.
 
-Exemples :
+Exemples de clients API :
 
 ```txt
 AuthApiService
-AuthContextService
 DisponibiliteApiService
 MatchApiService
 MatchPublicApiService
 ReservationApiService
 DetteApiService
-AdminStatsApiService
-AdminFermetureApiService
-AdminMembreApiService
+```
+
+Exemples de façades :
+
+```txt
+AuthFacadeService
+AppShellFacadeService
+CreerMatchFacadeService
+MatchesPublicsFacadeService
+DisponibilitesFacadeService
+MesReservationsFacadeService
+MesDettesFacadeService
+AdminDashboardFacadeService
 ```
 
 ---
@@ -436,6 +449,7 @@ Guards :
 ```txt
 joueur.guard.ts
 admin.guard.ts
+admin-global.guard.ts
 ```
 
 Rôle :
@@ -613,97 +627,72 @@ http://localhost:4200
 
 ---
 
-## 8. Sécurité MVP
+## 8. Sécurité Spring Security et JWT
 
-Le MVP contient une sécurité simple adaptée au projet.
+### 8.1. Authentification
 
-### Joueurs
+Les joueurs se connectent avec leur matricule et leur mot de passe.
 
-Les joueurs se connectent avec :
+Les administrateurs se connectent avec leur login et leur mot de passe.
+Deux portées administratives existent : `GLOBAL` et `SITE`.
 
-```txt
-matricule
-mot de passe
-```
+Les mots de passe sont hachés avec BCrypt. Les nouvelles inscriptions
+appliquent une longueur comprise entre 12 et 72 caractères.
 
-Le matricule reste l'identifiant métier principal du joueur.
+### 8.2. SecurityFilterChain
 
-### Administrateurs
+Le backend utilise une `SecurityFilterChain` stateless :
 
-Les administrateurs se connectent avec :
+- CSRF désactivé pour l'API REST JWT ;
+- sessions HTTP désactivées ;
+- routes publiques explicitement autorisées ;
+- routes joueur limitées à `ROLE_JOUEUR` ;
+- routes administrateur limitées à `ROLE_ADMIN` ;
+- toutes les autres routes authentifiées par défaut.
 
-```txt
-login
-mot de passe
-```
+Le `JwtAuthenticationFilter`, basé sur `OncePerRequestFilter`, est placé
+avant `UsernamePasswordAuthenticationFilter`.
 
-Deux rôles existent :
+Il valide le JWT, construit les autorités Spring et place l'utilisateur dans
+le `SecurityContext`.
 
-```txt
-GLOBAL
-SITE
-```
+### 8.3. Autorisation métier
 
-Règles :
+`@EnableMethodSecurity` active les contrôles `@PreAuthorize`.
 
-- un admin `GLOBAL` peut gérer tous les sites ;
-- un admin `SITE` ne peut gérer que son site ;
-- les routes admin Angular sont protégées ;
-- les endpoints admin backend vérifient le rôle via `AdminAuthorizationService`.
+Les controllers et services vérifient notamment :
 
-### Mots de passe
+- l'identité du joueur ;
+- la propriété des participations et des dettes ;
+- le rôle administrateur ;
+- la portée `GLOBAL` ou `SITE` ;
+- le site de rattachement d'un administrateur SITE.
 
-Les mots de passe ne sont pas stockés en clair.  
-Le backend utilise BCrypt via `spring-security-crypto`.
+Le backend reste l'autorité définitive. Les guards et les masquages Angular
+ne remplacent pas ces contrôles.
 
-### JWT MVP compatible
+### 8.4. Session Angular
 
-Le projet utilise un JWT MVP compatible avec l'architecture existante.
+`AuthFacadeService` orchestre les connexions et les déconnexions.
 
-Après une connexion réussie, le backend génère un token signé.
-Le token est renvoyé au frontend dans la réponse d'authentification.
-Le frontend le stocke dans le service d'authentification existant.
+`AuthContextService` :
 
-Un interceptor Angular ajoute ensuite le token aux requêtes HTTP avec :
+- conserve la session dans `localStorage` ;
+- supprime l'autre type de session lors d'une connexion ;
+- écoute l'événement `storage` ;
+- synchronise immédiatement les différents onglets ;
+- nettoie les deux sessions si un état incohérent est détecté.
 
-```txt
-Authorization: Bearer <token>
-```
+### 8.5. Limites connues
 
-Autorisation administrateur
+La sécurité est complète pour le périmètre du MVP, mais elle ne fournit pas :
 
-Pour les endpoints /api/admin/**, ce header est obligatoire.
+- de refresh token ;
+- de révocation serveur des JWT déjà émis ;
+- de rotation automatique du secret JWT.
 
-Le backend :
-
-valide le JWT ;
-exige un token de type ADMIN ;
-recharge l'administrateur actif depuis la base ;
-vérifie son rôle GLOBAL ou SITE.
-
-Le header historique X-Admin-Login n'est plus accepté.
-
-Autorisation joueur
-
-Après la connexion, les endpoints utilisés par l'espace joueur exigent
-un JWT de type JOUEUR.
-
-Le backend :
-
-valide la signature et l'expiration du JWT ;
-exige un token de type JOUEUR ;
-recharge le membre actif depuis la base ;
-compare le sujet du JWT avec le matricule demandé ;
-vérifie la propriété des participations et des dettes ;
-vérifie l'identité de l'organisateur pour les actions organisateur.
-
-Un joueur ne peut donc pas modifier un matricule, un identifiant de
-participation ou un identifiant de dette afin d'agir au nom d'un autre joueur.
-
-Les endpoints d'authentification, d'inscription et de health check restent
-accessibles sans JWT.
-
-Cette sécurité reste volontairement adaptée au MVP. Une version production pourrait ajouter une configuration Spring Security complète avec filter chain globale, refresh token, révocation de session et politique de mot de passe renforcée.
+La valeur JWT locale par défaut est réservée à la démonstration. Un
+déploiement réel doit fournir `PADEL_JWT_SECRET` depuis l'environnement.
 
 ## 9. Base de données
 
@@ -899,20 +888,17 @@ Spring Boot réel
 H2 réelle
 ```
 
-Terminal 1 :
-
-```powershell
-cd backend
-.\mvnw.cmd spring-boot:run
-```
-
-Terminal 2 :
+Une seule commande démarre automatiquement Spring Boot avec H2, attend son
+health check, démarre Angular, exécute Cypress puis arrête les processus
+lancés :
 
 ```powershell
 cd frontend
 npm.cmd run cypress:run:fullstack
 cd ..
 ```
+
+Il n'est pas nécessaire de démarrer manuellement PostgreSQL ou le backend.
 
 Ce test vérifie notamment la connexion joueur, la consultation des disponibilités, la création d'un match et la consultation des réservations.
 
@@ -950,8 +936,12 @@ H2
 PostgreSQL Docker optionnel
 OpenAPI / Springdoc
 Lombok
-BCrypt / spring-security-crypto
-JWT MVP
+Spring Security
+BCrypt
+JWT
+SecurityFilterChain
+OncePerRequestFilter
+Method Security
 Maven Wrapper
 GitHub Actions
 ```
@@ -960,6 +950,9 @@ GitHub Actions
 
 ```txt
 Angular
+Angular Material
+Angular Signals
+Façades de parcours
 TypeScript
 Angular Router
 Angular HttpClient

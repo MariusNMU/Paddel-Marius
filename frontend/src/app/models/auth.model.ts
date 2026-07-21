@@ -1,4 +1,4 @@
-﻿export type CategorieMembre = 'GLOBAL' | 'SITE' | 'LIBRE';
+export type CategorieMembre = 'GLOBAL' | 'SITE' | 'LIBRE';
 export type RoleAdministrateur = 'GLOBAL' | 'SITE';
 
 export interface ConnexionJoueurRequest {

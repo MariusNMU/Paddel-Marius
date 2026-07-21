@@ -1,4 +1,4 @@
-﻿import { Routes } from '@angular/router';
+import { Routes } from '@angular/router';
 import { AccueilComponent } from './pages/accueil/accueil.component';
 import { JoueurAuthComponent } from './pages/joueur-auth/joueur-auth.component';
 import { DisponibilitesComponent } from './pages/disponibilites/disponibilites.component';

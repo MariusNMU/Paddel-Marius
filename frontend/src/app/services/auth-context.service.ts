@@ -1,4 +1,4 @@
-﻿import { computed, Injectable, OnDestroy, signal } from '@angular/core';
+import { computed, Injectable, OnDestroy, signal } from '@angular/core';
 import { AuthAdminResponse, AuthJoueurResponse } from '../models/auth.model';
 
 function lireStockage<T>(cle: string): T | null {

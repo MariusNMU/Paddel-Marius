@@ -1,4 +1,4 @@
-﻿export interface CreneauDisponibiliteResponse {
+export interface CreneauDisponibiliteResponse {
   terrainId: number;
   numeroTerrain: string;
   dateHeureDebut: string;

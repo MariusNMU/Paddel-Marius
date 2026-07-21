@@ -1,4 +1,4 @@
-﻿export interface StatistiquesAdminResponse {
+export interface StatistiquesAdminResponse {
   dateDebut: string;
   dateFin: string;
   siteId: number | null;

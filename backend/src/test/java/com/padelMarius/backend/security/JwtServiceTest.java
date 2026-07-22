@@ -10,11 +10,15 @@ import com.padelMarius.backend.exception.AuthentificationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class JwtServiceTest {
@@ -146,6 +150,26 @@ class JwtServiceTest {
         );
 
         assertEquals("Token JWT expiré.", exception.getMessage());
+    }
+
+    @Test
+    void application_shouldConfigureJwtExpirationAtSixtyMinutes()
+            throws IOException {
+        Properties properties = new Properties();
+
+        try (InputStream inputStream = getClass()
+                .getClassLoader()
+                .getResourceAsStream("application.properties")) {
+            assertNotNull(inputStream);
+            properties.load(inputStream);
+        }
+
+        assertEquals(
+                "60",
+                properties.getProperty(
+                        "padel.jwt.expiration-minutes"
+                )
+        );
     }
 
     private Site creerSite(Long id) {

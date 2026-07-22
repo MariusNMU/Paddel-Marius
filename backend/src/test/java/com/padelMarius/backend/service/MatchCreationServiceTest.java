@@ -192,8 +192,8 @@ class MatchCreationServiceTest {
                 ModeCreation.PRIVE
         );
 
-        when(terrainRepository.findById(10L)).thenReturn(Optional.of(terrain));
-        when(membreRepository.findByMatricule("G0001")).thenReturn(Optional.of(organisateur));
+        when(terrainRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(terrain));
+        when(membreRepository.findByMatriculeForUpdate("G0001")).thenReturn(Optional.of(organisateur));
 
         ConfigurationMetierException exception = assertThrows(
                 ConfigurationMetierException.class,
@@ -257,7 +257,7 @@ class MatchCreationServiceTest {
                 ModeCreation.PRIVE
         );
 
-        when(terrainRepository.findById(999L)).thenReturn(Optional.empty());
+        when(terrainRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
         assertThrows(
                 RessourceIntrouvableException.class,
@@ -280,8 +280,8 @@ class MatchCreationServiceTest {
                 ModeCreation.PRIVE
         );
 
-        when(terrainRepository.findById(10L)).thenReturn(Optional.of(terrain));
-        when(membreRepository.findByMatricule("UNKNOWN")).thenReturn(Optional.empty());
+        when(terrainRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(terrain));
+        when(membreRepository.findByMatriculeForUpdate("UNKNOWN")).thenReturn(Optional.empty());
 
         assertThrows(
                 RessourceIntrouvableException.class,
@@ -596,7 +596,7 @@ class MatchCreationServiceTest {
                 ModeCreation.PRIVE
         );
 
-        when(terrainRepository.findById(10L)).thenReturn(Optional.of(terrain));
+        when(terrainRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(terrain));
 
         ConfigurationMetierException exception = assertThrows(
                 ConfigurationMetierException.class,
@@ -623,7 +623,7 @@ class MatchCreationServiceTest {
                 ModeCreation.PRIVE
         );
 
-        when(terrainRepository.findById(10L)).thenReturn(Optional.of(terrain));
+        when(terrainRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(terrain));
 
         assertThrows(
                 ConfigurationMetierException.class,
@@ -649,8 +649,8 @@ class MatchCreationServiceTest {
                 ModeCreation.PRIVE
         );
 
-        when(terrainRepository.findById(10L)).thenReturn(Optional.of(terrain));
-        when(membreRepository.findByMatricule("G0001")).thenReturn(Optional.of(organisateur));
+        when(terrainRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(terrain));
+        when(membreRepository.findByMatriculeForUpdate("G0001")).thenReturn(Optional.of(organisateur));
 
         assertThrows(
                 ConfigurationMetierException.class,
@@ -676,8 +676,8 @@ class MatchCreationServiceTest {
                 ModeCreation.PRIVE
         );
 
-        when(terrainRepository.findById(10L)).thenReturn(Optional.of(terrain));
-        when(membreRepository.findByMatricule("S0001")).thenReturn(Optional.of(organisateur));
+        when(terrainRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(terrain));
+        when(membreRepository.findByMatriculeForUpdate("S0001")).thenReturn(Optional.of(organisateur));
         doThrow(new ConfigurationMetierException(
                 "Un membre SITE ne peut réserver que sur son site de rattachement."
         )).when(reglesReservationMembreService).verifierReglesCreationMatch(
@@ -831,8 +831,8 @@ class MatchCreationServiceTest {
         LocalDateTime dateHeureDebut = LocalDateTime.of(2026, 5, 20, 9, 0);
         LocalDateTime dateHeureFin = LocalDateTime.of(2026, 5, 20, 10, 30);
 
-        when(terrainRepository.findById(10L)).thenReturn(Optional.of(terrain));
-        when(membreRepository.findByMatricule("G0001")).thenReturn(Optional.of(organisateur));
+        when(terrainRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(terrain));
+        when(membreRepository.findByMatriculeForUpdate("G0001")).thenReturn(Optional.of(organisateur));
 
         return new Scenario(site, terrain, organisateur, dateHeureDebut, dateHeureFin);
     }

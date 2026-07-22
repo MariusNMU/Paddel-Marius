@@ -42,7 +42,7 @@ public class JwtService {
 
     public JwtService(
             @Value("${padel.jwt.secret:padel-marius-dev-secret-change-me-2026}") String secret,
-            @Value("${padel.jwt.expiration-minutes:120}") long expirationMinutes,
+            @Value("${padel.jwt.expiration-minutes:60}") long expirationMinutes,
             Clock clock
     ) {
         if (!StringUtils.hasText(secret)) {

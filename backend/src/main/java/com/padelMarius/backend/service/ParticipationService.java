@@ -77,14 +77,14 @@ public class ParticipationService {
     }
 
     private PadelMatch recupererMatch(Long matchId) {
-        return padelMatchRepository.findById(matchId)
+        return padelMatchRepository.findByIdForUpdate(matchId)
                 .orElseThrow(() -> new RessourceIntrouvableException(
                         "Match introuvable avec l'id " + matchId
                 ));
     }
 
     private Membre recupererMembre(String matricule) {
-        return membreRepository.findByMatricule(matricule)
+        return membreRepository.findByMatriculeForUpdate(matricule)
                 .orElseThrow(() -> new RessourceIntrouvableException(
                         "Membre introuvable avec le matricule " + matricule
                 ));

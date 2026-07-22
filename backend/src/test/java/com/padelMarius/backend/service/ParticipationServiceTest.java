@@ -72,8 +72,8 @@ class ParticipationServiceTest {
                 StatutParticipation.EN_ATTENTE_PAIEMENT
         );
 
-        when(padelMatchRepository.findById(100L)).thenReturn(Optional.of(match));
-        when(membreRepository.findByMatricule("G0002")).thenReturn(Optional.of(joueur));
+        when(padelMatchRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(match));
+        when(membreRepository.findByMatriculeForUpdate("G0002")).thenReturn(Optional.of(joueur));
         when(participationRepository.findByMatchId(100L)).thenReturn(List.of(participationOrganisateur));
         when(participationRepository.existsByMatchIdAndMembreId(100L, 21L)).thenReturn(false);
         when(participationRepository.findByMembreId(21L)).thenReturn(List.of());
@@ -117,8 +117,8 @@ class ParticipationServiceTest {
                 StatutParticipation.EN_ATTENTE_PAIEMENT
         );
 
-        when(padelMatchRepository.findById(100L)).thenReturn(Optional.of(match));
-        when(membreRepository.findByMatricule("L0001")).thenReturn(Optional.of(joueur));
+        when(padelMatchRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(match));
+        when(membreRepository.findByMatriculeForUpdate("L0001")).thenReturn(Optional.of(joueur));
         when(participationRepository.findByMatchId(100L)).thenReturn(List.of(participationOrganisateur));
         when(participationRepository.existsByMatchIdAndMembreId(100L, 21L)).thenReturn(false);
         when(participationRepository.findByMembreId(21L)).thenReturn(List.of());
@@ -146,7 +146,7 @@ class ParticipationServiceTest {
 
     @Test
     void shouldThrowNotFound_whenMatchDoesNotExist() {
-        when(padelMatchRepository.findById(999L)).thenReturn(Optional.empty());
+        when(padelMatchRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
         assertThrows(
                 RessourceIntrouvableException.class,
@@ -165,8 +165,8 @@ class ParticipationServiceTest {
         Terrain terrain = creerTerrain(10L, site);
         PadelMatch match = creerMatch(100L, terrain, VisibiliteMatch.PRIVE, ModeCreation.PRIVE);
 
-        when(padelMatchRepository.findById(100L)).thenReturn(Optional.of(match));
-        when(membreRepository.findByMatricule("UNKNOWN")).thenReturn(Optional.empty());
+        when(padelMatchRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(match));
+        when(membreRepository.findByMatriculeForUpdate("UNKNOWN")).thenReturn(Optional.empty());
 
         assertThrows(
                 RessourceIntrouvableException.class,
@@ -187,8 +187,8 @@ class ParticipationServiceTest {
         Membre joueur = creerMembre(21L, "G0002");
         joueur.setActif(false);
 
-        when(padelMatchRepository.findById(100L)).thenReturn(Optional.of(match));
-        when(membreRepository.findByMatricule("G0002")).thenReturn(Optional.of(joueur));
+        when(padelMatchRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(match));
+        when(membreRepository.findByMatriculeForUpdate("G0002")).thenReturn(Optional.of(joueur));
 
         assertThrows(
                 ConfigurationMetierException.class,
@@ -208,7 +208,7 @@ class ParticipationServiceTest {
         PadelMatch match = creerMatch(100L, terrain, VisibiliteMatch.PRIVE, ModeCreation.PRIVE);
         match.setEtatCycle(EtatCycleMatch.TERMINE);
 
-        when(padelMatchRepository.findById(100L)).thenReturn(Optional.of(match));
+        when(padelMatchRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(match));
 
         assertThrows(
                 ConfigurationMetierException.class,
@@ -228,8 +228,8 @@ class ParticipationServiceTest {
         PadelMatch match = creerMatch(100L, terrain, VisibiliteMatch.PRIVE, ModeCreation.PRIVE);
         Membre joueur = creerMembre(21L, "G0002");
 
-        when(padelMatchRepository.findById(100L)).thenReturn(Optional.of(match));
-        when(membreRepository.findByMatricule("G0002")).thenReturn(Optional.of(joueur));
+        when(padelMatchRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(match));
+        when(membreRepository.findByMatriculeForUpdate("G0002")).thenReturn(Optional.of(joueur));
         when(participationRepository.findByMatchId(100L)).thenReturn(List.of(
                 creerParticipation(200L, match, creerMembre(20L, "G0001"), RoleParticipation.ORGANISATEUR, ModeEntreeParticipation.CREATION, StatutParticipation.EN_ATTENTE_PAIEMENT),
                 creerParticipation(201L, match, creerMembre(22L, "G0003"), RoleParticipation.JOUEUR, ModeEntreeParticipation.INVITATION_PRIVEE, StatutParticipation.EN_ATTENTE_PAIEMENT),
@@ -255,8 +255,8 @@ class ParticipationServiceTest {
         PadelMatch match = creerMatch(100L, terrain, VisibiliteMatch.PRIVE, ModeCreation.PRIVE);
         Membre joueur = creerMembre(21L, "G0002");
 
-        when(padelMatchRepository.findById(100L)).thenReturn(Optional.of(match));
-        when(membreRepository.findByMatricule("G0002")).thenReturn(Optional.of(joueur));
+        when(padelMatchRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(match));
+        when(membreRepository.findByMatriculeForUpdate("G0002")).thenReturn(Optional.of(joueur));
         when(participationRepository.findByMatchId(100L)).thenReturn(List.of());
         when(participationRepository.existsByMatchIdAndMembreId(100L, 21L)).thenReturn(true);
 
@@ -291,8 +291,8 @@ class ParticipationServiceTest {
                 StatutParticipation.CONFIRMEE
         );
 
-        when(padelMatchRepository.findById(100L)).thenReturn(Optional.of(nouveauMatch));
-        when(membreRepository.findByMatricule("L0001")).thenReturn(Optional.of(joueur));
+        when(padelMatchRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(nouveauMatch));
+        when(membreRepository.findByMatriculeForUpdate("L0001")).thenReturn(Optional.of(joueur));
         when(participationRepository.findByMatchId(100L)).thenReturn(List.of());
         when(participationRepository.existsByMatchIdAndMembreId(100L, 21L)).thenReturn(false);
         when(participationRepository.findByMembreId(21L)).thenReturn(List.of(participationExistante));
@@ -314,7 +314,7 @@ class ParticipationServiceTest {
         Terrain terrain = creerTerrain(10L, site);
         PadelMatch match = creerMatch(100L, terrain, VisibiliteMatch.PUBLIC, ModeCreation.PUBLIC);
 
-        when(padelMatchRepository.findById(100L)).thenReturn(Optional.of(match));
+        when(padelMatchRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(match));
 
         assertThrows(
                 ConfigurationMetierException.class,
@@ -333,7 +333,7 @@ class ParticipationServiceTest {
         Terrain terrain = creerTerrain(10L, site);
         PadelMatch match = creerMatch(100L, terrain, VisibiliteMatch.PRIVE, ModeCreation.PRIVE);
 
-        when(padelMatchRepository.findById(100L)).thenReturn(Optional.of(match));
+        when(padelMatchRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(match));
 
         assertThrows(
                 ConfigurationMetierException.class,

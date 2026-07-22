@@ -176,7 +176,20 @@ public class DetteService {
 
     @Transactional
     public PaiementDetteResponse payerDette(Long detteId, PayerDetteRequest request) {
-        Dette dette = detteRepository.findById(detteId)
+        Long membreResponsableId =
+                detteRepository.findMembreResponsableIdById(detteId)
+                        .orElseThrow(() -> new RessourceIntrouvableException(
+                                "Dette introuvable avec l'id " + detteId
+                        ));
+
+        Membre responsable =
+                membreRepository.findByIdForUpdate(membreResponsableId)
+                        .orElseThrow(() -> new RessourceIntrouvableException(
+                                "Membre introuvable avec l'id "
+                                        + membreResponsableId
+                        ));
+
+        Dette dette = detteRepository.findByIdForUpdate(detteId)
                 .orElseThrow(() -> new RessourceIntrouvableException(
                         "Dette introuvable avec l'id " + detteId
                 ));
@@ -186,17 +199,14 @@ public class DetteService {
         LocalDateTime maintenant = LocalDateTime.now(clock);
         BigDecimal montantPaiement = normaliserMontant(request.montant());
 
-
-        Membre responsable = dette.getMembreResponsable();
         debiterSolde(responsable, montantPaiement);
-
 
         dette.setMontantRestant(ZERO);
         dette.setDateReglement(maintenant);
         dette.setStatutDette(StatutDette.REGLEE);
 
         Paiement paiement = Paiement.builder()
-                .membre(dette.getMembreResponsable())
+                .membre(responsable)
                 .naturePaiement(NaturePaiement.REGLEMENT_DETTE)
                 .montant(montantPaiement)
                 .dateHeurePaiement(maintenant)

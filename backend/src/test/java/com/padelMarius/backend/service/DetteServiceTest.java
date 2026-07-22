@@ -315,7 +315,7 @@ class DetteServiceTest {
         Membre organisateur = creerMembre(20L, "G0001");
         Dette dette = creerDette(500L, match, organisateur, new BigDecimal("30.00"), StatutDette.OUVERTE);
 
-        when(detteRepository.findById(500L)).thenReturn(Optional.of(dette));
+        configurerDetteVerrouillee(dette);
         when(paiementRepository.existsByDetteId(500L)).thenReturn(false);
         when(paiementRepository.save(any(Paiement.class))).thenAnswer(invocation -> {
             Paiement paiement = invocation.getArgument(0);
@@ -353,7 +353,7 @@ class DetteServiceTest {
         Membre organisateur = creerMembre(20L, "G0001");
         Dette dette = creerDette(500L, match, organisateur, new BigDecimal("0.00"), StatutDette.REGLEE);
 
-        when(detteRepository.findById(500L)).thenReturn(Optional.of(dette));
+        configurerDetteVerrouillee(dette);
 
         assertThrows(
                 ConfigurationMetierException.class,
@@ -374,7 +374,7 @@ class DetteServiceTest {
         Membre organisateur = creerMembre(20L, "G0001");
         Dette dette = creerDette(500L, match, organisateur, new BigDecimal("30.00"), StatutDette.OUVERTE);
 
-        when(detteRepository.findById(500L)).thenReturn(Optional.of(dette));
+        configurerDetteVerrouillee(dette);
         when(paiementRepository.existsByDetteId(500L)).thenReturn(false);
 
         assertThrows(
@@ -415,6 +415,18 @@ class DetteServiceTest {
         assertEquals(LocalDateTime.of(2026, 5, 7, 12, 0), detteExistante.getDateReglement());
 
         verify(detteRepository).save(detteExistante);
+    }
+
+    private void configurerDetteVerrouillee(Dette dette) {
+        Long detteId = dette.getId();
+        Membre responsable = dette.getMembreResponsable();
+
+        when(detteRepository.findMembreResponsableIdById(detteId))
+                .thenReturn(Optional.of(responsable.getId()));
+        when(membreRepository.findByIdForUpdate(responsable.getId()))
+                .thenReturn(Optional.of(responsable));
+        when(detteRepository.findByIdForUpdate(detteId))
+                .thenReturn(Optional.of(dette));
     }
 
     private Site creerSite(Long id) {

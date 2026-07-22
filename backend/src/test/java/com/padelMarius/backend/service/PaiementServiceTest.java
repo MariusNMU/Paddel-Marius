@@ -103,7 +103,7 @@ class PaiementServiceTest {
                 StatutParticipation.EN_ATTENTE_PAIEMENT
         );
 
-        when(participationRepository.findById(300L)).thenReturn(Optional.of(participation));
+        configurerParticipationVerrouillee(participation);
         when(paiementRepository.existsByParticipationId(300L)).thenReturn(false);
         when(detteRepository.findByMembreResponsableIdAndStatutDette(
                 membre.getId(),
@@ -156,7 +156,7 @@ class PaiementServiceTest {
                 StatutParticipation.EN_ATTENTE_PAIEMENT
         );
 
-        when(participationRepository.findById(300L)).thenReturn(Optional.of(participation));
+        configurerParticipationVerrouillee(participation);
         when(paiementRepository.existsByParticipationId(300L)).thenReturn(false);
         when(detteRepository.findByMembreResponsableIdAndStatutDette(
                 membre.getId(),
@@ -195,7 +195,7 @@ class PaiementServiceTest {
                 StatutParticipation.EN_ATTENTE_PAIEMENT
         );
 
-        when(participationRepository.findById(300L)).thenReturn(Optional.of(participation));
+        configurerParticipationVerrouillee(participation);
         when(paiementRepository.existsByParticipationId(300L)).thenReturn(false);
         when(detteRepository.findByMembreResponsableIdAndStatutDette(
                 membre.getId(),
@@ -249,7 +249,7 @@ class PaiementServiceTest {
 
         ReflectionTestUtils.setField(dette, "id", 500L);
 
-        when(participationRepository.findById(300L)).thenReturn(Optional.of(participation));
+        configurerParticipationVerrouillee(participation);
         when(paiementRepository.existsByParticipationId(300L)).thenReturn(false);
         when(detteRepository.findByMembreResponsableIdAndStatutDette(
                 membre.getId(),
@@ -281,7 +281,8 @@ class PaiementServiceTest {
 
     @Test
     void payerParticipation_shouldThrowNotFound_whenParticipationDoesNotExist() {
-        when(participationRepository.findById(999L)).thenReturn(Optional.empty());
+        when(participationRepository.findMembreIdById(999L))
+                .thenReturn(Optional.empty());
 
         assertThrows(
                 RessourceIntrouvableException.class,
@@ -309,7 +310,7 @@ class PaiementServiceTest {
                 StatutParticipation.EN_ATTENTE_PAIEMENT
         );
 
-        when(participationRepository.findById(300L)).thenReturn(Optional.of(participation));
+        configurerParticipationVerrouillee(participation);
         when(paiementRepository.existsByParticipationId(300L)).thenReturn(true);
 
         assertThrows(
@@ -338,7 +339,7 @@ class PaiementServiceTest {
                 StatutParticipation.LIBEREE
         );
 
-        when(participationRepository.findById(300L)).thenReturn(Optional.of(participation));
+        configurerParticipationVerrouillee(participation);
 
         assertThrows(
                 ConfigurationMetierException.class,
@@ -366,7 +367,7 @@ class PaiementServiceTest {
                 StatutParticipation.CONFIRMEE
         );
 
-        when(participationRepository.findById(300L)).thenReturn(Optional.of(participation));
+        configurerParticipationVerrouillee(participation);
 
         assertThrows(
                 ConfigurationMetierException.class,
@@ -394,7 +395,7 @@ class PaiementServiceTest {
                 StatutParticipation.EN_ATTENTE_PAIEMENT
         );
 
-        when(participationRepository.findById(300L)).thenReturn(Optional.of(participation));
+        configurerParticipationVerrouillee(participation);
 
         assertThrows(
                 ConfigurationMetierException.class,
@@ -423,7 +424,7 @@ class PaiementServiceTest {
                 StatutParticipation.EN_ATTENTE_PAIEMENT
         );
 
-        when(participationRepository.findById(300L)).thenReturn(Optional.of(participation));
+        configurerParticipationVerrouillee(participation);
 
         assertThrows(
                 ConfigurationMetierException.class,
@@ -435,6 +436,20 @@ class PaiementServiceTest {
 
         verify(paiementRepository, never()).save(any());
         verify(participationRepository, never()).save(any());
+    }
+
+    private void configurerParticipationVerrouillee(
+            Participation participation
+    ) {
+        Long participationId = participation.getId();
+        Membre membre = participation.getMembre();
+
+        when(participationRepository.findMembreIdById(participationId))
+                .thenReturn(Optional.of(membre.getId()));
+        when(membreRepository.findByIdForUpdate(membre.getId()))
+                .thenReturn(Optional.of(membre));
+        when(participationRepository.findByIdForUpdate(participationId))
+                .thenReturn(Optional.of(participation));
     }
 
     private Site creerSite(Long id) {

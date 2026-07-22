@@ -3,6 +3,7 @@ package com.padelMarius.backend.config;
 import com.padelMarius.backend.security.JwtAuthenticationFilter;
 import com.padelMarius.backend.security.JwtService;
 import com.padelMarius.backend.security.SecurityErrorWriter;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -68,11 +69,17 @@ public class SecurityConfig {
                         )
                 )
                 .authorizeHttpRequests(authorize -> authorize
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/membres/inscription").permitAll()
                         .requestMatchers("/api/health/**").permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/demo/presentation"
+                        ).permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/api/sites").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/terrains").permitAll()

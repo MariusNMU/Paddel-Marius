@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@SpringBootTest(properties = "padel.demo.enabled=true")
 @AutoConfigureMockMvc
 @Sql(scripts = "/data.sql")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -43,6 +43,12 @@ class SecurityConfigTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
+    void shouldPermitDemoPresentationWithoutToken() throws Exception {
+        mockMvc.perform(get("/api/demo/presentation"))
+                .andExpect(status().isOk());
     }
 
     @Test

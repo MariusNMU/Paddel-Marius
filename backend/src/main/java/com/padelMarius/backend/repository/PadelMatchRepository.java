@@ -4,12 +4,27 @@ import com.padelMarius.backend.entity.EtatCycleMatch;
 import com.padelMarius.backend.entity.PadelMatch;
 import com.padelMarius.backend.entity.Terrain;
 import com.padelMarius.backend.entity.VisibiliteMatch;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface PadelMatchRepository extends JpaRepository<PadelMatch, Long> {
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select padelMatch
+            from PadelMatch padelMatch
+            where padelMatch.id = :matchId
+            """)
+    Optional<PadelMatch> findByIdForUpdate(
+            @Param("matchId") Long matchId
+    );
 
     List<PadelMatch> findByTerrain(Terrain terrain);
 

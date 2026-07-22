@@ -37,7 +37,7 @@ public class MatchCreationService {
 
     @Transactional
     public MatchResponse creerMatch(CreerMatchRequest request) {
-        Terrain terrain = terrainRepository.findById(request.terrainId())
+        Terrain terrain = terrainRepository.findByIdForUpdate(request.terrainId())
                 .orElseThrow(() -> new RessourceIntrouvableException(
                         "Terrain introuvable avec l'id " + request.terrainId()
                 ));
@@ -46,7 +46,7 @@ public class MatchCreationService {
 
         String matricule = request.matriculeOrganisateur().trim();
 
-        Membre organisateur = membreRepository.findByMatricule(matricule)
+        Membre organisateur = membreRepository.findByMatriculeForUpdate(matricule)
                 .orElseThrow(() -> new RessourceIntrouvableException(
                         "Membre introuvable avec le matricule " + matricule
                 ));

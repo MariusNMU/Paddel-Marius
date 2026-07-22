@@ -53,14 +53,24 @@ public class PaiementService {
 
     @Transactional
     public PaiementResponse payerParticipation(Long participationId, PayerParticipationRequest request) {
-        Participation participation = participationRepository.findById(participationId)
+        Long membreId = participationRepository.findMembreIdById(participationId)
                 .orElseThrow(() -> new RessourceIntrouvableException(
                         "Participation introuvable avec l'id " + participationId
                 ));
 
-        verifierPaiementPossible(participation, request);
+        Membre membre = membreRepository.findByIdForUpdate(membreId)
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        "Membre introuvable avec l'id " + membreId
+                ));
 
-        Membre membre = participation.getMembre();
+        Participation participation =
+                participationRepository.findByIdForUpdate(participationId)
+                        .orElseThrow(() -> new RessourceIntrouvableException(
+                                "Participation introuvable avec l'id "
+                                        + participationId
+                        ));
+
+        verifierPaiementPossible(participation, request);
 
         detteService.actualiserDettesOrganisateur(membre);
 
@@ -91,7 +101,7 @@ public class PaiementService {
         participation.setDateConfirmation(datePaiement);
 
         Paiement paiement = Paiement.builder()
-                .membre(participation.getMembre())
+                .membre(membre)
                 .naturePaiement(NaturePaiement.PARTICIPATION)
                 .montant(MONTANT_PARTICIPATION_STANDARD)
                 .dateHeurePaiement(datePaiement)

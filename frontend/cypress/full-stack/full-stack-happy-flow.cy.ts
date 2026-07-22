@@ -18,6 +18,26 @@ describe('Happy flow full stack Padel Marius', () => {
     cy.clearLocalStorage();
   });
 
+  it(
+    'charge la présentation de démonstration depuis le backend',
+    () => {
+      cy.visit('/accueil');
+
+      cy.contains(
+        'Padel Bruxelles',
+        {
+          timeout: 10000
+        }
+      ).should('be.visible');
+
+      cy.contains('G1001')
+        .should('be.visible');
+
+      cy.contains('admin-global')
+        .should('be.visible');
+    }
+  );
+
   it('connecte un joueur, consulte les disponibilités, crée un match puis voit la réservation', () => {
     cy.visit('/joueur');
 

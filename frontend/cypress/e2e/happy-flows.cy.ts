@@ -65,6 +65,32 @@ const parametresMetier = {
   soldeInitialJoueur: 100
 };
 
+const presentationDemo = {
+  categoriesMembres: [
+    {
+      prefixe: 'G',
+      categorie: 'GLOBAL',
+      regle:
+        "Peut réserver sur tous les sites, jusqu'à 21 jours avant."
+    }
+  ],
+  sites: sitesActifs,
+  joueurs: [
+    {
+      matricule: 'G1001',
+      motDePasse: 'password',
+      description: 'joueur GLOBAL actif'
+    }
+  ],
+  administrateurs: [
+    {
+      login: 'admin-global',
+      motDePasse: 'secret',
+      description: 'administrateur GLOBAL'
+    }
+  ]
+};
+
 const disponibilitesBruxelles = {
   siteId: 1001,
   nomSite: 'Padel Bruxelles',
@@ -219,6 +245,33 @@ function connecterAdminGlobal(): void {
 }
 
 describe('Happy flows MVP Padel Marius', () => {
+  it(
+    'affiche les données de démonstration fournies par le backend',
+    () => {
+      cy.intercept(
+        'GET',
+        '/api/demo/presentation',
+        {
+          statusCode: 200,
+          body: presentationDemo
+        }
+      ).as('presentationDemo');
+
+      cy.visit('/accueil');
+
+      cy.wait('@presentationDemo');
+
+      cy.contains('Padel Bruxelles')
+        .should('be.visible');
+
+      cy.contains('G1001')
+        .should('be.visible');
+
+      cy.contains('admin-global')
+        .should('be.visible');
+    }
+  );
+
   it('connecte un joueur puis consulte son solde', () => {
     connecterJoueurG1001();
     intercepterParametresMetier();

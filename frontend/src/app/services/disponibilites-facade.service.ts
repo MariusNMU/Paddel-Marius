@@ -13,6 +13,7 @@ import {
   genererJoursRapides,
   JourRapide
 } from '../shared/date-ui.util';
+import { AuthContextService } from './auth-context.service';
 import { DisponibiliteApiService } from './disponibilite-api.service';
 import { ParametresMetierApiService } from './parametres-metier-api.service';
 import { SiteApiService } from './site-api.service';
@@ -61,6 +62,7 @@ export class DisponibilitesFacadeService {
     private readonly siteApiService: SiteApiService,
     private readonly parametresMetierApiService:
     ParametresMetierApiService,
+    private readonly authContextService: AuthContextService,
     private readonly router: Router
   ) {
   }
@@ -143,9 +145,32 @@ export class DisponibilitesFacadeService {
       .subscribe();
   }
 
+  peutCreerMatchSurSiteSelectionne(): boolean {
+    const joueur = this.authContextService.joueur();
+    const site = this.siteSelectionne();
+
+    if (!joueur || !site) {
+      return false;
+    }
+
+    if (joueur.categorieMembre !== 'SITE') {
+      return true;
+    }
+
+    return joueur.siteRattachementId !== null
+      && joueur.siteRattachementId === site.siteId;
+  }
+
   allerCreerMatch(
     creneau: CreneauDisponibiliteResponse
   ): void {
+    if (!this.peutCreerMatchSurSiteSelectionne()) {
+      this.messageErreurSignal.set(
+        'Un membre SITE ne peut réserver que sur son site de rattachement.'
+      );
+      return;
+    }
+
     this.router.navigate(['/joueur/creer-match'], {
       queryParams: {
         terrainId: creneau.terrainId,

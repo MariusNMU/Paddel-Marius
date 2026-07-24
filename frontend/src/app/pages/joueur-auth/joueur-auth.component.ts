@@ -1,6 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { RouterLink } from '@angular/router';
 import { AuthFacadeService } from '../../services/auth-facade.service';
 import { enumLabel } from '../../shared/enum-label.util';
@@ -8,7 +11,14 @@ import { enumLabel } from '../../shared/enum-label.util';
 @Component({
   selector: 'app-joueur-auth',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [
+    CommonModule,
+    FormsModule,
+    RouterLink,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule
+  ],
   template: `
     <section class="page">
       <h2>Connexion joueur</h2>
@@ -18,7 +28,9 @@ import { enumLabel } from '../../shared/enum-label.util';
       </p>
 
       <p>
-        <a routerLink="/accueil">Retour à la Homepage</a>
+        <a mat-button routerLink="/accueil">
+          Retour à la Homepage
+        </a>
       </p>
 
       <p *ngIf="authFacade.messageSuccesJoueur()" class="succes">
@@ -45,14 +57,17 @@ import { enumLabel } from '../../shared/enum-label.util';
 
           <p *ngIf="joueur.nomSiteRattachement">
             Site de rattachement :
-            <strong>
+            <strong data-testid="site-rattachement">
               {{ joueur.nomSiteRattachement }}
-              ({{ joueur.siteRattachementId }})
             </strong>
           </p>
 
           <div class="actions">
-            <button type="button" (click)="deconnecter()">
+            <button
+              mat-stroked-button
+              type="button"
+              (click)="deconnecter()"
+            >
               Déconnecter
             </button>
           </div>
@@ -68,33 +83,49 @@ import { enumLabel } from '../../shared/enum-label.util';
             Cette page de connexion ne préremplit plus d'identifiants.
           </p>
 
-          <a routerLink="/accueil" class="lien-action">
+          <a
+            mat-button
+            routerLink="/accueil"
+            class="lien-action"
+          >
             Voir les informations de démonstration
           </a>
         </div>
 
-        <form (ngSubmit)="connecterJoueur()">
-          <label for="matricule">Matricule</label>
-          <input
-            id="matricule"
-            name="matricule"
-            type="text"
-            [(ngModel)]="matricule"
-            placeholder="Votre matricule"
-            required
-          />
+        <form
+          class="formulaire-connexion"
+          (ngSubmit)="connecterJoueur()"
+        >
+          <mat-form-field appearance="outline">
+            <mat-label>Matricule</mat-label>
 
-          <label for="motDePasse">Mot de passe</label>
-          <input
-            id="motDePasse"
-            name="motDePasse"
-            type="password"
-            [(ngModel)]="motDePasse"
-            placeholder="Votre mot de passe"
-            required
-          />
+            <input
+              matInput
+              id="matricule"
+              name="matricule"
+              type="text"
+              [(ngModel)]="matricule"
+              autocomplete="username"
+              required
+            />
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Mot de passe</mat-label>
+
+            <input
+              matInput
+              id="motDePasse"
+              name="motDePasse"
+              type="password"
+              [(ngModel)]="motDePasse"
+              autocomplete="current-password"
+              required
+            />
+          </mat-form-field>
 
           <button
+            mat-flat-button
             type="submit"
             [disabled]="authFacade.chargementJoueur()"
           >
@@ -119,6 +150,20 @@ import { enumLabel } from '../../shared/enum-label.util';
       display: inline-block;
       margin-top: 12px;
       font-weight: 600;
+    }
+
+    .formulaire-connexion {
+      display: flex;
+      max-width: 420px;
+      flex-direction: column;
+    }
+
+    .formulaire-connexion mat-form-field {
+      width: 100%;
+    }
+
+    .formulaire-connexion button {
+      align-self: flex-start;
     }
   `]
 })

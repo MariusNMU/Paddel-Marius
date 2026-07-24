@@ -181,9 +181,18 @@ import { DisponibilitesFacadeService } from '../../services/disponibilites-facad
               {{ facade.dureeMatchLibelle() }}
             </p>
 
-            <button type="button" (click)="allerCreerMatch(creneau)">
-              Utiliser ce créneau pour créer un match
-            </button>
+            @if (facade.peutCreerMatchSurSiteSelectionne()) {
+              <button
+                type="button"
+                (click)="allerCreerMatch(creneau)"
+              >
+                Utiliser ce créneau pour créer un match
+              </button>
+            } @else {
+              <p class="action-indisponible">
+                Un membre SITE ne peut réserver que sur son site de rattachement.
+              </p>
+            }
           </article>
         </div>
       </div>
@@ -266,6 +275,15 @@ import { DisponibilitesFacadeService } from '../../services/disponibilites-facad
 
     .creneau-card p {
       margin: 8px 0;
+    }
+
+    .action-indisponible {
+      margin-top: 12px;
+      padding: 10px;
+      border-radius: 8px;
+      background: #f1f5f9;
+      color: #475569;
+      font-weight: 600;
     }
 
     .creneau-card button {

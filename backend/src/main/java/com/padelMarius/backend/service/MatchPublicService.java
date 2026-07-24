@@ -41,6 +41,8 @@ public class MatchPublicService {
     private final ParticipationService participationService;
     private final PaiementService paiementService;
     private final MembreRepository membreRepository;
+    private final ReglesReservationMembreService
+            reglesReservationMembreService;
 
     @Transactional(readOnly = true)
     public List<MatchPublicResponse> listerMatchesPublicsDisponibles(
@@ -172,15 +174,24 @@ public class MatchPublicService {
                         participationsJoueur
                 );
 
+        String motifRestrictionReservation =
+                determinerMotifRestrictionReservation(
+                        joueurConnecte,
+                        terrain,
+                        match.getDateHeureDebut()
+                );
+
         boolean peutRejoindre =
                 placesDisponibles > 0
                         && !participeDeja
-                        && !conflitHoraire;
+                        && !conflitHoraire
+                        && motifRestrictionReservation == null;
 
         String motifNonEligibilite =
                 determinerMotifNonEligibilite(
                         participeDeja,
-                        conflitHoraire
+                        conflitHoraire,
+                        motifRestrictionReservation
                 );
 
         return new MatchPublicResponse(
@@ -200,9 +211,29 @@ public class MatchPublicService {
         );
     }
 
+    private String determinerMotifRestrictionReservation(
+            Membre joueur,
+            Terrain terrain,
+            LocalDateTime dateHeureDebut
+    ) {
+        try {
+            reglesReservationMembreService
+                    .verifierReglesReservation(
+                            joueur,
+                            terrain,
+                            dateHeureDebut
+                    );
+
+            return null;
+        } catch (ConfigurationMetierException exception) {
+            return exception.getMessage();
+        }
+    }
+
     private String determinerMotifNonEligibilite(
             boolean participeDeja,
-            boolean conflitHoraire
+            boolean conflitHoraire,
+            String motifRestrictionReservation
     ) {
         if (participeDeja) {
             return "Tu participes déjà à ce match.";
@@ -212,7 +243,7 @@ public class MatchPublicService {
             return "Tu participes déjà à un autre match sur ce créneau.";
         }
 
-        return null;
+        return motifRestrictionReservation;
     }
 
     private int compterParticipantsActifs(PadelMatch match) {

@@ -15,8 +15,8 @@ button {
   font: inherit;
 }
 
-input,
-select {
+input:not(.mat-mdc-input-element),
+select:not(.mat-mdc-input-element) {
   display: block;
   width: 100%;
   max-width: 420px;

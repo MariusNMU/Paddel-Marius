@@ -319,17 +319,39 @@ export class CreerMatchFacadeService {
       .subscribe();
   }
 
+  private filtrerTerrainsAccessibles(
+    terrains: TerrainResponse[]
+  ): TerrainResponse[] {
+    const joueur = this.authContextService.joueur();
+
+    if (joueur?.categorieMembre !== 'SITE') {
+      return terrains;
+    }
+
+    if (joueur.siteRattachementId === null) {
+      return [];
+    }
+
+    return terrains.filter(
+      terrain =>
+        terrain.siteId === joueur.siteRattachementId
+    );
+  }
+
   private chargerTerrains(): void {
     this.chargementTerrainsSignal.set(true);
 
     this.terrainApiService.listerTerrainsActifs().pipe(
       tap(terrains => {
-        this.terrainsSignal.set(terrains);
+        const terrainsAccessibles =
+          this.filtrerTerrainsAccessibles(terrains);
+
+        this.terrainsSignal.set(terrainsAccessibles);
 
         const terrainIdActuel = this.terrainIdSignal();
         const terrainSelectionExiste =
           terrainIdActuel !== null
-          && terrains.some(
+          && terrainsAccessibles.some(
             terrain => terrain.terrainId === terrainIdActuel
           );
 
@@ -347,8 +369,8 @@ export class CreerMatchFacadeService {
         }
 
         this.terrainIdSignal.set(
-          terrains.length > 0
-            ? terrains[0].terrainId
+          terrainsAccessibles.length > 0
+            ? terrainsAccessibles[0].terrainId
             : null
         );
       }),

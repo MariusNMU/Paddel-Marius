@@ -35,6 +35,8 @@ public class ParticipationService {
     private final PadelMatchRepository padelMatchRepository;
     private final MembreRepository membreRepository;
     private final ParticipationRepository participationRepository;
+    private final ReglesReservationMembreService
+            reglesReservationMembreService;
 
     @Transactional
     public ParticipationResponse ajouterParticipantPrive(
@@ -66,8 +68,17 @@ public class ParticipationService {
         verifierMatchAVenir(match);
         verifierMatchPublic(match);
 
-        String matricule = normaliserMatricule(request.matriculeJoueur());
+        String matricule =
+                normaliserMatricule(request.matriculeJoueur());
+
         Membre membre = recupererMembre(matricule);
+
+        reglesReservationMembreService
+                .verifierReglesReservation(
+                        membre,
+                        match.getTerrain(),
+                        match.getDateHeureDebut()
+                );
 
         return creerParticipation(
                 match,

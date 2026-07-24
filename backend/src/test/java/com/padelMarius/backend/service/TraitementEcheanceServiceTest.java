@@ -1,6 +1,7 @@
 package com.padelMarius.backend.service;
 
 import com.padelMarius.backend.dto.traitement.TraitementEcheanceResponse;
+import com.padelMarius.backend.entity.Dette;
 import com.padelMarius.backend.entity.EtatCycleMatch;
 import com.padelMarius.backend.entity.Membre;
 import com.padelMarius.backend.entity.ModeCreation;
@@ -8,6 +9,7 @@ import com.padelMarius.backend.entity.PadelMatch;
 import com.padelMarius.backend.entity.Participation;
 import com.padelMarius.backend.entity.Penalite;
 import com.padelMarius.backend.entity.RoleParticipation;
+import com.padelMarius.backend.entity.StatutDette;
 import com.padelMarius.backend.entity.StatutParticipation;
 import com.padelMarius.backend.entity.StatutPenalite;
 import com.padelMarius.backend.repository.DetteRepository;
@@ -86,7 +88,7 @@ class TraitementEcheanceServiceTest {
         PadelMatch match = creerMatch(100L, ModeCreation.PUBLIC, new BigDecimal("60.00"));
 
         stubRechercheMatchesArrivesAEcheance(match);
-        when(detteRepository.findByMatchId(100L)).thenReturn(Optional.empty());
+        when(detteRepository.findByMatchIdForUpdate(100L)).thenReturn(Optional.empty());
         when(paiementRepository.findByParticipation_Match_IdAndNaturePaiementAndStatutPaiement(
                 eq(100L),
                 any(),
@@ -118,12 +120,12 @@ class TraitementEcheanceServiceTest {
 
         ReflectionTestUtils.setField(matchDemarre, "id", 200L);
 
-        when(padelMatchRepository.findByEtatCycleAndDateHeureDebutLessThanEqual(
+        when(padelMatchRepository.findArrivesAEcheanceForUpdate(
                 eq(EtatCycleMatch.A_VENIR),
                 any(LocalDateTime.class)
         )).thenReturn(List.of());
 
-        when(padelMatchRepository.findByEtatCycleAndDateHeureFinLessThanEqual(
+        when(padelMatchRepository.findATerminerForUpdate(
                 eq(EtatCycleMatch.DEMARRE),
                 any(LocalDateTime.class)
         )).thenReturn(List.of(matchDemarre));
@@ -216,20 +218,54 @@ class TraitementEcheanceServiceTest {
         verifyNoInteractions(penaliteRepository);
     }
 
+    @Test
+    void traitement_echeance_doit_ignorer_une_dette_deja_existante() {
+        PadelMatch match = creerMatch(
+                100L,
+                ModeCreation.PUBLIC,
+                new BigDecimal("60.00")
+        );
+
+        Membre responsable = creerMembre(20L, "G0001");
+
+        Dette detteExistante = Dette.builder()
+                .match(match)
+                .membreResponsable(responsable)
+                .montantInitial(new BigDecimal("60.00"))
+                .montantRestant(BigDecimal.ZERO)
+                .dateCreation(LocalDateTime.of(2026, 5, 13, 12, 0))
+                .dateReglement(LocalDateTime.of(2026, 5, 14, 9, 0))
+                .statutDette(StatutDette.REGLEE)
+                .build();
+
+        stubRechercheMatchesArrivesAEcheance(match);
+
+        when(detteRepository.findByMatchIdForUpdate(100L))
+                .thenReturn(Optional.of(detteExistante));
+
+        TraitementEcheanceResponse response =
+                service.traiterMatchesArrivesAEcheance();
+
+        assertEquals(0, response.dettesCreees());
+        assertEquals(EtatCycleMatch.DEMARRE, match.getEtatCycle());
+
+        verifyNoInteractions(detteService);
+    }
+
     private void stubRechercheMatchesArrivesAEcheance(PadelMatch match) {
-        when(padelMatchRepository.findByEtatCycleAndDateHeureDebutLessThanEqual(
+        when(padelMatchRepository.findArrivesAEcheanceForUpdate(
                 eq(EtatCycleMatch.A_VENIR),
                 any(LocalDateTime.class)
         )).thenReturn(List.of(match));
 
-        when(padelMatchRepository.findByEtatCycleAndDateHeureFinLessThanEqual(
+        when(padelMatchRepository.findATerminerForUpdate(
                 eq(EtatCycleMatch.DEMARRE),
                 any(LocalDateTime.class)
         )).thenReturn(List.of());
     }
 
     private void stubDetteNonCreee(Long matchId) {
-        when(detteRepository.findByMatchId(matchId)).thenReturn(Optional.empty());
+        when(detteRepository.findByMatchIdForUpdate(matchId)).thenReturn(Optional.empty());
         when(paiementRepository.findByParticipation_Match_IdAndNaturePaiementAndStatutPaiement(
                 eq(matchId),
                 any(),

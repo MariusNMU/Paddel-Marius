@@ -48,9 +48,17 @@ public interface PadelMatchRepository extends JpaRepository<PadelMatch, Long> {
             LocalDateTime fin
     );
 
-    List<PadelMatch> findByEtatCycleAndDateHeureDebutLessThanEqual(
-            EtatCycleMatch etatCycle,
-            LocalDateTime dateHeureDebut
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select padelMatch
+            from PadelMatch padelMatch
+            where padelMatch.etatCycle = :etatCycle
+              and padelMatch.dateHeureDebut <= :dateHeureDebut
+            order by padelMatch.id
+            """)
+    List<PadelMatch> findArrivesAEcheanceForUpdate(
+            @Param("etatCycle") EtatCycleMatch etatCycle,
+            @Param("dateHeureDebut") LocalDateTime dateHeureDebut
     );
 
     List<PadelMatch> findByTerrainInAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBeforeAndEtatCycle(
@@ -60,8 +68,16 @@ public interface PadelMatchRepository extends JpaRepository<PadelMatch, Long> {
             EtatCycleMatch etatCycle
     );
 
-    List<PadelMatch> findByEtatCycleAndDateHeureFinLessThanEqual(
-            EtatCycleMatch etatCycle,
-            LocalDateTime dateHeureFin
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select padelMatch
+            from PadelMatch padelMatch
+            where padelMatch.etatCycle = :etatCycle
+              and padelMatch.dateHeureFin <= :dateHeureFin
+            order by padelMatch.id
+            """)
+    List<PadelMatch> findATerminerForUpdate(
+            @Param("etatCycle") EtatCycleMatch etatCycle,
+            @Param("dateHeureFin") LocalDateTime dateHeureFin
     );
 }

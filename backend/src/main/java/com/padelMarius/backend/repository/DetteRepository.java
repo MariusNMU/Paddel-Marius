@@ -22,6 +22,25 @@ public interface DetteRepository extends JpaRepository<Dette, Long> {
             @Param("detteId") Long detteId
     );
 
+    @Query("""
+            select dette.match.id
+            from Dette dette
+            where dette.id = :detteId
+            """)
+    Optional<Long> findMatchIdById(
+            @Param("detteId") Long detteId
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select dette
+            from Dette dette
+            where dette.match.id = :matchId
+            """)
+    Optional<Dette> findByMatchIdForUpdate(
+            @Param("matchId") Long matchId
+    );
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             select dette

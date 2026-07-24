@@ -50,14 +50,11 @@ public class DetteService {
 
     @Transactional
     public DetteResponse genererDettePourMatch(Long matchId) {
-        PadelMatch match = padelMatchRepository.findById(matchId)
-                .orElseThrow(() -> new RessourceIntrouvableException(
-                        "Match introuvable avec l'id " + matchId
-                ));
+        PadelMatch match = verrouillerMatch(matchId);
 
         verifierMatchArriveAEcheance(match);
 
-        return actualiserDettePourMatch(match)
+        return actualiserDettePourMatchVerrouille(match)
                 .orElseThrow(() -> new ConfigurationMetierException(
                         "Le match est entièrement payé. Aucune dette ne doit être créée."
                 ));
@@ -71,7 +68,20 @@ public class DetteService {
             return Optional.empty();
         }
 
-        Optional<Dette> detteExistante = detteRepository.findByMatchId(match.getId());
+        PadelMatch matchVerrouille = verrouillerMatch(match.getId());
+
+        if (!matchPeutGenererUneDette(matchVerrouille)) {
+            return Optional.empty();
+        }
+
+        return actualiserDettePourMatchVerrouille(matchVerrouille);
+    }
+
+    private Optional<DetteResponse> actualiserDettePourMatchVerrouille(
+            PadelMatch match
+    ) {
+        Optional<Dette> detteExistante =
+                detteRepository.findByMatchIdForUpdate(match.getId());
 
         if (detteExistante.isPresent() && dettePossedeDejaUnPaiement(detteExistante.get())) {
             Dette dette = detteExistante.get();
@@ -131,7 +141,19 @@ public class DetteService {
             dette.setMontantInitial(montantRestant);
         }
 
-        return Optional.of(convertirEnDetteResponse(detteRepository.save(dette)));
+        Dette detteSauvegardee =
+                detteRepository.save(dette);
+
+        return Optional.of(
+                convertirEnDetteResponse(detteSauvegardee)
+        );
+    }
+
+    private PadelMatch verrouillerMatch(Long matchId) {
+        return padelMatchRepository.findByIdForUpdate(matchId)
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        "Match introuvable avec l'id " + matchId
+                ));
     }
 
     @Transactional
@@ -175,11 +197,21 @@ public class DetteService {
     }
 
     @Transactional
-    public PaiementDetteResponse payerDette(Long detteId, PayerDetteRequest request) {
+    public PaiementDetteResponse payerDette(
+            Long detteId,
+            PayerDetteRequest request
+    ) {
         Long membreResponsableId =
                 detteRepository.findMembreResponsableIdById(detteId)
                         .orElseThrow(() -> new RessourceIntrouvableException(
                                 "Dette introuvable avec l'id " + detteId
+                        ));
+
+        Long matchId =
+                detteRepository.findMatchIdById(detteId)
+                        .orElseThrow(() -> new RessourceIntrouvableException(
+                                "Match de la dette introuvable pour la dette "
+                                        + detteId
                         ));
 
         Membre responsable =
@@ -188,6 +220,8 @@ public class DetteService {
                                 "Membre introuvable avec l'id "
                                         + membreResponsableId
                         ));
+
+        verrouillerMatch(matchId);
 
         Dette dette = detteRepository.findByIdForUpdate(detteId)
                 .orElseThrow(() -> new RessourceIntrouvableException(
@@ -220,6 +254,7 @@ public class DetteService {
 
         return convertirEnPaiementDetteResponse(paiementSauvegarde, detteSauvegardee);
     }
+
     private boolean dettePossedeDejaUnPaiement(Dette dette) {
         return dette != null
                 && dette.getId() != null

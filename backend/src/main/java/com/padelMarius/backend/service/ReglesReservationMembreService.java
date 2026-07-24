@@ -26,32 +26,79 @@ public class ReglesReservationMembreService {
         this.clock = clock;
     }
 
-    public void verifierReglesCreationMatch(Membre membre, Terrain terrain, LocalDateTime dateHeureDebut) {
+    public void verifierReglesCreationMatch(
+            Membre membre,
+            Terrain terrain,
+            LocalDateTime dateHeureDebut
+    ) {
+        verifierReglesReservation(
+                membre,
+                terrain,
+                dateHeureDebut
+        );
+    }
+
+    public void verifierReglesReservation(
+            Membre membre,
+            Terrain terrain,
+            LocalDateTime dateHeureDebut
+    ) {
         if (membre == null) {
-            throw new IllegalArgumentException("Le membre est obligatoire pour vérifier les règles de réservation.");
+            throw new IllegalArgumentException(
+                    "Le membre est obligatoire pour vérifier les règles de réservation."
+            );
         }
 
         if (terrain == null) {
-            throw new IllegalArgumentException("Le terrain est obligatoire pour vérifier les règles de réservation.");
+            throw new IllegalArgumentException(
+                    "Le terrain est obligatoire pour vérifier les règles de réservation."
+            );
         }
 
         if (dateHeureDebut == null) {
-            throw new ConfigurationMetierException("La date de début du match est obligatoire.");
+            throw new ConfigurationMetierException(
+                    "La date de début du match est obligatoire."
+            );
         }
 
-        CategorieMembre categorie = membre.getCategorieMembre();
+        CategorieMembre categorie =
+                membre.getCategorieMembre();
 
         if (categorie == null) {
-            throw new ConfigurationMetierException("La catégorie du membre est obligatoire.");
+            throw new ConfigurationMetierException(
+                    "La catégorie du membre est obligatoire."
+            );
         }
 
-        String matricule = normaliserMatricule(membre.getMatricule());
+        String matricule =
+                normaliserMatricule(membre.getMatricule());
 
         switch (categorie) {
-            case GLOBAL -> verifierMembreGlobal(matricule, dateHeureDebut);
-            case SITE -> verifierMembreSite(membre, terrain, matricule, dateHeureDebut);
-            case LIBRE -> verifierMembreLibre(matricule, dateHeureDebut);
-            default -> throw new ConfigurationMetierException("Catégorie de membre non supportée : " + categorie);
+            case GLOBAL ->
+                    verifierMembreGlobal(
+                            matricule,
+                            dateHeureDebut
+                    );
+
+            case SITE ->
+                    verifierMembreSite(
+                            membre,
+                            terrain,
+                            matricule,
+                            dateHeureDebut
+                    );
+
+            case LIBRE ->
+                    verifierMembreLibre(
+                            matricule,
+                            dateHeureDebut
+                    );
+
+            default ->
+                    throw new ConfigurationMetierException(
+                            "Catégorie de membre non supportée : "
+                                    + categorie
+                    );
         }
     }
 

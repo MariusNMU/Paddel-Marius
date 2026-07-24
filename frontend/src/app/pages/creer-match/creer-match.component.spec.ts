@@ -137,6 +137,21 @@ describe('CreerMatchComponent', () => {
     expect(bouton.disabled).toBe(true);
   });
 
+  it('doit utiliser Angular Material pour le formulaire principal', () => {
+    const champsMaterial: NodeListOf<HTMLElement> =
+      fixture.nativeElement.querySelectorAll('mat-form-field');
+
+    const bouton: HTMLButtonElement =
+      fixture.nativeElement.querySelector(
+        'button[type="submit"]'
+      );
+
+    expect(champsMaterial.length).toBe(4);
+    expect(
+      bouton.classList.contains('mat-mdc-button-base')
+    ).toBe(true);
+  });
+
   it('doit déléguer la création du match à la façade', () => {
     component.creerMatch();
 

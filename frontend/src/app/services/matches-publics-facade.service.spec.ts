@@ -169,6 +169,51 @@ describe('MatchesPublicsFacadeService', () => {
     expect(service.chargementRecherche()).toBe(false);
   });
 
+  it('doit garder visible un match hors site sans permettre sa réservation', () => {
+    authContextService.joueur.mockReturnValue({
+      ...joueur,
+      matricule: 'S1001',
+      categorieMembre: 'SITE',
+      siteRattachementId: 1,
+      nomSiteRattachement: 'Site Alpha'
+    });
+
+    const matchHorsSite: MatchPublicResponse = {
+      ...matchPublic,
+      matchId: 11,
+      siteId: 2,
+      nomSite: 'Site Beta',
+      peutRejoindre: false,
+      motifNonEligibilite:
+        'Un membre SITE ne peut réserver que sur son site de rattachement.'
+    };
+
+    matchPublicApiService.listerMatchesPublics
+      .mockReturnValue(of([matchHorsSite]));
+
+    service.initialiser();
+
+    expect(service.sites()).toEqual(sites);
+
+    service.modifierSiteId(2);
+    service.modifierDate('2026-06-20');
+    service.rechercherMatchesPublics();
+
+    expect(service.matches()).toEqual([
+      matchHorsSite
+    ]);
+
+    service.rejoindreEtPayer(matchHorsSite);
+
+    expect(service.messageErreur()).toBe(
+      'Un membre SITE ne peut réserver que sur son site de rattachement.'
+    );
+
+    expect(
+      matchPublicApiService.rejoindreEtPayer
+    ).not.toHaveBeenCalled();
+  });
+
   it('doit refuser une recherche incomplète', () => {
     service.initialiser();
     service.modifierSiteId(null);

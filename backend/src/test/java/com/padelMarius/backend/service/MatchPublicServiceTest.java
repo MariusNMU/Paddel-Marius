@@ -44,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -64,6 +65,10 @@ class MatchPublicServiceTest {
     @Mock
     private MembreRepository membreRepository;
 
+    @Mock
+    private ReglesReservationMembreService
+            reglesReservationMembreService;
+
     private MatchPublicService matchPublicService;
 
     @BeforeEach
@@ -73,7 +78,8 @@ class MatchPublicServiceTest {
                 participationRepository,
                 participationService,
                 paiementService,
-                membreRepository
+                membreRepository,
+                reglesReservationMembreService
         );
     }
 
@@ -155,6 +161,111 @@ class MatchPublicServiceTest {
         assertEquals(
                 null,
                 responses.getFirst().motifNonEligibilite()
+        );
+    }
+
+    @Test
+    void listerMatchesPublicsDisponibles_shouldKeepOtherSiteVisibleButNotJoinableForSiteMember() {
+        LocalDate date =
+                LocalDate.of(2026, 6, 20);
+
+        Site siteBruxelles =
+                creerSite(1001L, "Padel Bruxelles");
+
+        Site siteNamur =
+                creerSite(1002L, "Padel Namur");
+
+        Terrain terrainNamur =
+                creerTerrain(
+                        1201L,
+                        siteNamur,
+                        "T1"
+                );
+
+        PadelMatch matchNamur =
+                creerMatch(
+                        3002L,
+                        terrainNamur,
+                        LocalDateTime.of(
+                                2026,
+                                6,
+                                20,
+                                11,
+                                0
+                        )
+                );
+
+        Membre joueurSite =
+                creerMembre(2001L, "S1001");
+
+        joueurSite.setCategorieMembre(
+                CategorieMembre.SITE
+        );
+
+        joueurSite.setSiteRattachement(
+                siteBruxelles
+        );
+
+        when(membreRepository.findByMatricule("S1001"))
+                .thenReturn(Optional.of(joueurSite));
+
+        when(participationRepository
+                .findByMembreId(2001L))
+                .thenReturn(List.of());
+
+        when(padelMatchRepository
+                .findByVisibiliteCouranteAndEtatCycleAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBefore(
+                        VisibiliteMatch.PUBLIC,
+                        EtatCycleMatch.A_VENIR,
+                        date.atStartOfDay(),
+                        date.plusDays(1).atStartOfDay()
+                ))
+                .thenReturn(List.of(matchNamur));
+
+        when(participationRepository
+                .findByMatchId(3002L))
+                .thenReturn(List.of());
+
+        when(participationRepository
+                .existsByMatchIdAndMembreId(
+                        3002L,
+                        2001L
+                ))
+                .thenReturn(false);
+
+        doThrow(new ConfigurationMetierException(
+                "Un membre SITE ne peut réserver que sur son site de rattachement."
+        )).when(reglesReservationMembreService)
+                .verifierReglesReservation(
+                        joueurSite,
+                        terrainNamur,
+                        matchNamur.getDateHeureDebut()
+                );
+
+        List<MatchPublicResponse> responses =
+                matchPublicService
+                        .listerMatchesPublicsDisponibles(
+                                1002L,
+                                date,
+                                "S1001"
+                        );
+
+        assertEquals(1, responses.size());
+        assertEquals(
+                3002L,
+                responses.getFirst().matchId()
+        );
+        assertEquals(
+                1002L,
+                responses.getFirst().siteId()
+        );
+        assertFalse(
+                responses.getFirst().peutRejoindre()
+        );
+        assertEquals(
+                "Un membre SITE ne peut réserver que sur son site de rattachement.",
+                responses.getFirst()
+                        .motifNonEligibilite()
         );
     }
 

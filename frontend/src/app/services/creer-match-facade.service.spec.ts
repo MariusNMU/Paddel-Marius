@@ -176,6 +176,43 @@ describe('CreerMatchFacadeService', () => {
     expect(service.dureeMatchLibelle()).toBe('1h30');
   });
 
+  it('doit limiter les terrains d un membre SITE à son site', () => {
+    authContextService.joueur.mockReturnValue({
+      ...joueur,
+      matricule: 'S1001',
+      categorieMembre: 'SITE',
+      siteRattachementId: 1,
+      nomSiteRattachement: 'Site Alpha'
+    });
+
+    service.initialiser(null, null);
+
+    expect(service.terrains()).toEqual([terrains[0]]);
+    expect(service.terrainId()).toBe(10);
+  });
+
+  it('doit refuser un terrain URL appartenant à un autre site', () => {
+    authContextService.joueur.mockReturnValue({
+      ...joueur,
+      matricule: 'S1001',
+      categorieMembre: 'SITE',
+      siteRattachementId: 1,
+      nomSiteRattachement: 'Site Alpha'
+    });
+
+    service.initialiser(
+      '20',
+      '2026-06-20T09:00:00'
+    );
+
+    expect(service.terrains()).toEqual([terrains[0]]);
+    expect(service.terrainId()).toBeNull();
+    expect(service.messageErreur()).toBe(
+      'Le terrain demandé n’est plus disponible. '
+      + 'Choisis un autre terrain.'
+    );
+  });
+
   it('doit choisir le premier terrain sans terrain demandé dans l URL', () => {
     service.initialiser(null, null);
 

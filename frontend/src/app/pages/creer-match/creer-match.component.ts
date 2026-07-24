@@ -1,6 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { ActivatedRoute } from '@angular/router';
 import { CreerMatchFacadeService } from '../../services/creer-match-facade.service';
 import { enumLabel } from '../../shared/enum-label.util';
@@ -8,7 +11,13 @@ import { enumLabel } from '../../shared/enum-label.util';
 @Component({
   selector: 'app-creer-match',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule
+  ],
   providers: [CreerMatchFacadeService],
   template: `
     <section class="page">
@@ -52,19 +61,29 @@ import { enumLabel } from '../../shared/enum-label.util';
       </div>
 
       <form (ngSubmit)="creerMatch()">
-        <label for="terrainId">Terrain</label>
-        <select
-          id="terrainId"
-          name="terrainId"
-          [ngModel]="facade.terrainId()"
-          (ngModelChange)="facade.modifierTerrainId($event)"
-          required
-        >
-          <option [ngValue]="null" disabled>Choisir un terrain</option>
-          <option *ngFor="let terrain of facade.terrains()" [ngValue]="terrain.terrainId">
-            {{ terrain.nomSite }} — Terrain {{ terrain.numeroTerrain }}
-          </option>
-        </select>
+        <mat-form-field appearance="outline">
+          <mat-label>Terrain</mat-label>
+
+          <select
+            matNativeControl
+            id="terrainId"
+            name="terrainId"
+            [ngModel]="facade.terrainId()"
+            (ngModelChange)="facade.modifierTerrainId($event)"
+            required
+          >
+            <option [ngValue]="null" disabled>
+              Choisir un terrain
+            </option>
+
+            <option
+              *ngFor="let terrain of facade.terrains()"
+              [ngValue]="terrain.terrainId"
+            >
+              {{ terrain.nomSite }} — Terrain {{ terrain.numeroTerrain }}
+            </option>
+          </select>
+        </mat-form-field>
 
         <p *ngIf="facade.chargementTerrains()" class="aide">
           Chargement des terrains depuis le backend...
@@ -82,42 +101,56 @@ import { enumLabel } from '../../shared/enum-label.util';
           </p>
         </div>
 
-        <label for="matriculeOrganisateur">Matricule organisateur</label>
-        <input
-          id="matriculeOrganisateur"
-          name="matriculeOrganisateur"
-          type="text"
-          [ngModel]="facade.matriculeOrganisateur()"
-          (ngModelChange)="facade.modifierMatriculeOrganisateur($event)"
-          required
-        />
+        <mat-form-field appearance="outline">
+          <mat-label>Matricule organisateur</mat-label>
+
+          <input
+            matInput
+            id="matriculeOrganisateur"
+            name="matriculeOrganisateur"
+            type="text"
+            [ngModel]="facade.matriculeOrganisateur()"
+            (ngModelChange)="facade.modifierMatriculeOrganisateur($event)"
+            required
+          />
+        </mat-form-field>
 
         <p class="aide">
           Le matricule est prérempli avec le joueur connecté si disponible.
         </p>
 
-        <label for="dateHeureDebut">Date et heure de début</label>
-        <input
-          id="dateHeureDebut"
-          name="dateHeureDebut"
-          type="datetime-local"
-          [ngModel]="facade.dateHeureDebut()"
-          (ngModelChange)="facade.modifierDateHeureDebut($event)"
-          required
-        />
+        <mat-form-field appearance="outline">
+          <mat-label>Date et heure de début</mat-label>
 
-        <label for="modeCreation">Type de match</label>
-        <select
-          id="modeCreation"
-          name="modeCreation"
-          [ngModel]="facade.modeCreation()"
-          (ngModelChange)="facade.modifierModeCreation($event)"
-          required
-        >
-          <option value="" disabled>Choisir un type de match</option>
-          <option value="PUBLIC">Public</option>
-          <option value="PRIVE">Privé</option>
-        </select>
+          <input
+            matInput
+            id="dateHeureDebut"
+            name="dateHeureDebut"
+            type="datetime-local"
+            [ngModel]="facade.dateHeureDebut()"
+            (ngModelChange)="facade.modifierDateHeureDebut($event)"
+            required
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Type de match</mat-label>
+
+          <select
+            matNativeControl
+            id="modeCreation"
+            name="modeCreation"
+            [ngModel]="facade.modeCreation()"
+            (ngModelChange)="facade.modifierModeCreation($event)"
+            required
+          >
+            <option value="" disabled>
+              Choisir un type de match
+            </option>
+            <option value="PUBLIC">Public</option>
+            <option value="PRIVE">Privé</option>
+          </select>
+        </mat-form-field>
 
         <div class="bloc-info">
           <h3>Résumé avant création</h3>
@@ -157,12 +190,17 @@ import { enumLabel } from '../../shared/enum-label.util';
           </p>
         </div>
 
-        <button type="submit" [disabled]="
-          facade.chargementCreation()
-          || facade.chargementTerrains()
-          || facade.terrains().length === 0
-          || facade.terrainId() === null
-        ">
+        <button
+          mat-flat-button
+          class="action-principale"
+          type="submit"
+          [disabled]="
+            facade.chargementCreation()
+            || facade.chargementTerrains()
+            || facade.terrains().length === 0
+            || facade.terrainId() === null
+          "
+        >
           {{ facade.chargementCreation() ? 'Création...' : 'Créer le match' }}
         </button>
       </form>
@@ -207,16 +245,29 @@ import { enumLabel } from '../../shared/enum-label.util';
           joueurs. Ajoute les matricules un par un.
         </p>
 
-        <label for="matriculeInvite">Matricule du joueur à inviter</label>
-        <input
-          id="matriculeInvite"
-          name="matriculeInvite"
-          type="text"
-          [ngModel]="facade.matriculeInvite()"
-          (ngModelChange)="facade.modifierMatriculeInvite($event)"
-        />
+        <mat-form-field appearance="outline">
+          <mat-label>Matricule du joueur à inviter</mat-label>
 
-        <button type="button" (click)="inviterJoueur()" [disabled]="facade.chargementCreation() || facade.chargementInvitation()">
+          <input
+            matInput
+            id="matriculeInvite"
+            name="matriculeInvite"
+            type="text"
+            [ngModel]="facade.matriculeInvite()"
+            (ngModelChange)="facade.modifierMatriculeInvite($event)"
+          />
+        </mat-form-field>
+
+        <button
+          mat-stroked-button
+          class="action-principale"
+          type="button"
+          (click)="inviterJoueur()"
+          [disabled]="
+            facade.chargementCreation()
+            || facade.chargementInvitation()
+          "
+        >
           Inviter
         </button>
 
@@ -237,6 +288,17 @@ import { enumLabel } from '../../shared/enum-label.util';
     </section>
   `,
   styles: [`
+    mat-form-field {
+      display: block;
+      width: 100%;
+      max-width: 420px;
+      margin-top: 16px;
+    }
+
+    .action-principale {
+      margin-top: 16px;
+    }
+
     .aide {
       margin-top: -4px;
       color: #64748b;

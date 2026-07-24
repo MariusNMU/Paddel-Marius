@@ -23,6 +23,8 @@ describe('DisponibilitesComponent', () => {
     selectionnerJour: ReturnType<typeof vi.fn>;
     consulterDisponibilites: ReturnType<typeof vi.fn>;
     allerCreerMatch: ReturnType<typeof vi.fn>;
+    peutCreerMatchSurSiteSelectionne:
+      ReturnType<typeof vi.fn>;
     siteSelectionne: ReturnType<typeof vi.fn>;
     dureeMatchLibelle: ReturnType<typeof vi.fn>;
 
@@ -70,6 +72,8 @@ describe('DisponibilitesComponent', () => {
       selectionnerJour: vi.fn(),
       consulterDisponibilites: vi.fn(),
       allerCreerMatch: vi.fn(),
+      peutCreerMatchSurSiteSelectionne:
+        vi.fn(() => true),
       siteSelectionne: vi.fn(() => site),
       dureeMatchLibelle: vi.fn(() => '1h30'),
 
@@ -146,5 +150,37 @@ describe('DisponibilitesComponent', () => {
     expect(contenu).toContain('09:00');
     expect(contenu).toContain('10:30');
     expect(contenu).toContain('1h30');
+  });
+
+  it('doit masquer l’action de réservation hors site', () => {
+    facade.peutCreerMatchSurSiteSelectionne
+      .mockReturnValue(false);
+
+    facade.disponibilites.set({
+      ...disponibilites,
+      siteId: 2,
+      nomSite: 'Site Beta'
+    });
+
+    fixture.detectChanges();
+
+    const contenu: string =
+      fixture.nativeElement.textContent;
+
+    const boutons: HTMLButtonElement[] = Array.from(
+      fixture.nativeElement.querySelectorAll('button')
+    );
+
+    const boutonReservation = boutons.find(
+      bouton => bouton.textContent?.includes(
+        'Utiliser ce créneau'
+      )
+    );
+
+    expect(contenu).toContain(
+      'Un membre SITE ne peut réserver que sur son site de rattachement.'
+    );
+
+    expect(boutonReservation).toBeUndefined();
   });
 });

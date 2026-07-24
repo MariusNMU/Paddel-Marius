@@ -92,6 +92,26 @@ describe('JoueurAuthComponent', () => {
     );
   });
 
+  it('doit afficher le nom du site sans identifiant technique', () => {
+    joueurSignal.set({
+      ...joueur,
+      categorieMembre: 'SITE',
+      siteRattachementId: 42,
+      nomSiteRattachement: 'Site Beta'
+    });
+
+    fixture.detectChanges();
+
+    const site: HTMLElement =
+      fixture.nativeElement.querySelector(
+        '[data-testid="site-rattachement"]'
+      );
+
+    expect(site).toBeTruthy();
+    expect(site.textContent?.trim()).toBe('Site Beta');
+    expect(fixture.nativeElement.textContent).not.toContain('(42)');
+  });
+
   it('doit transmettre la déconnexion à la façade', () => {
     joueurSignal.set(joueur);
 

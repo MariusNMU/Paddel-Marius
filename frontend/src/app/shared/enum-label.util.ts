@@ -28,6 +28,7 @@ const ENUM_LABELS: Record<string, string> = {
   OUVERTE: 'Ouverte',
   REGLEE: 'Réglée',
 
+  EN_ATTENTE: 'En attente',
   PAYE: 'Payé',
   REFUSE: 'Refusé',
 

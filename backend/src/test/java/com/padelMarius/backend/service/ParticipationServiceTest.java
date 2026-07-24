@@ -36,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -51,6 +52,10 @@ class ParticipationServiceTest {
 
     @Mock
     private ParticipationRepository participationRepository;
+
+    @Mock
+    private ReglesReservationMembreService
+            reglesReservationMembreService;
 
     @InjectMocks
     private ParticipationService participationService;
@@ -142,6 +147,71 @@ class ParticipationServiceTest {
         assertEquals(StatutParticipation.EN_ATTENTE_PAIEMENT, response.statutParticipation());
 
         verify(participationRepository).save(any(Participation.class));
+    }
+
+    @Test
+    void inscrireParticipantPublic_shouldRejectSiteMemberOnOtherSite() {
+        Site siteBruxelles = creerSite(1L);
+        Site siteNamur = creerSite(2L);
+
+        Terrain terrainNamur =
+                creerTerrain(20L, siteNamur);
+
+        PadelMatch matchNamur = creerMatch(
+                100L,
+                terrainNamur,
+                VisibiliteMatch.PUBLIC,
+                ModeCreation.PUBLIC
+        );
+
+        Membre joueurSite =
+                creerMembre(21L, "S0001");
+
+        joueurSite.setCategorieMembre(
+                CategorieMembre.SITE
+        );
+
+        joueurSite.setSiteRattachement(
+                siteBruxelles
+        );
+
+        when(padelMatchRepository.findByIdForUpdate(100L))
+                .thenReturn(Optional.of(matchNamur));
+
+        when(membreRepository
+                .findByMatriculeForUpdate("S0001"))
+                .thenReturn(Optional.of(joueurSite));
+
+        doThrow(new ConfigurationMetierException(
+                "Un membre SITE ne peut réserver que sur son site de rattachement."
+        )).when(reglesReservationMembreService)
+                .verifierReglesReservation(
+                        joueurSite,
+                        terrainNamur,
+                        matchNamur.getDateHeureDebut()
+                );
+
+        ConfigurationMetierException exception =
+                assertThrows(
+                        ConfigurationMetierException.class,
+                        () -> participationService
+                                .inscrireParticipantPublic(
+                                        100L,
+                                        new InscriptionPubliqueRequest(
+                                                "S0001"
+                                        )
+                                )
+                );
+
+        assertEquals(
+                "Un membre SITE ne peut réserver que sur son site de rattachement.",
+                exception.getMessage()
+        );
+
+        verify(
+                participationRepository,
+                never()
+        ).save(any());
     }
 
     @Test

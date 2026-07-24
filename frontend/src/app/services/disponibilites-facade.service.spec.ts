@@ -2,9 +2,11 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
+import { AuthJoueurResponse } from '../models/auth.model';
 import { DisponibilitesResponse } from '../models/disponibilite.model';
 import { ParametresMetierResponse } from '../models/parametres-metier.model';
 import { SiteResponse } from '../models/site.model';
+import { AuthContextService } from './auth-context.service';
 import { DisponibiliteApiService } from './disponibilite-api.service';
 import { DisponibilitesFacadeService } from './disponibilites-facade.service';
 import { ParametresMetierApiService } from './parametres-metier-api.service';
@@ -25,6 +27,10 @@ describe('DisponibilitesFacadeService', () => {
     consulterParametresMetier: ReturnType<typeof vi.fn>;
   };
 
+  let authContextService: {
+    joueur: ReturnType<typeof vi.fn>;
+  };
+
   let router: {
     navigate: ReturnType<typeof vi.fn>;
   };
@@ -43,6 +49,17 @@ describe('DisponibilitesFacadeService', () => {
       adresse: 'Rue du Test 2'
     }
   ];
+
+  const joueurGlobal: AuthJoueurResponse = {
+    membreId: 2001,
+    matricule: 'G1001',
+    nom: 'Dupont',
+    prenom: 'Marie',
+    categorieMembre: 'GLOBAL',
+    siteRattachementId: null,
+    nomSiteRattachement: null,
+    actif: true
+  };
 
   const parametresMetier: ParametresMetierResponse = {
     dureeMatchMinutes: 90,
@@ -90,6 +107,10 @@ describe('DisponibilitesFacadeService', () => {
       navigate: vi.fn()
     };
 
+    authContextService = {
+      joueur: vi.fn(() => joueurGlobal)
+    };
+
     TestBed.configureTestingModule({
       providers: [
         DisponibilitesFacadeService,
@@ -104,6 +125,10 @@ describe('DisponibilitesFacadeService', () => {
         {
           provide: ParametresMetierApiService,
           useValue: parametresMetierApiService
+        },
+        {
+          provide: AuthContextService,
+          useValue: authContextService
         },
         {
           provide: Router,
@@ -135,6 +160,36 @@ describe('DisponibilitesFacadeService', () => {
     expect(service.dureeMatchLibelle()).toBe('1h30');
     expect(service.joursRapides()).toHaveLength(7);
     expect(service.date()).not.toBe('');
+  });
+
+  it('doit afficher tous les sites mais bloquer la réservation hors site', () => {
+    authContextService.joueur.mockReturnValue({
+      ...joueurGlobal,
+      matricule: 'S1001',
+      categorieMembre: 'SITE',
+      siteRattachementId: 1,
+      nomSiteRattachement: 'Site Alpha'
+    });
+
+    service.initialiser();
+
+    expect(service.sites()).toEqual(sites);
+
+    service.modifierSiteId(2);
+
+    expect(
+      service.peutCreerMatchSurSiteSelectionne()
+    ).toBe(false);
+
+    service.allerCreerMatch(
+      disponibilites.creneaux[0]
+    );
+
+    expect(service.messageErreur()).toBe(
+      'Un membre SITE ne peut réserver que sur son site de rattachement.'
+    );
+
+    expect(router.navigate).not.toHaveBeenCalled();
   });
 
   it('doit rechercher les disponibilités', () => {
@@ -230,6 +285,8 @@ describe('DisponibilitesFacadeService', () => {
   it('doit naviguer vers la création avec le créneau choisi', () => {
     const creneau = disponibilites.creneaux[0];
 
+    service.initialiser();
+    service.modifierSiteId(2);
     service.allerCreerMatch(creneau);
 
     expect(router.navigate).toHaveBeenCalledWith(

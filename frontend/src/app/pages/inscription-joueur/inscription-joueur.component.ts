@@ -188,7 +188,6 @@ import { enumLabel } from '../../shared/enum-label.util';
               [ngValue]="site.siteId"
             >
               {{ site.nom }}
-              ({{ site.siteId }})
             </option>
           </select>
         }

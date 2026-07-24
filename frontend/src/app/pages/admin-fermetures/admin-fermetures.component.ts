@@ -89,7 +89,7 @@ import { enumLabel } from '../../shared/enum-label.util';
             [disabled]="facade.chargementSites() || facade.sites().length === 0"
           >
             <option *ngFor="let site of facade.sites()" [ngValue]="site.siteId">
-              {{ site.nom }} ({{ site.siteId }})
+              {{ site.nom }}
             </option>
           </select>
         }
@@ -109,7 +109,11 @@ import { enumLabel } from '../../shared/enum-label.util';
 
           <p>
             <strong>Date :</strong>
-            {{ facade.dateFermeture() || 'Non renseignée' }}
+            @if (facade.dateFermeture()) {
+              {{ facade.dateFermeture() | date:'dd/MM/yyyy' }}
+            } @else {
+              Non renseignée
+            }
           </p>
           <p>
             <strong>Portée :</strong>
@@ -149,8 +153,10 @@ import { enumLabel } from '../../shared/enum-label.util';
           <h3>Fermeture créée avec succès</h3>
 
           <div class="resume-grid">
-            <p><strong>ID fermeture</strong><br>{{ fermetureCreee.fermetureId }}</p>
-            <p><strong>Date</strong><br>{{ fermetureCreee.dateFermeture }}</p>
+            <p>
+              <strong>Date</strong><br>
+              {{ fermetureCreee.dateFermeture | date:'dd/MM/yyyy' }}
+            </p>
             <p><strong>Portée</strong><br>{{ enumLabel(fermetureCreee.portee) }}</p>
             <p><strong>Site</strong><br>{{ fermetureCreee.nomSite || 'Tous les sites' }}</p>
             <p><strong>Matches annulés</strong><br>{{ fermetureCreee.nombreMatchesAnnules }}</p>

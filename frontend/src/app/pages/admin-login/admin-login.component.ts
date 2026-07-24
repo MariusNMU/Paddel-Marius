@@ -27,7 +27,7 @@ import { enumLabel } from '../../shared/enum-label.util';
           </p>
 
           @if (admin.siteId) {
-            <p>Site : {{ admin.nomSite }} ({{ admin.siteId }})</p>
+            <p>Site : {{ admin.nomSite }}</p>
           } @else {
             <p>Accès global à tous les sites.</p>
           }

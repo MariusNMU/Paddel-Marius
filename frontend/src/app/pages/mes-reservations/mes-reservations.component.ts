@@ -175,29 +175,28 @@ import { enumLabel } from '../../shared/enum-label.util';
             "
           >
             <h3>
-              Match #{{ reservation.matchId }}
+              Réservation du
+              {{ reservation.dateHeureDebut | date:'dd/MM/yyyy, HH:mm' }}
             </h3>
 
             <p>
               <strong>Site :</strong>
               {{ reservation.nomSite }}
-              ({{ reservation.siteId }})
             </p>
 
             <p>
               <strong>Terrain :</strong>
               {{ reservation.numeroTerrain }}
-              ({{ reservation.terrainId }})
             </p>
 
             <p>
               <strong>Début :</strong>
-              {{ reservation.dateHeureDebut }}
+              {{ reservation.dateHeureDebut | date:'dd/MM/yyyy, HH:mm' }}
             </p>
 
             <p>
               <strong>Fin :</strong>
-              {{ reservation.dateHeureFin }}
+              {{ reservation.dateHeureFin | date:'dd/MM/yyyy, HH:mm' }}
             </p>
 
             <div class="resume-grid">

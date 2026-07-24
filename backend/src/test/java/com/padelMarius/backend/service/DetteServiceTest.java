@@ -30,6 +30,7 @@ import com.padelMarius.backend.repository.ParticipationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -46,6 +47,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -108,8 +110,8 @@ class DetteServiceTest {
         Paiement paiement1 = creerPaiementParticipation(400L, organisateur, new BigDecimal("15.00"));
         Paiement paiement2 = creerPaiementParticipation(401L, organisateur, new BigDecimal("15.00"));
 
-        when(padelMatchRepository.findById(100L)).thenReturn(Optional.of(match));
-        when(detteRepository.findByMatchId(100L)).thenReturn(Optional.empty());
+        when(padelMatchRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(match));
+        when(detteRepository.findByMatchIdForUpdate(100L)).thenReturn(Optional.empty());
         when(participationRepository.findByMatchId(100L)).thenReturn(List.of(participationOrganisateur));
         when(paiementRepository.findByParticipation_Match_IdAndNaturePaiementAndStatutPaiement(
                 100L,
@@ -139,7 +141,7 @@ class DetteServiceTest {
 
     @Test
     void genererDettePourMatch_shouldReject_whenMatchDoesNotExist() {
-        when(padelMatchRepository.findById(999L)).thenReturn(Optional.empty());
+        when(padelMatchRepository.findByIdForUpdate(999L)).thenReturn(Optional.empty());
 
         assertThrows(
                 RessourceIntrouvableException.class,
@@ -163,8 +165,8 @@ class DetteServiceTest {
                 RoleParticipation.ORGANISATEUR
         );
 
-        when(padelMatchRepository.findById(100L)).thenReturn(Optional.of(match));
-        when(detteRepository.findByMatchId(100L)).thenReturn(Optional.of(detteExistante));
+        when(padelMatchRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(match));
+        when(detteRepository.findByMatchIdForUpdate(100L)).thenReturn(Optional.of(detteExistante));
         when(participationRepository.findByMatchId(100L)).thenReturn(List.of(participationOrganisateur));
         when(paiementRepository.findByParticipation_Match_IdAndNaturePaiementAndStatutPaiement(
                 100L,
@@ -200,8 +202,8 @@ class DetteServiceTest {
         Paiement paiement3 = creerPaiementParticipation(402L, organisateur, new BigDecimal("15.00"));
         Paiement paiement4 = creerPaiementParticipation(403L, organisateur, new BigDecimal("15.00"));
 
-        when(padelMatchRepository.findById(100L)).thenReturn(Optional.of(match));
-        when(detteRepository.findByMatchId(100L)).thenReturn(Optional.empty());
+        when(padelMatchRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(match));
+        when(detteRepository.findByMatchIdForUpdate(100L)).thenReturn(Optional.empty());
         when(participationRepository.findByMatchId(100L)).thenReturn(List.of(participationOrganisateur));
         when(paiementRepository.findByParticipation_Match_IdAndNaturePaiementAndStatutPaiement(
                 100L,
@@ -244,7 +246,7 @@ class DetteServiceTest {
         Terrain terrain = creerTerrain(10L, site);
         PadelMatch match = creerMatchFutur(100L, terrain);
 
-        when(padelMatchRepository.findById(100L))
+        when(padelMatchRepository.findByIdForUpdate(100L))
                 .thenReturn(Optional.of(match));
 
         // Act
@@ -343,6 +345,21 @@ class DetteServiceTest {
         assertEquals(StatutDette.REGLEE, dette.getStatutDette());
         assertEquals(0, new BigDecimal("0.00").compareTo(dette.getMontantRestant()));
         assertEquals(0, new BigDecimal("70.00").compareTo(organisateur.getSoldeCredit()));
+
+        InOrder ordreVerrouillage = inOrder(
+                membreRepository,
+                padelMatchRepository,
+                detteRepository
+        );
+
+        ordreVerrouillage.verify(membreRepository)
+                .findByIdForUpdate(20L);
+
+        ordreVerrouillage.verify(padelMatchRepository)
+                .findByIdForUpdate(100L);
+
+        ordreVerrouillage.verify(detteRepository)
+                .findByIdForUpdate(500L);
     }
 
     @Test
@@ -403,7 +420,8 @@ class DetteServiceTest {
                 StatutDette.REGLEE
         );
 
-        when(detteRepository.findByMatchId(100L)).thenReturn(Optional.of(detteExistante));
+        when(padelMatchRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(match));
+        when(detteRepository.findByMatchIdForUpdate(100L)).thenReturn(Optional.of(detteExistante));
         when(paiementRepository.existsByDetteId(500L)).thenReturn(true);
         when(detteRepository.save(any(Dette.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -419,12 +437,21 @@ class DetteServiceTest {
 
     private void configurerDetteVerrouillee(Dette dette) {
         Long detteId = dette.getId();
+        Long matchId = dette.getMatch().getId();
         Membre responsable = dette.getMembreResponsable();
 
         when(detteRepository.findMembreResponsableIdById(detteId))
                 .thenReturn(Optional.of(responsable.getId()));
+
+        when(detteRepository.findMatchIdById(detteId))
+                .thenReturn(Optional.of(matchId));
+
         when(membreRepository.findByIdForUpdate(responsable.getId()))
                 .thenReturn(Optional.of(responsable));
+
+        when(padelMatchRepository.findByIdForUpdate(matchId))
+                .thenReturn(Optional.of(dette.getMatch()));
+
         when(detteRepository.findByIdForUpdate(detteId))
                 .thenReturn(Optional.of(dette));
     }

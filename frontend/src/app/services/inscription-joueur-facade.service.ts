@@ -176,7 +176,7 @@ export class InscriptionJoueurFacadeService {
       return 'Site inconnu';
     }
 
-    return `${site.nom} (${site.siteId})`;
+    return site.nom;
   }
 
   envoyerDemande(): void {

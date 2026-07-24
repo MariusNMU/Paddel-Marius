@@ -74,7 +74,7 @@ import { MatchesPublicsFacadeService } from '../../services/matches-publics-faca
             [class.selectionne]="facade.date() === jour.date"
           >
             <span>{{ jour.libelle }}</span>
-            <strong>{{ jour.date }}</strong>
+            <strong>{{ jour.date | date:'dd/MM/yyyy' }}</strong>
           </button>
         </div>
       </div>
@@ -95,7 +95,7 @@ import { MatchesPublicsFacadeService } from '../../services/matches-publics-faca
             *ngFor="let site of facade.sites()"
             [ngValue]="site.siteId"
           >
-            {{ site.nom }} ({{ site.siteId }})
+            {{ site.nom }}
           </option>
         </select>
 
@@ -139,18 +139,6 @@ import { MatchesPublicsFacadeService } from '../../services/matches-publics-faca
           @if (facade.dernierPaiement(); as dernierPaiement) {
             <div class="resume-grid">
               <p>
-                <strong>Match</strong><br>
-                {{ dernierPaiement.matchId }}
-              </p>
-              <p>
-                <strong>Participation</strong><br>
-                {{ dernierPaiement.participationId }}
-              </p>
-              <p>
-                <strong>Paiement</strong><br>
-                {{ dernierPaiement.paiementId }}
-              </p>
-              <p>
                 <strong>Montant payé</strong><br>
                 {{
                   dernierPaiement.montantPaye
@@ -192,11 +180,11 @@ import { MatchesPublicsFacadeService } from '../../services/matches-publics-faca
 
             <p>
               <strong>Début :</strong>
-              {{ match.dateHeureDebut }}
+              {{ match.dateHeureDebut | date:'dd/MM/yyyy, HH:mm' }}
             </p>
             <p>
               <strong>Fin :</strong>
-              {{ match.dateHeureFin }}
+              {{ match.dateHeureFin | date:'dd/MM/yyyy, HH:mm' }}
             </p>
             <p>
               <strong>Participants :</strong>

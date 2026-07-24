@@ -35,7 +35,7 @@ import { enumLabel } from '../../shared/enum-label.util';
           @if (admin.siteId) {
             <p>
               Cet administrateur est limité au site :
-              <strong>{{ admin.nomSite }} ({{ admin.siteId }})</strong>.
+              <strong>{{ admin.nomSite }}</strong>.
             </p>
           } @else {
             <p>

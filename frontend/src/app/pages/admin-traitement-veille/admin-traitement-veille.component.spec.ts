@@ -262,7 +262,7 @@ describe(
 
         expect(contenu)
           .toContain(
-            '2026-07-21'
+            '21/07/2026'
           );
 
         expect(contenu)

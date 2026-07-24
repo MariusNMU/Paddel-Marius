@@ -10,7 +10,6 @@ import com.padelMarius.backend.entity.Paiement;
 import com.padelMarius.backend.entity.Participation;
 import com.padelMarius.backend.entity.Penalite;
 import com.padelMarius.backend.entity.RoleParticipation;
-import com.padelMarius.backend.entity.StatutDette;
 import com.padelMarius.backend.entity.StatutPaiement;
 import com.padelMarius.backend.entity.StatutParticipation;
 import com.padelMarius.backend.entity.StatutPenalite;
@@ -57,7 +56,7 @@ public class TraitementEcheanceService {
         LocalDateTime maintenant = LocalDateTime.now(clock);
 
         List<PadelMatch> matches = padelMatchRepository
-                .findByEtatCycleAndDateHeureDebutLessThanEqual(
+                .findArrivesAEcheanceForUpdate(
                         EtatCycleMatch.A_VENIR,
                         maintenant
                 );
@@ -79,8 +78,8 @@ public class TraitementEcheanceService {
             matchesDemarres++;
         }
 
-        List<PadelMatch> matchesDemarresATerminer = padelMatchRepository
-                .findByEtatCycleAndDateHeureFinLessThanEqual(
+        List<PadelMatch> matchesDemarresATerminer =
+                padelMatchRepository.findATerminerForUpdate(
                         EtatCycleMatch.DEMARRE,
                         maintenant
                 );
@@ -104,9 +103,9 @@ public class TraitementEcheanceService {
             return false;
         }
 
-        boolean detteExisteDeja = detteRepository.findByMatchId(match.getId())
-                .filter(dette -> dette.getStatutDette() == StatutDette.OUVERTE)
-                .isPresent();
+        boolean detteExisteDeja =
+                detteRepository.findByMatchIdForUpdate(match.getId())
+                        .isPresent();
 
         if (detteExisteDeja) {
             return false;

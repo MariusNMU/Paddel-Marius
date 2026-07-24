@@ -47,7 +47,6 @@ import { DisponibilitesFacadeService } from '../../services/disponibilites-facad
             <h4>{{ site.nom }}</h4>
             <p><strong>Code :</strong> {{ site.code }}</p>
             <p><strong>Adresse :</strong> {{ site.adresse }}</p>
-            <p><strong>ID :</strong> {{ site.siteId }}</p>
           </article>
         </div>
 
@@ -66,7 +65,7 @@ import { DisponibilitesFacadeService } from '../../services/disponibilites-facad
             [class.selectionne]="facade.date() === jour.date"
           >
             <span>{{ jour.libelle }}</span>
-            <strong>{{ jour.date }}</strong>
+            <strong>{{ jour.date | date:'dd/MM/yyyy' }}</strong>
           </button>
         </div>
       </div>
@@ -89,7 +88,7 @@ import { DisponibilitesFacadeService } from '../../services/disponibilites-facad
             *ngFor="let site of facade.sites()"
             [ngValue]="site.siteId"
           >
-            {{ site.nom }} ({{ site.siteId }})
+            {{ site.nom }}
           </option>
         </select>
 
@@ -102,7 +101,6 @@ import { DisponibilitesFacadeService } from '../../services/disponibilites-facad
           <p>
             <strong>{{ site.nom }}</strong>
             — code {{ site.code }}
-            — ID {{ site.siteId }}
           </p>
 
           <p>{{ site.adresse }}</p>
@@ -144,7 +142,8 @@ import { DisponibilitesFacadeService } from '../../services/disponibilites-facad
         class="resultat"
       >
         <h3>
-          {{ disponibilites.nomSite }} ({{ disponibilites.siteId }}) — {{ disponibilites.date }}
+          {{ disponibilites.nomSite }} —
+          {{ disponibilites.date | date:'dd/MM/yyyy' }}
         </h3>
 
         <p *ngIf="disponibilites.ferme">
@@ -164,17 +163,17 @@ import { DisponibilitesFacadeService } from '../../services/disponibilites-facad
             class="creneau-card"
           >
             <h4>
-              Terrain {{ creneau.numeroTerrain }} ({{ creneau.terrainId }})
+              Terrain {{ creneau.numeroTerrain }}
             </h4>
 
             <p>
               <strong>Début :</strong>
-              {{ formaterHeure(creneau.dateHeureDebut) }}
+              {{ creneau.dateHeureDebut | date:'HH:mm' }}
             </p>
 
             <p>
               <strong>Fin :</strong>
-              {{ formaterHeure(creneau.dateHeureFin) }}
+              {{ creneau.dateHeureFin | date:'HH:mm' }}
             </p>
 
             <p>

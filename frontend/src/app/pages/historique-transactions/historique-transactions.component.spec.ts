@@ -175,8 +175,11 @@ describe(
         expect(contenu).toContain('Dupont');
         expect(contenu).toContain('Marie');
         expect(contenu).toContain('15.00');
-        expect(contenu).toContain('3001');
-        expect(contenu).toContain('3101');
+        expect(contenu).toContain(
+          '01/06/2026, 12:00'
+        );
+        expect(contenu).not.toContain('3001');
+        expect(contenu).not.toContain('3101');
         expect(contenu)
           .toContain(
             'Nombre de transactions'

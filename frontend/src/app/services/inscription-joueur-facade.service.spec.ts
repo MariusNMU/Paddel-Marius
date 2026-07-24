@@ -136,7 +136,7 @@ describe(
 
         expect(service.nomSiteSelectionne())
           .toBe(
-            'Padel Bruxelles (1001)'
+            'Padel Bruxelles'
           );
 
         service.modifierSiteRattachementId(

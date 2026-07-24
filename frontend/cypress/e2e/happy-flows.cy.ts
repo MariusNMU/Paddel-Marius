@@ -1,3 +1,5 @@
+export {};
+
 function dateIsoDansJours(decalageJours: number): string {
   const date = new Date();
   date.setDate(date.getDate() + decalageJours);
@@ -7,6 +9,11 @@ function dateIsoDansJours(decalageJours: number): string {
   const jour = String(date.getDate()).padStart(2, '0');
 
   return `${annee}-${mois}-${jour}`;
+}
+
+function formaterDateFr(dateIso: string): string {
+  const [annee, mois, jour] = dateIso.split('-');
+  return `${jour}/${mois}/${annee}`;
 }
 
 const dateMatchPublic = dateIsoDansJours(3);
@@ -312,8 +319,12 @@ describe('Happy flows MVP Padel Marius', () => {
 
     cy.wait('@consultationDisponibilites');
 
-    cy.contains(`Padel Bruxelles (1001) — ${dateMatchPublic}`).should('be.visible');
-    cy.contains('Terrain T3 (1103)').should('be.visible');
+    cy.contains(
+      `Padel Bruxelles — ${formaterDateFr(dateMatchPublic)}`
+    ).should('be.visible');
+
+    cy.contains('Terrain T3').should('be.visible');
+    cy.contains('(1103)').should('not.exist');
     cy.contains('13:15').should('be.visible');
     cy.contains('14:45').should('be.visible');
     cy.contains('Utiliser ce créneau pour créer un match').should('be.visible');

@@ -90,7 +90,8 @@ import { enumLabel } from '../../shared/enum-label.util';
             class="invitation-card"
           >
             <h3>
-              Match #{{ invitation.matchId }}
+              Invitation au match du
+              {{ invitation.dateHeureDebut | date:'dd/MM/yyyy, HH:mm' }}
             </h3>
 
             <div class="resume-grid">
@@ -106,12 +107,12 @@ import { enumLabel } from '../../shared/enum-label.util';
 
               <p>
                 <strong>Début</strong><br>
-                {{ invitation.dateHeureDebut }}
+                {{ invitation.dateHeureDebut | date:'dd/MM/yyyy, HH:mm' }}
               </p>
 
               <p>
                 <strong>Fin</strong><br>
-                {{ invitation.dateHeureFin }}
+                {{ invitation.dateHeureFin | date:'dd/MM/yyyy, HH:mm' }}
               </p>
 
               <p>

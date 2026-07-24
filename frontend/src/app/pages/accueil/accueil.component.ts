@@ -90,7 +90,6 @@ import { AccueilFacadeService } from '../../services/accueil-facade.service';
               <li>
                 <strong>{{ site.nom }}</strong>
                 — {{ site.code }}
-                — ID {{ site.siteId }}
               </li>
             }
           </ul>

@@ -1,3 +1,5 @@
+export {};
+
 function dateIsoDansJours(decalageJours: number): string {
   const date = new Date();
   date.setDate(date.getDate() + decalageJours);
@@ -7,6 +9,11 @@ function dateIsoDansJours(decalageJours: number): string {
   const jour = String(date.getDate()).padStart(2, '0');
 
   return `${annee}-${mois}-${jour}`;
+}
+
+function formaterDateFr(dateIso: string): string {
+  const [annee, mois, jour] = dateIso.split('-');
+  return `${jour}/${mois}/${annee}`;
 }
 
 describe('Happy flow full stack Padel Marius', () => {
@@ -60,15 +67,16 @@ describe('Happy flow full stack Padel Marius', () => {
 
     cy.contains('button', 'Voir les créneaux disponibles').click();
 
-    cy.contains(`Padel Bruxelles (1001) — ${dateMatch}`, {
+    cy.contains(`Padel Bruxelles — ${formaterDateFr(dateMatch)}`, {
       timeout: 10000
     }).should('be.visible');
 
-    cy.contains('.creneau-card', 'Terrain T3 (1103)', {
+    cy.contains('.creneau-card', 'Terrain T3', {
       timeout: 10000
     })
       .should('be.visible')
       .within(() => {
+        cy.contains('(1103)').should('not.exist');
         cy.contains('button', 'Utiliser ce créneau pour créer un match').click();
       });
 
@@ -77,7 +85,8 @@ describe('Happy flow full stack Padel Marius', () => {
 
     cy.contains('h2', 'Créer un match').should('be.visible');
 
-    cy.get('select[name="terrainId"]').should('contain', 'Terrain T3 (1103)');
+    cy.get('select[name="terrainId"]')
+      .should('contain', 'Padel Bruxelles — Terrain T3');
     cy.get('input[name="matriculeOrganisateur"]').should('have.value', matricule);
 
     cy.get('input[name="dateHeureDebut"]')
@@ -95,7 +104,8 @@ describe('Happy flow full stack Padel Marius', () => {
     }).should('be.visible');
 
     cy.get('.resultat.match-card').within(() => {
-      cy.contains('T3 (1103)').should('be.visible');
+      cy.contains('T3').should('be.visible');
+      cy.contains('(1103)').should('not.exist');
       cy.contains('Public').should('be.visible');
       cy.contains('À venir').should('be.visible');
     });
@@ -104,17 +114,39 @@ describe('Happy flow full stack Padel Marius', () => {
 
     cy.contains('h2', 'Mes réservations').should('be.visible');
 
-    cy.contains('.reservation-card', 'T3 (1103)', {
-      timeout: 10000
-    })
+    cy.contains(
+      '.reservation-card',
+      `Réservation du ${formaterDateFr(dateMatch)}`,
+      {
+        timeout: 10000
+      }
+    )
       .should('be.visible')
       .within(() => {
-        cy.contains('Padel Bruxelles').should('be.visible');
-        cy.contains(dateMatch).should('be.visible');
-        cy.contains('Organisateur').should('be.visible');
-        cy.contains('En attente de paiement').should('be.visible');
-        cy.contains('À venir').should('be.visible');
-        cy.contains('Public').should('be.visible');
+        cy.contains('Padel Bruxelles')
+          .should('be.visible');
+
+        cy.contains('T3')
+          .should('be.visible');
+
+        cy.contains('1103')
+          .should('not.exist');
+
+        cy.contains(
+          formaterDateFr(dateMatch)
+        ).should('be.visible');
+
+        cy.contains('Organisateur')
+          .should('be.visible');
+
+        cy.contains('En attente de paiement')
+          .should('be.visible');
+
+        cy.contains('À venir')
+          .should('be.visible');
+
+        cy.contains('Public')
+          .should('be.visible');
       });
   });
 });

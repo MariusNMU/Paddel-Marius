@@ -130,7 +130,7 @@ describe('AdminFermeturesFacadeService', () => {
     expect(service.siteId()).toBe(1001);
     expect(service.estAdminGlobal()).toBe(false);
     expect(service.nomSiteSelectionne()).toBe(
-      'Padel Bruxelles (1001)'
+      'Padel Bruxelles'
     );
   });
 

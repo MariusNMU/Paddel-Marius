@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import {
   Component,
   OnInit
@@ -9,7 +10,7 @@ import { AdminStatistiquesFacadeService } from '../../services/admin-statistique
 @Component({
   selector: 'app-admin-statistiques',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [DatePipe, FormsModule, RouterLink],
   providers: [AdminStatistiquesFacadeService],
   template: `
     <section class="page">
@@ -87,7 +88,7 @@ import { AdminStatistiquesFacadeService } from '../../services/admin-statistique
                 track site.siteId
               ) {
                 <option [ngValue]="site.siteId">
-                  {{ site.nom }} ({{ site.siteId }})
+                  {{ site.nom }}
                 </option>
               }
             </select>
@@ -95,7 +96,6 @@ import { AdminStatistiquesFacadeService } from '../../services/admin-statistique
             <div class="bloc-info">
               <strong>Vue limitée à ton site :</strong>
               {{ admin.nomSite || 'Site' }}
-              ({{ admin.siteId }})
             </div>
           }
 
@@ -114,15 +114,15 @@ import { AdminStatistiquesFacadeService } from '../../services/admin-statistique
 
             <p>
               Période :
-              <strong>{{ stats.dateDebut }}</strong>
+              <strong>{{ stats.dateDebut | date:'dd/MM/yyyy' }}</strong>
               →
-              <strong>{{ stats.dateFin }}</strong>
+              <strong>{{ stats.dateFin | date:'dd/MM/yyyy' }}</strong>
             </p>
 
             @if (stats.siteId) {
               <p>
                 Site :
-                <strong>{{ stats.nomSite }} ({{ stats.siteId }})</strong>
+                <strong>{{ stats.nomSite }}</strong>
               </p>
             } @else {
               <p>

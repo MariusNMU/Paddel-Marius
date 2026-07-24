@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -6,7 +7,7 @@ import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitem
 @Component({
   selector: 'app-admin-traitement-veille',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [DatePipe, FormsModule, RouterLink],
   providers: [
     AdminTraitementVeilleFacadeService
   ],
@@ -129,14 +130,14 @@ import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitem
             <p>
               Date de traitement :
               <strong>
-                {{ traitement.dateTraitement }}
+                {{ traitement.dateTraitement | date:'dd/MM/yyyy' }}
               </strong>
             </p>
 
             <p>
               Matches analysés pour le :
               <strong>
-                {{ traitement.dateMatchTraitee }}
+                {{ traitement.dateMatchTraitee | date:'dd/MM/yyyy' }}
               </strong>
             </p>
           </div>
@@ -181,13 +182,13 @@ import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitem
               <tr>
                 <th>Date de traitement</th>
                 <td>
-                  {{ traitement.dateTraitement }}
+                  {{ traitement.dateTraitement | date:'dd/MM/yyyy' }}
                 </td>
               </tr>
               <tr>
                 <th>Date des matches traités</th>
                 <td>
-                  {{ traitement.dateMatchTraitee }}
+                  {{ traitement.dateMatchTraitee | date:'dd/MM/yyyy' }}
                 </td>
               </tr>
               <tr>

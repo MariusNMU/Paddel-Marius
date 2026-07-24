@@ -61,7 +61,7 @@ import { enumLabel } from '../../shared/enum-label.util';
               *ngFor="let site of facade.sites()"
               [ngValue]="site.siteId"
             >
-              {{ site.nom }} ({{ site.siteId }})
+              {{ site.nom }}
             </option>
           </select>
 
@@ -73,7 +73,7 @@ import { enumLabel } from '../../shared/enum-label.util';
             <p class="aide">
               Ton accès est limité aux membres du site
               <strong>
-                {{ admin.nomSite }} ({{ admin.siteId }})
+                {{ admin.nomSite }}
               </strong>.
             </p>
           }
@@ -124,7 +124,6 @@ import { enumLabel } from '../../shared/enum-label.util';
               <td>
                 <span *ngIf="membre.nomSiteRattachement">
                   {{ membre.nomSiteRattachement }}
-                  ({{ membre.siteRattachementId }})
                 </span>
 
                 <span *ngIf="!membre.nomSiteRattachement">

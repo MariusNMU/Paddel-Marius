@@ -62,7 +62,7 @@ import { enumLabel } from '../../shared/enum-label.util';
         >
           <option [ngValue]="null" disabled>Choisir un terrain</option>
           <option *ngFor="let terrain of facade.terrains()" [ngValue]="terrain.terrainId">
-            {{ terrain.nomSite }} ({{ terrain.siteId }}) — Terrain {{ terrain.numeroTerrain }} ({{ terrain.terrainId }})
+            {{ terrain.nomSite }} — Terrain {{ terrain.numeroTerrain }}
           </option>
         </select>
 
@@ -77,8 +77,8 @@ import { enumLabel } from '../../shared/enum-label.util';
         <div class="bloc-info" *ngIf="facade.terrainSelectionne() as terrain">
           <h3>Terrain sélectionné</h3>
           <p>
-            <strong>{{ terrain.nomSite }} ({{ terrain.siteId }})</strong>
-            — Terrain {{ terrain.numeroTerrain }} ({{ terrain.terrainId }})
+            <strong>{{ terrain.nomSite }}</strong>
+            — Terrain {{ terrain.numeroTerrain }}
           </p>
         </div>
 
@@ -125,7 +125,10 @@ import { enumLabel } from '../../shared/enum-label.util';
           <p><strong>Prix total :</strong> {{ facade.parametresMetier()?.prixTotalMatch | number:'1.2-2' }} €</p>
           <p><strong>Participation initiale de l'organisateur :</strong> {{ facade.parametresMetier()?.montantParticipationStandard | number:'1.2-2' }} €</p>
           <p><strong>Type :</strong> {{ enumLabel(facade.modeCreation()) }}</p>
-          <p><strong>Début demandé :</strong> {{ facade.dateHeureDebut() }}</p>
+          <p>
+            <strong>Début demandé :</strong>
+            {{ facade.dateHeureDebut() | date:'dd/MM/yyyy, HH:mm' }}
+          </p>
         </div>
 
         <div class="bloc-info engagement-financier">
@@ -178,11 +181,16 @@ import { enumLabel } from '../../shared/enum-label.util';
         </p>
 
         <div class="resume-grid">
-          <p><strong>ID match</strong><br>{{ matchCree.matchId }}</p>
-          <p><strong>Site</strong><br>{{ matchCree.nomSite }} ({{ matchCree.siteId }})</p>
-          <p><strong>Terrain</strong><br>{{ matchCree.numeroTerrain }} ({{ matchCree.terrainId }})</p>
-          <p><strong>Début</strong><br>{{ matchCree.dateHeureDebut }}</p>
-          <p><strong>Fin</strong><br>{{ matchCree.dateHeureFin }}</p>
+          <p><strong>Site</strong><br>{{ matchCree.nomSite }}</p>
+          <p><strong>Terrain</strong><br>{{ matchCree.numeroTerrain }}</p>
+          <p>
+            <strong>Début</strong><br>
+            {{ matchCree.dateHeureDebut | date:'dd/MM/yyyy, HH:mm' }}
+          </p>
+          <p>
+            <strong>Fin</strong><br>
+            {{ matchCree.dateHeureFin | date:'dd/MM/yyyy, HH:mm' }}
+          </p>
           <p><strong>Mode</strong><br>{{ enumLabel(matchCree.modeCreation) }}</p>
           <p><strong>Visibilité</strong><br>{{ enumLabel(matchCree.visibiliteCourante) }}</p>
           <p><strong>Prix total</strong><br>{{ matchCree.prixTotal | number:'1.2-2' }} €</p>

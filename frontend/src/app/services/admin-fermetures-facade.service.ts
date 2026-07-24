@@ -134,18 +134,15 @@ export class AdminFermeturesFacadeService {
       admin?.roleAdministrateur === 'SITE'
       && admin.siteId === siteId
     ) {
-      return admin.nomSite
-        ? `${admin.nomSite} (${admin.siteId})`
-        : `Site ${admin.siteId}`;
+      return admin.nomSite || 'Site administré';
     }
 
     const site = this.sitesSignal().find(
-      siteActif => siteActif.siteId === Number(siteId)
+      siteActif =>
+        siteActif.siteId === Number(siteId)
     );
 
-    return site
-      ? `${site.nom} (${site.siteId})`
-      : 'Site inconnu';
+    return site?.nom || 'Site inconnu';
   }
 
   creerFermeture(): void {

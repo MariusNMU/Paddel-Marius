@@ -137,12 +137,6 @@ import { enumLabel } from '../../shared/enum-label.util';
 
           <div class="resume-grid">
             <p>
-              <strong>ID membre</strong>
-              <br>
-              {{ soldeActuel.membreId }}
-            </p>
-
-            <p>
               <strong>Matricule</strong>
               <br>
               {{ soldeActuel.matricule }}

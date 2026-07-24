@@ -91,7 +91,7 @@ describe('AdminFermeturesComponent', () => {
       modifierSiteId: vi.fn(),
       modifierMotif: vi.fn(),
       nomSiteSelectionne: vi.fn(
-        () => 'Padel Bruxelles (1001)'
+        () => 'Padel Bruxelles'
       ),
       creerFermeture: vi.fn(),
 
@@ -168,7 +168,8 @@ describe('AdminFermeturesComponent', () => {
     );
 
     expect(contenu).not.toContain('Globale — tous les sites');
-    expect(contenu).toContain('Padel Bruxelles (1001)');
+    expect(contenu).toContain('Padel Bruxelles');
+    expect(contenu).not.toContain('(1001)');
     expect(selectionPortee).toBeNull();
     expect(selectionSite).toBeNull();
   });

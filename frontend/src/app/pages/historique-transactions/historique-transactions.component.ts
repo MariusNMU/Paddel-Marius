@@ -120,9 +120,6 @@ import { enumLabel } from '../../shared/enum-label.util';
               <th>Nature</th>
               <th>Montant</th>
               <th>Statut</th>
-              <th>Match</th>
-              <th>Participation</th>
-              <th>Dette</th>
             </tr>
           </thead>
 
@@ -135,8 +132,8 @@ import { enumLabel } from '../../shared/enum-label.util';
             >
               <td>
                 {{
-                  transaction
-                    .dateHeurePaiement
+                  transaction.dateHeurePaiement
+                    | date:'dd/MM/yyyy, HH:mm'
                 }}
               </td>
 
@@ -163,21 +160,6 @@ import { enumLabel } from '../../shared/enum-label.util';
                       .statutPaiement
                   )
                 }}
-              </td>
-
-              <td>
-                {{ transaction.matchId || '-' }}
-              </td>
-
-              <td>
-                {{
-                  transaction
-                    .participationId || '-'
-                }}
-              </td>
-
-              <td>
-                {{ transaction.detteId || '-' }}
               </td>
             </tr>
           </tbody>

@@ -124,7 +124,7 @@ describe(
         nomSiteSelectionne:
           vi.fn(
             () =>
-              'Padel Bruxelles (1001)'
+              'Padel Bruxelles'
           ),
 
         envoyerDemande: vi.fn(),

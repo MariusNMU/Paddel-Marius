@@ -79,12 +79,12 @@ import { enumLabel } from '../../shared/enum-label.util';
 
         <div *ngIf="facade.dettes().length > 0" class="dettes-grid">
           <article *ngFor="let dette of facade.dettes()" class="dette-card">
-            <h3>Dette {{ dette.detteId }}</h3>
+            <h3>Dette à régler</h3>
 
             <div class="resume-grid">
               <p>
-                <strong>Match</strong><br>
-                {{ dette.matchId }}
+                <strong>Créée le</strong><br>
+                {{ dette.dateCreation | date:'dd/MM/yyyy, HH:mm' }}
               </p>
 
               <p>

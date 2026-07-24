@@ -165,7 +165,13 @@ describe('MesDettesComponent', () => {
       expect(contenu).toContain('G1001');
       expect(contenu).toContain('Marie');
       expect(contenu).toContain('Dupont');
-      expect(contenu).toContain('Dette 4001');
+      expect(contenu).toContain('Dette à régler');
+      expect(contenu).toContain(
+        '01/06/2026, 10:00'
+      );
+      expect(contenu).not.toContain(
+        'Match 3001'
+      );
       expect(contenu).toContain('45.00');
     }
   );

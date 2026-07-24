@@ -140,7 +140,9 @@ describe('DisponibilitesComponent', () => {
 
     const contenu = fixture.nativeElement.textContent;
 
-    expect(contenu).toContain('Terrain T2 (20)');
+    expect(contenu).toContain('Terrain T2');
+    expect(contenu).not.toContain('(20)');
+    expect(contenu).toContain('20/06/2026');
     expect(contenu).toContain('09:00');
     expect(contenu).toContain('10:30');
     expect(contenu).toContain('1h30');

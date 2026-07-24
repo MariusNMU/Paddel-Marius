@@ -226,7 +226,15 @@ describe(
           .toContain('Marie');
 
         expect(contenu)
-          .toContain('Match #3001');
+          .toContain(
+            'Réservation du 20/06/2026, 09:00'
+          );
+
+        expect(contenu)
+          .not.toContain('Match #3001');
+
+        expect(contenu)
+          .not.toContain('(1101)');
 
         expect(contenu)
           .toContain('Padel Bruxelles');

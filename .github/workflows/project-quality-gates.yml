@@ -42,6 +42,35 @@ jobs:
       - name: Run backend tests
         run: ./mvnw --batch-mode clean test
 
+  backend-postgresql-integration:
+    name: Backend PostgreSQL integration tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Make Maven wrapper executable
+        run: chmod +x ./mvnw
+
+      - name: Check Docker
+        run: docker info
+
+      - name: Run PostgreSQL integration tests
+        run: ./mvnw --batch-mode -Ppostgresql-integration clean verify
+
   frontend-quality:
     name: Frontend build and tests
     runs-on: ubuntu-latest

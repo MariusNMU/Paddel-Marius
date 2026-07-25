@@ -71,7 +71,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DirtiesContext(
         classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD
 )
-class ConcurrencePostgreSqlIntegrationTest {
+class ConcurrencePostgreSqlITest {
 
     private static final BigDecimal MONTANT_DETTE =
             PRIX_TOTAL_MATCH.subtract(

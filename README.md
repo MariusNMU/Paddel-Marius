@@ -578,6 +578,8 @@ Le backend est le seul composant qui accède à la DB.
 
 ### 11.1. Tests backend
 
+#### Suite standard H2
+
 Depuis la racine du projet :
 
 ```powershell
@@ -586,7 +588,10 @@ cd backend
 cd ..
 ```
 
-Les tests backend couvrent notamment :
+Cette commande exécute la suite backend standard avec H2. Docker Desktop
+n'est pas nécessaire.
+
+Les tests backend standard couvrent notamment :
 
 ```txt
 controllers
@@ -596,6 +601,25 @@ config
 security
 intégration backend avec MockMvc + H2
 ```
+
+#### Tests PostgreSQL complémentaires
+
+Les tests de concurrence qui nécessitent le comportement réel de PostgreSQL
+sont exécutés séparément avec Testcontainers.
+
+Docker Desktop doit être démarré, puis :
+
+```powershell
+cd backend
+docker info
+.\mvnw.cmd -Ppostgresql-integration clean verify
+cd ..
+```
+
+Cette commande exécute les classes suffixées par `ITest`.
+
+Testcontainers crée un PostgreSQL temporaire et le supprime après les tests.
+Il n'est pas nécessaire de lancer `docker compose up` pour cette validation.
 
 ### 11.2. Build frontend
 
@@ -660,7 +684,8 @@ Cette commande :
 Le dépôt contient un workflow GitHub Actions qui exécute automatiquement les validations principales sur les Pull Requests :
 
 ```txt
-backend tests
+backend tests H2
+backend PostgreSQL integration tests
 frontend build
 frontend tests
 ```
@@ -787,6 +812,21 @@ cd backend
 cd ..
 ```
 
+### Tests PostgreSQL complémentaires
+
+Docker Desktop doit être démarré :
+
+```powershell
+cd backend
+docker info
+.\mvnw.cmd -Ppostgresql-integration clean verify
+cd ..
+```
+
+Cette commande utilise un conteneur PostgreSQL temporaire géré par
+Testcontainers. Elle ne démarre pas la base PostgreSQL Docker Compose de
+démonstration.
+
 ### Frontend
 
 ```powershell
@@ -859,5 +899,3 @@ docker compose stop postgres
 - PostgreSQL Docker est disponible en option.
 - Les données de démonstration sont relatives à la date du jour.
 - Les tests backend, frontend, Cypress et la CI GitHub Actions montrent la stabilité du projet.
-
-

@@ -8,17 +8,21 @@ spring:
     password:
 
   jpa:
-    defer-datasource-initialization: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
         format_sql: true
 
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.yaml
+    contexts:
+      - demo
+
   sql:
     init:
-      mode: always
+      mode: never
 
 server:
   port: 8080

@@ -455,7 +455,9 @@ Base utilisée pour le MVP :
 
 - H2 en mémoire ;
 - démarrage automatique avec le backend ;
-- seed automatique via `data.sql` ;
+- schéma versionné et créé par Liquibase ;
+- validation du schéma par Hibernate avec `ddl-auto=validate` ;
+- seed H2 automatique via le changeset Liquibase `data.sql` ;
 - aucun script SQL manuel à exécuter pour la démo.
 
 User local MVP :

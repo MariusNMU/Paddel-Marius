@@ -7,8 +7,7 @@
 -- On limite les droits publics sur le schéma public.
 REVOKE CREATE ON SCHEMA public FROM PUBLIC;
 
--- User prévu pour les futures migrations ou scripts de schéma.
--- Il n'est pas encore utilisé par Spring Boot dans cette PR.
+-- User utilisé par Liquibase pour créer et faire évoluer le schéma.
 DO
 $$
 BEGIN
@@ -53,7 +52,7 @@ GRANT CONNECT ON DATABASE padel_db TO padel_readonly;
 
 -- Droits sur le schéma public.
 GRANT USAGE, CREATE ON SCHEMA public TO padel_migration;
-GRANT USAGE, CREATE ON SCHEMA public TO padel_app;
+GRANT USAGE ON SCHEMA public TO padel_app;
 GRANT USAGE ON SCHEMA public TO padel_readonly;
 
 -- Droits sur les tables déjà existantes.
@@ -65,15 +64,15 @@ GRANT SELECT ON ALL TABLES IN SCHEMA public TO padel_readonly;
 GRANT USAGE, SELECT, UPDATE ON ALL SEQUENCES IN SCHEMA public TO padel_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO padel_readonly;
 
--- Droits par défaut pour les futures tables créées par padel_app.
-ALTER DEFAULT PRIVILEGES FOR ROLE padel_app IN SCHEMA public
+-- Droits par défaut pour les objets créés par Liquibase.
+ALTER DEFAULT PRIVILEGES FOR ROLE padel_migration IN SCHEMA public
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO padel_app;
 
-ALTER DEFAULT PRIVILEGES FOR ROLE padel_app IN SCHEMA public
+ALTER DEFAULT PRIVILEGES FOR ROLE padel_migration IN SCHEMA public
 GRANT SELECT ON TABLES TO padel_readonly;
 
-ALTER DEFAULT PRIVILEGES FOR ROLE padel_app IN SCHEMA public
+ALTER DEFAULT PRIVILEGES FOR ROLE padel_migration IN SCHEMA public
 GRANT USAGE, SELECT, UPDATE ON SEQUENCES TO padel_app;
 
-ALTER DEFAULT PRIVILEGES FOR ROLE padel_app IN SCHEMA public
+ALTER DEFAULT PRIVILEGES FOR ROLE padel_migration IN SCHEMA public
 GRANT USAGE, SELECT ON SEQUENCES TO padel_readonly;

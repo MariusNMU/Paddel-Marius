@@ -732,8 +732,9 @@ Le frontend ne contient aucun SQL et ne connaît aucun identifiant de base de do
 H2 est utilisé par défaut.
 La base est en mémoire.
 Elle démarre automatiquement avec le backend.
-Le schéma est créé automatiquement.
-Les données sont seedées automatiquement avec data.sql.
+Le schéma est créé par la migration Liquibase initiale.
+Hibernate valide le schéma sans le modifier.
+Les données sont seedées par le changeset Liquibase data.sql.
 Les données sont relatives à la date du jour.
 ```
 
@@ -778,7 +779,6 @@ Limites assumées pour le MVP :
 pas de refresh token
 pas de révocation serveur d'un JWT déjà émis
 secret local de démonstration à remplacer dans un déploiement réel
-pas de migrations Flyway ou Liquibase
 ```
 
 ## 11. Contrat d'erreur API

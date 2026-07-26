@@ -717,13 +717,11 @@ User     : sa
 Password : vide
 ```
 
-Le schéma est créé automatiquement par JPA/Hibernate pour le MVP local.
+Le schéma est créé par Liquibase à partir d'un changelog versionné.
+Hibernate utilise `ddl-auto=validate` et vérifie la correspondance entre le
+schéma et les entités JPA sans modifier les tables.
 
-Le seed H2 est automatique au démarrage backend via :
-
-```txt
-backend/src/main/resources/data.sql
-```
+Le seed H2 est un changeset Liquibase réservé au contexte `demo` et à H2.
 
 Les données de démonstration H2 sont calculées relativement à la date du jour afin de rester utilisables pendant la deuxième session.
 
@@ -801,7 +799,9 @@ padel_app        : user applicatif utilisé par le backend
 padel_readonly   : lecture seule
 ```
 
-Pour le MVP, Hibernate ddl-auto=update reste utilisé afin de simplifier le démarrage. Une séparation stricte entre migration de schéma et accès applicatif reste une amélioration future.
+Liquibase utilise `padel_migration` pour les opérations DDL. Le backend utilise
+`padel_app` pour les opérations métier. Cette séparation empêche l'application
+de créer ou de modifier elle-même les tables.
 
 ---
 

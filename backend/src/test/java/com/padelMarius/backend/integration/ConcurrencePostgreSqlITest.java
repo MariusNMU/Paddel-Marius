@@ -29,9 +29,11 @@ import com.padelMarius.backend.repository.TerrainRepository;
 import com.padelMarius.backend.service.DetteService;
 import com.padelMarius.backend.service.PaiementService;
 import com.padelMarius.backend.service.TraitementEcheanceService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -63,7 +65,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest(properties = {
         "spring.profiles.active=test",
         "spring.sql.init.mode=never",
-        "spring.jpa.hibernate.ddl-auto=create-drop",
+        "spring.jpa.hibernate.ddl-auto=validate",
         "spring.jpa.database-platform="
                 + "org.hibernate.dialect.PostgreSQLDialect"
 })
@@ -142,6 +144,42 @@ class ConcurrencePostgreSqlITest {
 
     @Autowired
     private Clock clock;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @BeforeEach
+    void nettoyerDonneesMetier() {
+        jdbcTemplate.execute("""
+                TRUNCATE TABLE
+                    paiement,
+                    penalite,
+                    dette,
+                    participation,
+                    padel_match,
+                    administrateur,
+                    membre,
+                    fermeture,
+                    horaire_annuel_site,
+                    terrain,
+                    site
+                RESTART IDENTITY CASCADE
+                """);
+    }
+
+    @Test
+    void liquibase_doit_creer_le_schema_postgresql_une_seule_fois() {
+        Integer nombreMigrations = jdbcTemplate.queryForObject(
+                """
+                SELECT COUNT(*)
+                FROM databasechangelog
+                WHERE id = '001-create-initial-schema'
+                """,
+                Integer.class
+        );
+
+        assertThat(nombreMigrations).isEqualTo(1);
+    }
 
     @Test
     void verrou_match_doit_bloquer_une_transaction_concurrente()

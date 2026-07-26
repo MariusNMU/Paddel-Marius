@@ -439,15 +439,17 @@ Password : vide
 
 La base démarre automatiquement avec le backend.
 
-Le schéma est créé automatiquement par JPA/Hibernate pour le MVP local.
+Le schéma est créé automatiquement par Liquibase. Hibernate utilise
+`ddl-auto=validate` pour contrôler sa cohérence avec les entités JPA.
 
-Les données de démonstration sont chargées automatiquement via :
+Les données de démonstration H2 sont chargées par le changeset Liquibase.
+
+Changelog et migration initiale :
 
 ```txt
-backend/src/main/resources/data.sql
+backend/src/main/resources/db/changelog/db.changelog-master.yaml
+backend/src/main/resources/db/changelog/changes/001-create-initial-schema.sql
 ```
-
-Aucun script SQL manuel ne doit être exécuté pour lancer la démo H2.
 
 ---
 

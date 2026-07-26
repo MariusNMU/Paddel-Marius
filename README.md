@@ -125,6 +125,10 @@ Paddel-Marius/
       application.yml
       application.properties
       application-postgres.properties
+      db/changelog/
+        db.changelog-master.yaml
+        changes/
+          001-create-initial-schema.sql
       data.sql
 
     src/test/java/com/padelMarius/backend/
@@ -481,15 +485,24 @@ Password : vide
 
 La base démarre automatiquement avec le backend.
 
-Le schéma est créé automatiquement par JPA/Hibernate pour le MVP local.
+Le schéma est créé automatiquement par Liquibase. Hibernate utilise
+`ddl-auto=validate` pour vérifier que le schéma correspond aux entités JPA,
+sans modifier la structure de la base.
 
-Les données de démonstration sont chargées automatiquement via :
+Les données de démonstration H2 sont chargées par le changeset Liquibase :
 
 ```txt
 backend/src/main/resources/data.sql
 ```
 
 Aucun script SQL manuel n'est nécessaire pour lancer la démonstration locale avec H2.
+
+Le changelog principal et la migration initiale se trouvent dans :
+
+```txt
+backend/src/main/resources/db/changelog/db.changelog-master.yaml
+backend/src/main/resources/db/changelog/changes/001-create-initial-schema.sql
+```
 
 ### 10.2. Artefacts DB
 
@@ -523,6 +536,9 @@ postgres-demo-seed.md : explication du seed PostgreSQL optionnel
 ### 10.3. PostgreSQL Docker optionnel
 
 H2 reste la configuration par défaut.
+
+Liquibase crée le schéma avec `padel_migration`, puis le backend et le seeder
+utilisent `padel_app`.
 
 Une base PostgreSQL locale peut aussi être lancée avec Docker :
 

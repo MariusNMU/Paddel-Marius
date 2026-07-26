@@ -1,14 +1,16 @@
+--liquibase formatted sql
+
+--changeset MariusNMU:002-load-h2-demo-data dbms:h2 context:@demo splitStatements:true endDelimiter:;
 -- ============================================================
--- Seed de démonstration automatique - H2 MVP
+-- Migration des données de démonstration - H2 MVP
 -- Projet : Padel Marius
--- Exécuté automatiquement au démarrage backend.
+-- Exécutée par Liquibase au démarrage backend avec le contexte demo.
 --
 -- Les dates métier sont relatives à CURRENT_DATE pour rester
 -- utilisables pendant la session d’août et après.
 --
 -- H2 uniquement :
--- PostgreSQL n’exécute pas ce fichier car le profil postgres
--- désactive spring.sql.init.mode.
+-- le filtre Liquibase dbms:h2 empêche son exécution sur PostgreSQL.
 -- ============================================================
 
 -- Sites
@@ -364,3 +366,15 @@ INSERT INTO paiement (
           3304,
           NULL
       );
+
+--rollback DELETE FROM paiement;
+--rollback DELETE FROM penalite;
+--rollback DELETE FROM dette;
+--rollback DELETE FROM participation;
+--rollback DELETE FROM padel_match;
+--rollback DELETE FROM administrateur;
+--rollback DELETE FROM membre;
+--rollback DELETE FROM fermeture;
+--rollback DELETE FROM horaire_annuel_site;
+--rollback DELETE FROM terrain;
+--rollback DELETE FROM site;

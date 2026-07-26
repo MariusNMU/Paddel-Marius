@@ -135,9 +135,14 @@ Droits de création / modification du schéma
 
 ### Utilisation dans le MVP
 
-Dans le MVP actuel, le schéma H2 est créé automatiquement par JPA/Hibernate au démarrage.
+`padel_migration` est utilisé par Liquibase pour les opérations de création et
+d’évolution du schéma PostgreSQL.
 
-Pour une version plus stricte, `padel_migration` serait utilisé par un outil de migration comme Liquibase ou Flyway.
+Le profil PostgreSQL fournit à Liquibase les identifiants de
+`padel_migration`. Hibernate utilise ensuite `ddl-auto=validate` avec
+`padel_app` et ne modifie pas le schéma.
+
+Sur H2, Liquibase utilise la connexion locale `sa`.
 
 Point à expliquer à l’oral :
 
@@ -353,7 +358,7 @@ Rôle :
 |---|---|---|---|
 | `sa` | User H2 local MVP | Droits H2 locaux | Backend en démo H2 |
 | `padel_admin` | Initialisation Docker | Droits élevés locaux | Docker PostgreSQL |
-| `padel_migration` | Création / évolution du schéma | DDL / migrations | Outil de migration futur |
+| `padel_migration` | Création / évolution du schéma | DDL / migrations | Liquibase |
 | `padel_app` | User applicatif backend | CRUD sur tables métier | Backend Spring Boot |
 | `padel_readonly` | Lecture seule | SELECT | Audit / reporting |
 

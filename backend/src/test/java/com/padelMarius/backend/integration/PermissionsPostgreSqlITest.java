@@ -1,5 +1,6 @@
 package com.padelMarius.backend.integration;
 
+import com.padelMarius.backend.config.PostgresDemoDataSeeder;
 import com.padelMarius.backend.entity.Site;
 import com.padelMarius.backend.repository.SiteRepository;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -28,7 +30,7 @@ import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
 @SpringBootTest(
         webEnvironment =
-                SpringBootTest.WebEnvironment.NONE,
+                SpringBootTest.WebEnvironment.MOCK,
         properties = {
                 "padel.demo.enabled=false",
                 "spring.sql.init.mode=never",
@@ -122,6 +124,9 @@ class PermissionsPostgreSqlITest {
                 () -> MIGRATION_PASSWORD
         );
     }
+
+    @MockitoBean
+    private PostgresDemoDataSeeder postgresDemoDataSeeder;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;

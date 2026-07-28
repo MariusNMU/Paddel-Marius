@@ -1,13 +1,20 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { CreneauDisponibiliteResponse } from '../../models/disponibilite.model';
 import { DisponibilitesFacadeService } from '../../services/disponibilites-facade.service';
 
 @Component({
   selector: 'app-disponibilites',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    MatCardModule
+  ],
   providers: [DisponibilitesFacadeService],
   template: `
     <section class="page">
@@ -40,14 +47,29 @@ import { DisponibilitesFacadeService } from '../../services/disponibilites-facad
           "
           class="sites-api"
         >
-          <article
+          <mat-card
             *ngFor="let site of facade.sites()"
+            appearance="outlined"
             class="site-api-card"
           >
-            <h4>{{ site.nom }}</h4>
-            <p><strong>Code :</strong> {{ site.code }}</p>
-            <p><strong>Adresse :</strong> {{ site.adresse }}</p>
-          </article>
+            <mat-card-header>
+              <mat-card-title>
+                {{ site.nom }}
+              </mat-card-title>
+            </mat-card-header>
+
+            <mat-card-content>
+              <p>
+                <strong>Code :</strong>
+                {{ site.code }}
+              </p>
+
+              <p>
+                <strong>Adresse :</strong>
+                {{ site.adresse }}
+              </p>
+            </mat-card-content>
+          </mat-card>
         </div>
 
         <p class="aide">
@@ -118,6 +140,7 @@ import { DisponibilitesFacadeService } from '../../services/disponibilites-facad
         />
 
         <button
+          mat-flat-button
           type="submit"
           [disabled]="
             facade.chargementRecherche()
@@ -158,48 +181,75 @@ import { DisponibilitesFacadeService } from '../../services/disponibilites-facad
           *ngIf="!disponibilites.ferme && disponibilites.creneaux.length > 0"
           class="creneaux-grid"
         >
-          <article
-            *ngFor="let creneau of disponibilites.creneaux"
+          <mat-card
+            *ngFor="
+              let creneau
+              of disponibilites.creneaux
+            "
+            appearance="outlined"
             class="creneau-card"
           >
-            <h4>
-              Terrain {{ creneau.numeroTerrain }}
-            </h4>
+            <mat-card-header>
+              <mat-card-title>
+                Terrain
+                {{ creneau.numeroTerrain }}
+              </mat-card-title>
+            </mat-card-header>
 
-            <p>
-              <strong>Début :</strong>
-              {{ creneau.dateHeureDebut | date:'HH:mm' }}
-            </p>
-
-            <p>
-              <strong>Fin :</strong>
-              {{ creneau.dateHeureFin | date:'HH:mm' }}
-            </p>
-
-            <p>
-              <strong>Durée :</strong>
-              {{ facade.dureeMatchLibelle() }}
-            </p>
-
-            @if (facade.peutCreerMatchSurSiteSelectionne()) {
-              <button
-                type="button"
-                (click)="allerCreerMatch(creneau)"
-              >
-                Utiliser ce créneau pour créer un match
-              </button>
-            } @else {
-              <p class="action-indisponible">
-                Un membre SITE ne peut réserver que sur son site de rattachement.
+            <mat-card-content>
+              <p>
+                <strong>Début :</strong>
+                {{
+                  creneau.dateHeureDebut
+                    | date:'HH:mm'
+                }}
               </p>
+
+              <p>
+                <strong>Fin :</strong>
+                {{
+                  creneau.dateHeureFin
+                    | date:'HH:mm'
+                }}
+              </p>
+
+              <p>
+                <strong>Durée :</strong>
+                {{ facade.dureeMatchLibelle() }}
+              </p>
+
+              @if (
+                !facade
+                  .peutCreerMatchSurSiteSelectionne()
+              ) {
+                <p class="action-indisponible">
+                  Un membre SITE ne peut réserver
+                  que sur son site de rattachement.
+                </p>
+              }
+            </mat-card-content>
+
+            @if (
+              facade
+                .peutCreerMatchSurSiteSelectionne()
+            ) {
+              <mat-card-actions align="start">
+                <button
+                  mat-flat-button
+                  type="button"
+                  (click)="allerCreerMatch(creneau)"
+                >
+                  Utiliser ce créneau pour créer
+                  un match
+                </button>
+              </mat-card-actions>
             }
-          </article>
+          </mat-card>
         </div>
       </div>
     </section>
   `,
   styles: [`
-
     .sites-api {
       display: grid;
       grid-template-columns:
@@ -216,25 +266,28 @@ import { DisponibilitesFacadeService } from '../../services/disponibilites-facad
     .site-api-card {
       box-sizing: border-box;
       width: 100%;
+      min-width: 0;
       height: 100%;
-      border: 1px solid #bfdbfe;
-      border-radius: 10px;
-      background: #ffffff;
-      padding: 14px;
     }
 
-    .site-api-card h4 {
-      margin: 0 0 10px;
+    .site-api-card mat-card-title {
       color: #003b95;
+      font-size: 1.05rem;
+      line-height: 1.35;
     }
 
-    .site-api-card p {
+    .site-api-card mat-card-content {
+      padding-top: 10px;
+    }
+
+    .site-api-card mat-card-content > p {
       margin: 6px 0;
     }
 
     .jours-rapides {
       display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
+      grid-template-columns:
+        repeat(7, minmax(0, 1fr));
       gap: 8px;
     }
 
@@ -258,7 +311,11 @@ import { DisponibilitesFacadeService } from '../../services/disponibilites-facad
 
     @media (max-width: 1100px) {
       .jours-rapides {
-        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        grid-template-columns:
+          repeat(
+            auto-fit,
+            minmax(100px, 1fr)
+          );
       }
     }
 
@@ -278,42 +335,39 @@ import { DisponibilitesFacadeService } from '../../services/disponibilites-facad
 
     .creneau-card {
       box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
       width: 100%;
       min-width: 0;
       height: 100%;
-      border: 1px solid #bfdbfe;
-      border-radius: 12px;
-      background: #ffffff;
-      padding: 16px;
-      box-shadow:
-        0 4px 12px
-        rgba(15, 23, 42, 0.06);
     }
 
-    .creneau-card h4 {
-      margin: 0 0 12px;
+    .creneau-card mat-card-title {
       color: #003b95;
+      font-size: 1.1rem;
+      line-height: 1.35;
     }
 
-    .creneau-card p {
+    .creneau-card mat-card-content {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      padding-top: 12px;
+    }
+
+    .creneau-card mat-card-content > p {
       margin: 8px 0;
     }
 
+    .creneau-card mat-card-actions {
+      padding-top: 0;
+    }
+
     .action-indisponible {
-      margin-top: 12px;
+      margin-top: auto;
       padding: 10px;
       border-radius: 8px;
       background: #f1f5f9;
       color: #475569;
       font-weight: 600;
-    }
-
-    .creneau-card button,
-    .creneau-card .action-indisponible {
-      align-self: flex-start;
-      margin-top: auto;
     }
 
     @media (max-width: 640px) {

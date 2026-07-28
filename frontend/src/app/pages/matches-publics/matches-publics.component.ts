@@ -1,13 +1,20 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { MatchPublicResponse } from '../../models/match-public.model';
 import { MatchesPublicsFacadeService } from '../../services/matches-publics-facade.service';
 
 @Component({
   selector: 'app-matches-publics',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    MatCardModule
+  ],
   providers: [MatchesPublicsFacadeService],
   template: `
     <section class="page">
@@ -110,6 +117,7 @@ import { MatchesPublicsFacadeService } from '../../services/matches-publics-faca
         />
 
         <button
+          mat-flat-button
           type="submit"
           [disabled]="
             facade.chargementRecherche()
@@ -169,78 +177,104 @@ import { MatchesPublicsFacadeService } from '../../services/matches-publics-faca
 
       @if (facade.matches().length > 0) {
         <div class="matches-grid">
-          <article
+          <mat-card
             *ngFor="let match of facade.matches()"
+            appearance="outlined"
             class="match-card"
           >
-            <h3>
-              {{ match.nomSite }} — Terrain
-              {{ match.numeroTerrain }}
-            </h3>
+            <mat-card-header>
+              <mat-card-title>
+                {{ match.nomSite }} — Terrain
+                {{ match.numeroTerrain }}
+              </mat-card-title>
+            </mat-card-header>
 
-            <p>
-              <strong>Début :</strong>
-              {{ match.dateHeureDebut | date:'dd/MM/yyyy, HH:mm' }}
-            </p>
-            <p>
-              <strong>Fin :</strong>
-              {{ match.dateHeureFin | date:'dd/MM/yyyy, HH:mm' }}
-            </p>
-            <p>
-              <strong>Participants :</strong>
-              {{ match.nombreParticipantsActifs }} /
-              {{
-                facade.parametresMetier()
-                  ?.nombreJoueursMaximum
-              }}
-            </p>
-            <p>
-              <strong>Places disponibles :</strong>
-              {{ match.placesDisponibles }}
-            </p>
-            <p>
-              <strong>Prix total :</strong>
-              {{ match.prixTotal | number:'1.2-2' }} €
-            </p>
-            <p>
-              <strong>Ta place :</strong>
-              {{
-                match.montantParticipation
-                  | number:'1.2-2'
-              }} €
-            </p>
-
-            @if (match.peutRejoindre) {
-              <button
-                type="button"
-                [disabled]="
-                  facade.chargementPaiement()
-                  || !facade.joueurConnecte()
-                "
-                (click)="rejoindreEtPayer(match)"
-              >
+            <mat-card-content>
+              <p>
+                <strong>Début :</strong>
                 {{
-                  facade.chargementPaiement()
-                    ? 'Paiement...'
-                    : (
-                        'Rejoindre et payer '
-                        + (
-                          match.montantParticipation
-                            | number:'1.2-2'
-                        )
-                        + ' €'
-                      )
-                }}
-              </button>
-            } @else {
-              <p class="action-indisponible">
-                {{
-                  match.motifNonEligibilite
-                    || 'Ce match ne peut pas être rejoint.'
+                  match.dateHeureDebut
+                    | date:'dd/MM/yyyy, HH:mm'
                 }}
               </p>
+
+              <p>
+                <strong>Fin :</strong>
+                {{
+                  match.dateHeureFin
+                    | date:'dd/MM/yyyy, HH:mm'
+                }}
+              </p>
+
+              <p>
+                <strong>Participants :</strong>
+                {{ match.nombreParticipantsActifs }} /
+                {{
+                  facade.parametresMetier()
+                    ?.nombreJoueursMaximum
+                }}
+              </p>
+
+              <p>
+                <strong>Places disponibles :</strong>
+                {{ match.placesDisponibles }}
+              </p>
+
+              <p>
+                <strong>Prix total :</strong>
+                {{
+                  match.prixTotal
+                    | number:'1.2-2'
+                }}
+                €
+              </p>
+
+              <p>
+                <strong>Ta place :</strong>
+                {{
+                  match.montantParticipation
+                    | number:'1.2-2'
+                }}
+                €
+              </p>
+
+              @if (!match.peutRejoindre) {
+                <p class="action-indisponible">
+                  {{
+                    match.motifNonEligibilite
+                      || 'Ce match ne peut pas être rejoint.'
+                  }}
+                </p>
+              }
+            </mat-card-content>
+
+            @if (match.peutRejoindre) {
+              <mat-card-actions align="start">
+                <button
+                  mat-flat-button
+                  type="button"
+                  [disabled]="
+                    facade.chargementPaiement()
+                    || !facade.joueurConnecte()
+                  "
+                  (click)="rejoindreEtPayer(match)"
+                >
+                  {{
+                    facade.chargementPaiement()
+                      ? 'Paiement...'
+                      : (
+                          'Rejoindre et payer '
+                          + (
+                            match.montantParticipation
+                              | number:'1.2-2'
+                          )
+                          + ' €'
+                        )
+                  }}
+                </button>
+              </mat-card-actions>
             }
-          </article>
+          </mat-card>
         </div>
       }
     </section>
@@ -248,7 +282,8 @@ import { MatchesPublicsFacadeService } from '../../services/matches-publics-faca
   styles: [`
     .jours-rapides {
       display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
+      grid-template-columns:
+        repeat(7, minmax(0, 1fr));
       gap: 8px;
     }
 
@@ -273,7 +308,10 @@ import { MatchesPublicsFacadeService } from '../../services/matches-publics-faca
     @media (max-width: 1100px) {
       .jours-rapides {
         grid-template-columns:
-          repeat(auto-fit, minmax(100px, 1fr));
+          repeat(
+            auto-fit,
+            minmax(100px, 1fr)
+          );
       }
     }
 
@@ -293,37 +331,34 @@ import { MatchesPublicsFacadeService } from '../../services/matches-publics-faca
 
     .match-card {
       box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
       width: 100%;
       min-width: 0;
       height: 100%;
-      border: 1px solid #bfdbfe;
-      border-radius: 12px;
-      background: #ffffff;
-      padding: 16px;
-      box-shadow:
-        0 4px 12px
-        rgba(15, 23, 42, 0.06);
     }
 
-    .match-card h3 {
-      margin: 0 0 12px;
+    .match-card mat-card-title {
       color: #003b95;
+      font-size: 1.1rem;
+      line-height: 1.35;
     }
 
-    .match-card p {
+    .match-card mat-card-content {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      padding-top: 12px;
+    }
+
+    .match-card mat-card-content > p {
       margin: 8px 0;
     }
 
-    .match-card button,
-    .match-card .action-indisponible {
-      align-self: flex-start;
-      margin-top: auto;
+    .match-card mat-card-actions {
+      padding-top: 0;
     }
 
     .action-indisponible {
-      margin-top: 12px;
+      margin-top: auto;
       padding: 10px;
       border-radius: 8px;
       background: #f1f5f9;
@@ -334,7 +369,10 @@ import { MatchesPublicsFacadeService } from '../../services/matches-publics-faca
     .resume-grid {
       display: grid;
       grid-template-columns:
-        repeat(auto-fit, minmax(160px, 1fr));
+        repeat(
+          auto-fit,
+          minmax(160px, 1fr)
+        );
       gap: 12px;
       margin-top: 16px;
     }

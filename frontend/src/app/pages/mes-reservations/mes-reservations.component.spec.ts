@@ -247,7 +247,7 @@ describe(
     );
 
     it(
-      'doit afficher une carte distincte par réservation',
+      'doit afficher trois réservations dans trois cartes Material distinctes',
       () => {
         facade.joueur.set(joueur);
 
@@ -284,7 +284,7 @@ describe(
         const cartes =
           fixture.nativeElement
             .querySelectorAll(
-              '.reservation-card'
+              'mat-card.reservation-card'
             );
 
         expect(grille).toBeTruthy();

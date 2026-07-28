@@ -3,6 +3,8 @@ import {
   Component,
   OnInit
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { RouterLink } from '@angular/router';
 import { MesReservationsFacadeService } from '../../services/mes-reservations-facade.service';
 import { enumLabel } from '../../shared/enum-label.util';
@@ -12,6 +14,8 @@ import { enumLabel } from '../../shared/enum-label.util';
   standalone: true,
   imports: [
     CommonModule,
+    MatButtonModule,
+    MatCardModule,
     RouterLink
   ],
   providers: [
@@ -72,6 +76,7 @@ import { enumLabel } from '../../shared/enum-label.util';
         </div>
 
         <button
+          mat-flat-button
           type="button"
           (click)="
             facade.chargerReservations()
@@ -163,176 +168,201 @@ import { enumLabel } from '../../shared/enum-label.util';
         facade.reservations().length > 0
       ) {
         <div class="reservations-grid">
-          <article
+          <mat-card
             *ngFor="
               let reservation
               of facade.reservations()
             "
+            appearance="outlined"
             class="reservation-card"
             [class.annulee]="
               reservation.etatCycle
                 === 'ANNULE'
             "
           >
-            <h3>
-              Réservation du
-              {{ reservation.dateHeureDebut | date:'dd/MM/yyyy, HH:mm' }}
-            </h3>
-
-            <p>
-              <strong>Site :</strong>
-              {{ reservation.nomSite }}
-            </p>
-
-            <p>
-              <strong>Terrain :</strong>
-              {{ reservation.numeroTerrain }}
-            </p>
-
-            <p>
-              <strong>Début :</strong>
-              {{ reservation.dateHeureDebut | date:'dd/MM/yyyy, HH:mm' }}
-            </p>
-
-            <p>
-              <strong>Fin :</strong>
-              {{ reservation.dateHeureFin | date:'dd/MM/yyyy, HH:mm' }}
-            </p>
-
-            <div class="resume-grid">
-              <p>
-                <strong>Rôle</strong>
-                <br>
+            <mat-card-header>
+              <mat-card-title>
+                Réservation du
                 {{
-                  enumLabel(
-                    reservation
-                      .roleParticipation
-                  )
+                  reservation.dateHeureDebut
+                    | date:'dd/MM/yyyy, HH:mm'
+                }}
+              </mat-card-title>
+            </mat-card-header>
+
+            <mat-card-content>
+              <p>
+                <strong>Site :</strong>
+                {{ reservation.nomSite }}
+              </p>
+
+              <p>
+                <strong>Terrain :</strong>
+                {{ reservation.numeroTerrain }}
+              </p>
+
+              <p>
+                <strong>Début :</strong>
+                {{
+                  reservation.dateHeureDebut
+                    | date:'dd/MM/yyyy, HH:mm'
                 }}
               </p>
 
               <p>
-                <strong>Entrée</strong>
-                <br>
+                <strong>Fin :</strong>
                 {{
-                  enumLabel(
-                    reservation.modeEntree
-                  )
+                  reservation.dateHeureFin
+                    | date:'dd/MM/yyyy, HH:mm'
                 }}
               </p>
 
-              <p>
-                <strong>Participation</strong>
-                <br>
-                {{
-                  reservation.etatCycle
-                    === 'ANNULE'
-                    ? 'Annulée'
-                    : enumLabel(
-                        reservation
-                          .statutParticipation
-                      )
-                }}
-              </p>
-
-              <p>
-                <strong>Match</strong>
-                <br>
-                {{
-                  enumLabel(
-                    reservation.etatCycle
-                  )
-                }}
-              </p>
-
-              <p>
-                <strong>Mode</strong>
-                <br>
-                {{
-                  enumLabel(
-                    reservation.modeCreation
-                  )
-                }}
-              </p>
-
-              <p>
-                <strong>Visibilité</strong>
-                <br>
-                {{
-                  enumLabel(
-                    reservation
-                      .visibiliteCourante
-                  )
-                }}
-              </p>
-
-              <p>
-                <strong>Prix total</strong>
-                <br>
-                {{
-                  reservation.prixTotal
-                    | number:'1.2-2'
-                }}
-                €
-              </p>
-            </div>
-
-            @if (
-              reservation.etatCycle
-                === 'ANNULE'
-            ) {
-              <p class="badge-attention">
-                Match annulé à la suite d'une
-                fermeture administrative.
-                Aucun paiement n'est requis
-                pour cette réservation.
-              </p>
-            } @else if (
-              reservation.statutParticipation
-                === 'EN_ATTENTE_PAIEMENT'
-            ) {
-              <p class="badge-attention">
-                Participation en attente de
-                paiement.
-              </p>
-
-              <button
-                type="button"
-                (click)="
-                  facade
-                    .payerParticipation(
+              <div class="resume-grid">
+                <p>
+                  <strong>Rôle</strong>
+                  <br>
+                  {{
+                    enumLabel(
                       reservation
+                        .roleParticipation
                     )
-                "
-                [disabled]="
-                  facade
-                    .paiementEnCoursParticipationId()
-                    !== null
-                "
-              >
-                {{
-                  facade
-                    .paiementEnCoursParticipationId()
-                    === reservation
-                      .participationId
-                    ? 'Paiement...'
-                    : 'Payer ma participation'
-                }}
-              </button>
-            }
+                  }}
+                </p>
+
+                <p>
+                  <strong>Entrée</strong>
+                  <br>
+                  {{
+                    enumLabel(
+                      reservation.modeEntree
+                    )
+                  }}
+                </p>
+
+                <p>
+                  <strong>Participation</strong>
+                  <br>
+                  {{
+                    reservation.etatCycle
+                      === 'ANNULE'
+                      ? 'Annulée'
+                      : enumLabel(
+                          reservation
+                            .statutParticipation
+                        )
+                  }}
+                </p>
+
+                <p>
+                  <strong>Match</strong>
+                  <br>
+                  {{
+                    enumLabel(
+                      reservation.etatCycle
+                    )
+                  }}
+                </p>
+
+                <p>
+                  <strong>Mode</strong>
+                  <br>
+                  {{
+                    enumLabel(
+                      reservation.modeCreation
+                    )
+                  }}
+                </p>
+
+                <p>
+                  <strong>Visibilité</strong>
+                  <br>
+                  {{
+                    enumLabel(
+                      reservation
+                        .visibiliteCourante
+                    )
+                  }}
+                </p>
+
+                <p>
+                  <strong>Prix total</strong>
+                  <br>
+                  {{
+                    reservation.prixTotal
+                      | number:'1.2-2'
+                  }}
+                  €
+                </p>
+              </div>
+
+              @if (
+                reservation.etatCycle
+                  === 'ANNULE'
+              ) {
+                <p class="badge-attention">
+                  Match annulé à la suite d'une
+                  fermeture administrative.
+                  Aucun paiement n'est requis
+                  pour cette réservation.
+                </p>
+              } @else if (
+                reservation.statutParticipation
+                  === 'EN_ATTENTE_PAIEMENT'
+              ) {
+                <p class="badge-attention">
+                  Participation en attente de
+                  paiement.
+                </p>
+              }
+
+              @if (
+                reservation.etatCycle
+                  !== 'ANNULE'
+                && reservation
+                  .statutParticipation
+                  === 'CONFIRMEE'
+              ) {
+                <p class="badge-ok">
+                  Participation confirmée.
+                </p>
+              }
+            </mat-card-content>
 
             @if (
               reservation.etatCycle
                 !== 'ANNULE'
               && reservation
                 .statutParticipation
-                === 'CONFIRMEE'
+                === 'EN_ATTENTE_PAIEMENT'
             ) {
-              <p class="badge-ok">
-                Participation confirmée.
-              </p>
+              <mat-card-actions align="start">
+                <button
+                  mat-flat-button
+                  type="button"
+                  (click)="
+                    facade
+                      .payerParticipation(
+                        reservation
+                      )
+                  "
+                  [disabled]="
+                    facade
+                      .paiementEnCoursParticipationId()
+                      !== null
+                  "
+                >
+                  {{
+                    facade
+                      .paiementEnCoursParticipationId()
+                      === reservation
+                        .participationId
+                      ? 'Paiement...'
+                      : 'Payer ma participation'
+                  }}
+                </button>
+              </mat-card-actions>
             }
-          </article>
+          </mat-card>
         </div>
       }
     </section>
@@ -354,18 +384,9 @@ import { enumLabel } from '../../shared/enum-label.util';
 
     .reservation-card {
       box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
       width: 100%;
       min-width: 0;
       height: 100%;
-      border: 1px solid #bfdbfe;
-      border-radius: 12px;
-      background: #ffffff;
-      padding: 16px;
-      box-shadow:
-        0 4px 12px
-        rgba(15, 23, 42, 0.06);
     }
 
     .reservation-card.annulee {
@@ -373,18 +394,25 @@ import { enumLabel } from '../../shared/enum-label.util';
       background: #fff7f7;
     }
 
-    .reservation-card h3 {
-      margin: 0 0 12px;
+    .reservation-card mat-card-title {
       color: #003b95;
+      font-size: 1.1rem;
+      line-height: 1.35;
     }
 
-    .reservation-card p {
+    .reservation-card mat-card-content {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      padding-top: 12px;
+    }
+
+    .reservation-card mat-card-content > p {
       margin: 8px 0;
     }
 
-    .reservation-card > button {
-      align-self: flex-start;
-      margin-top: auto;
+    .reservation-card mat-card-actions {
+      padding-top: 0;
     }
 
     .resume-grid {

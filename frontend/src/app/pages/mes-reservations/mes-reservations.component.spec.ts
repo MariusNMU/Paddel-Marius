@@ -247,6 +247,52 @@ describe(
     );
 
     it(
+      'doit afficher une carte distincte par réservation',
+      () => {
+        facade.joueur.set(joueur);
+
+        facade.reservations.set([
+          reservation,
+          {
+            ...reservation,
+            participationId: 3102,
+            matchId: 3002,
+            dateHeureDebut:
+              '2026-06-21T11:00:00',
+            dateHeureFin:
+              '2026-06-21T12:30:00'
+          },
+          {
+            ...reservation,
+            participationId: 3103,
+            matchId: 3003,
+            dateHeureDebut:
+              '2026-06-22T14:00:00',
+            dateHeureFin:
+              '2026-06-22T15:30:00'
+          }
+        ]);
+
+        fixture.detectChanges();
+
+        const grille =
+          fixture.nativeElement
+            .querySelector(
+              '.reservations-grid'
+            );
+
+        const cartes =
+          fixture.nativeElement
+            .querySelectorAll(
+              '.reservation-card'
+            );
+
+        expect(grille).toBeTruthy();
+        expect(cartes).toHaveLength(3);
+      }
+    );
+
+    it(
       'doit afficher une annulation administrative sans demander de paiement',
       () => {
         facade.joueur.set(joueur);

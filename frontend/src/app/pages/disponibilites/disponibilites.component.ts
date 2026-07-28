@@ -202,12 +202,21 @@ import { DisponibilitesFacadeService } from '../../services/disponibilites-facad
 
     .sites-api {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      grid-template-columns:
+        repeat(
+          auto-fill,
+          minmax(260px, 320px)
+        );
+      justify-content: start;
+      align-items: stretch;
       gap: 12px;
       margin-top: 12px;
     }
 
     .site-api-card {
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
       border: 1px solid #bfdbfe;
       border-radius: 10px;
       background: #ffffff;
@@ -255,17 +264,32 @@ import { DisponibilitesFacadeService } from '../../services/disponibilites-facad
 
     .creneaux-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      gap: 16px;
+      grid-template-columns:
+        repeat(
+          auto-fill,
+          minmax(320px, 360px)
+        );
+      grid-auto-rows: 1fr;
+      justify-content: start;
+      align-items: stretch;
+      gap: 20px;
       margin-top: 18px;
     }
 
     .creneau-card {
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      min-width: 0;
+      height: 100%;
       border: 1px solid #bfdbfe;
       border-radius: 12px;
       background: #ffffff;
       padding: 16px;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+      box-shadow:
+        0 4px 12px
+        rgba(15, 23, 42, 0.06);
     }
 
     .creneau-card h4 {
@@ -286,8 +310,18 @@ import { DisponibilitesFacadeService } from '../../services/disponibilites-facad
       font-weight: 600;
     }
 
-    .creneau-card button {
-      margin-top: 12px;
+    .creneau-card button,
+    .creneau-card .action-indisponible {
+      align-self: flex-start;
+      margin-top: auto;
+    }
+
+    @media (max-width: 640px) {
+      .sites-api,
+      .creneaux-grid {
+        grid-template-columns:
+          minmax(0, 1fr);
+      }
     }
   `]
 })

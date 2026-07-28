@@ -280,17 +280,31 @@ import { MatchesPublicsFacadeService } from '../../services/matches-publics-faca
     .matches-grid {
       display: grid;
       grid-template-columns:
-        repeat(auto-fit, minmax(260px, 1fr));
-      gap: 16px;
+        repeat(
+          auto-fill,
+          minmax(320px, 360px)
+        );
+      grid-auto-rows: 1fr;
+      justify-content: start;
+      align-items: stretch;
+      gap: 20px;
       margin-top: 18px;
     }
 
     .match-card {
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      min-width: 0;
+      height: 100%;
       border: 1px solid #bfdbfe;
       border-radius: 12px;
       background: #ffffff;
       padding: 16px;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+      box-shadow:
+        0 4px 12px
+        rgba(15, 23, 42, 0.06);
     }
 
     .match-card h3 {
@@ -302,8 +316,10 @@ import { MatchesPublicsFacadeService } from '../../services/matches-publics-faca
       margin: 8px 0;
     }
 
-    .match-card button {
-      margin-top: 12px;
+    .match-card button,
+    .match-card .action-indisponible {
+      align-self: flex-start;
+      margin-top: auto;
     }
 
     .action-indisponible {
@@ -329,6 +345,13 @@ import { MatchesPublicsFacadeService } from '../../services/matches-publics-faca
       border: 1px solid #bfdbfe;
       border-radius: 10px;
       background: #ffffff;
+    }
+
+    @media (max-width: 640px) {
+      .matches-grid {
+        grid-template-columns:
+          minmax(0, 1fr);
+      }
     }
   `]
 })

@@ -342,14 +342,23 @@ import { enumLabel } from '../../shared/enum-label.util';
       display: grid;
       grid-template-columns:
         repeat(
-          auto-fit,
-          minmax(280px, 1fr)
+          auto-fill,
+          minmax(320px, 360px)
         );
-      gap: 16px;
+      grid-auto-rows: 1fr;
+      justify-content: start;
+      align-items: stretch;
+      gap: 20px;
       margin-top: 18px;
     }
 
     .reservation-card {
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      min-width: 0;
+      height: 100%;
       border: 1px solid #bfdbfe;
       border-radius: 12px;
       background: #ffffff;
@@ -371,6 +380,11 @@ import { enumLabel } from '../../shared/enum-label.util';
 
     .reservation-card p {
       margin: 8px 0;
+    }
+
+    .reservation-card > button {
+      align-self: flex-start;
+      margin-top: auto;
     }
 
     .resume-grid {
@@ -415,6 +429,13 @@ import { enumLabel } from '../../shared/enum-label.util';
       display: inline-block;
       margin-top: 12px;
       font-weight: 600;
+    }
+
+    @media (max-width: 640px) {
+      .reservations-grid {
+        grid-template-columns:
+          minmax(0, 1fr);
+      }
     }
   `]
 })

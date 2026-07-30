@@ -4,13 +4,24 @@ import {
   OnInit
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { MesDettesFacadeService } from '../../services/mes-dettes-facade.service';
 import { enumLabel } from '../../shared/enum-label.util';
 
 @Component({
   selector: 'app-mes-dettes',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule
+  ],
   providers: [
     MesDettesFacadeService
   ],
@@ -24,7 +35,10 @@ import { enumLabel } from '../../shared/enum-label.util';
       </p>
 
       <ng-container *ngIf="facade.joueur() as joueur; else aucunJoueurConnecte">
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Joueur connecté</h3>
 
           <p>
@@ -36,10 +50,15 @@ import { enumLabel } from '../../shared/enum-label.util';
             Seules les dettes de ce joueur peuvent être consultées depuis cet écran.
           </p>
 
-          <button type="button" (click)="facade.chargerDettes()" [disabled]="facade.chargement()">
+          <button
+            mat-flat-button
+            type="button"
+            (click)="facade.chargerDettes()"
+            [disabled]="facade.chargement()"
+          >
             {{ facade.chargement() ? 'Chargement...' : 'Actualiser mes dettes' }}
           </button>
-        </div>
+        </mat-card>
 
         <p *ngIf="facade.messageErreur()" class="erreur">
           {{ facade.messageErreur() }}
@@ -49,7 +68,14 @@ import { enumLabel } from '../../shared/enum-label.util';
           {{ facade.messageSucces() }}
         </p>
 
-        <div *ngIf="facade.rechercheEffectuee() && !facade.messageErreur()" class="bloc-info">
+        <mat-card
+          *ngIf="
+            facade.rechercheEffectuee()
+            && !facade.messageErreur()
+          "
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Résumé</h3>
 
           <div class="resume-grid">
@@ -68,82 +94,103 @@ import { enumLabel } from '../../shared/enum-label.util';
               {{ facade.totalMontantRestant() | number:'1.2-2' }} €
             </p>
           </div>
-        </div>
+        </mat-card>
 
-        <div *ngIf="facade.dettes().length === 0 && facade.rechercheEffectuee() && !facade.messageErreur()" class="resultat">
+        <mat-card
+          *ngIf="
+            facade.dettes().length === 0
+            && facade.rechercheEffectuee()
+            && !facade.messageErreur()
+          "
+          appearance="outlined"
+          class="resultat"
+        >
           <h3>Aucune dette ouverte</h3>
           <p>
             Ce joueur ne présente actuellement aucune dette ouverte.
           </p>
-        </div>
+        </mat-card>
 
         <div *ngIf="facade.dettes().length > 0" class="dettes-grid">
-          <article *ngFor="let dette of facade.dettes()" class="dette-card">
-            <h3>Dette à régler</h3>
+          <mat-card
+            *ngFor="let dette of facade.dettes()"
+            appearance="outlined"
+            class="dette-card"
+          >
+            <mat-card-header>
+              <mat-card-title>
+                Dette à régler
+              </mat-card-title>
+            </mat-card-header>
 
-            <div class="resume-grid">
-              <p>
-                <strong>Créée le</strong><br>
-                {{ dette.dateCreation | date:'dd/MM/yyyy, HH:mm' }}
-              </p>
+            <mat-card-content>
+              <div class="resume-grid">
+                <p>
+                  <strong>Créée le</strong><br>
+                  {{ dette.dateCreation | date:'dd/MM/yyyy, HH:mm' }}
+                </p>
 
-              <p>
-                <strong>Montant initial</strong><br>
-                {{ dette.montantInitial | number:'1.2-2' }} €
-              </p>
+                <p>
+                  <strong>Montant initial</strong><br>
+                  {{ dette.montantInitial | number:'1.2-2' }} €
+                </p>
 
-              <p>
-                <strong>Montant restant</strong><br>
-                {{ dette.montantRestant | number:'1.2-2' }} €
-              </p>
+                <p>
+                  <strong>Montant restant</strong><br>
+                  {{ dette.montantRestant | number:'1.2-2' }} €
+                </p>
 
-              <p>
-                <strong>Statut</strong><br>
-                {{ enumLabel(dette.statutDette) }}
-              </p>
-            </div>
+                <p>
+                  <strong>Statut</strong><br>
+                  {{ enumLabel(dette.statutDette) }}
+                </p>
+              </div>
 
-            <div class="paiement-zone">
-              <label [for]="'montantDette' + dette.detteId">
-                Montant à payer
-              </label>
+              <div class="paiement-zone">
+                <mat-form-field appearance="outline">
+                  <mat-label>
+                    Montant à payer
+                  </mat-label>
+                  <input
+                    matInput
+                    [id]="'montantDette' + dette.detteId"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    [ngModel]="
+                      facade.montantPaiement(
+                        dette.detteId
+                      )
+                    "
+                    (ngModelChange)="
+                      facade.modifierMontantPaiement(
+                        dette.detteId,
+                        $event
+                      )
+                    "
+                    [name]="'montantDette' + dette.detteId"
+                  >
+                </mat-form-field>
 
-              <input
-                [id]="'montantDette' + dette.detteId"
-                type="number"
-                min="0"
-                step="0.01"
-                [ngModel]="
-                  facade.montantPaiement(
-                    dette.detteId
-                  )
-                "
-                (ngModelChange)="
-                  facade.modifierMontantPaiement(
-                    dette.detteId,
-                    $event
-                  )
-                "
-                [name]="'montantDette' + dette.detteId"
-              />
-
-              <button
-                type="button"
-                (click)="facade.payerDette(dette)"
-                [disabled]="
-                  facade.paiementEnCoursDetteId()
-                    !== null
-                "
-              >
-                {{
-                  facade.paiementEnCoursDetteId()
+                <button
+                  mat-flat-button
+                  type="button"
+                  (click)="facade.payerDette(dette)"
+                  [disabled]="
+                    facade.paiementEnCoursDetteId()
+                      !== null
+                  "
+                >
+                  {{
+                    facade.paiementEnCoursDetteId()
                     === dette.detteId
-                    ? 'Paiement...'
-                    : 'Payer cette dette'
-                }}
-              </button>
-            </div>
-          </article>
+                      ? 'Paiement...'
+                      : 'Payer cette dette'
+                  }}
+                </button>
+              </div>
+            </mat-card-content>
+          </mat-card>
         </div>
       </ng-container>
 
@@ -189,22 +236,22 @@ import { enumLabel } from '../../shared/enum-label.util';
     }
 
     .dette-card {
-      border: 1px solid #bfdbfe;
-      border-radius: 12px;
-      background: #f8fbff;
-      padding: 16px;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+      height: 100%;
     }
 
-    .dette-card h3 {
-      margin-top: 0;
+    .dette-card mat-card-title {
       color: #003b95;
+      font-size: 1.1rem;
     }
 
     .paiement-zone {
       display: grid;
       gap: 10px;
       margin-top: 16px;
+    }
+
+    .paiement-zone mat-form-field {
+      width: 100%;
     }
   `]
 })
@@ -214,7 +261,7 @@ export class MesDettesComponent
 
   constructor(
     readonly facade:
-      MesDettesFacadeService
+    MesDettesFacadeService
   ) {
   }
 

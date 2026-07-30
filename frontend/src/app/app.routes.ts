@@ -1,101 +1,128 @@
 import { Routes } from '@angular/router';
-import { AccueilComponent } from './pages/accueil/accueil.component';
-import { JoueurAuthComponent } from './pages/joueur-auth/joueur-auth.component';
-import { DisponibilitesComponent } from './pages/disponibilites/disponibilites.component';
-import { CreerMatchComponent } from './pages/creer-match/creer-match.component';
-import { MatchesPublicsComponent } from './pages/matches-publics/matches-publics.component';
-import { MesReservationsComponent } from './pages/mes-reservations/mes-reservations.component';
-import { MesDettesComponent } from './pages/mes-dettes/mes-dettes.component';
-import { HistoriqueTransactionsComponent } from './pages/historique-transactions/historique-transactions.component';
-import { AdminLoginComponent } from './pages/admin-login/admin-login.component';
-import { AdminDashboardComponent } from './pages/admin-dashboard/admin-dashboard.component';
-import { AdminTraitementVeilleComponent } from './pages/admin-traitement-veille/admin-traitement-veille.component';
-import { AdminStatistiquesComponent } from './pages/admin-statistiques/admin-statistiques.component';
-import { InscriptionJoueurComponent } from './pages/inscription-joueur/inscription-joueur.component';
-import { AdminFermeturesComponent } from './pages/admin-fermetures/admin-fermetures.component';
-import { MonSoldeComponent } from './pages/mon-solde/mon-solde.component';
-import { AdminMembresComponent } from './pages/admin-membres/admin-membres.component';
-import { InvitationsRecuesComponent } from './pages/invitations-recues/invitations-recues.component';
-import { joueurGuard } from './guards/joueur.guard';
-import { adminGuard } from './guards/admin.guard';
 import { adminGlobalGuard } from './guards/admin-global.guard';
+import { adminGuard } from './guards/admin.guard';
+import { joueurGuard } from './guards/joueur.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'accueil', pathMatch: 'full' },
-  { path: 'accueil', component: AccueilComponent },
-
-  { path: 'joueur', component: JoueurAuthComponent },
-  { path: 'inscription-joueur', component: InscriptionJoueurComponent },
-
+  {
+    path: 'accueil',
+    loadComponent: () =>
+      import('./pages/accueil/accueil.component')
+        .then(component => component.AccueilComponent)
+  },
+  {
+    path: 'joueur',
+    loadComponent: () =>
+      import('./pages/joueur-auth/joueur-auth.component')
+        .then(component => component.JoueurAuthComponent)
+  },
+  {
+    path: 'inscription-joueur',
+    loadComponent: () =>
+      import('./pages/inscription-joueur/inscription-joueur.component')
+        .then(component => component.InscriptionJoueurComponent)
+  },
   {
     path: 'joueur/disponibilites',
-    component: DisponibilitesComponent,
+    loadComponent: () =>
+      import('./pages/disponibilites/disponibilites.component')
+        .then(component => component.DisponibilitesComponent),
     canActivate: [joueurGuard]
   },
   {
     path: 'joueur/creer-match',
-    component: CreerMatchComponent,
+    loadComponent: () =>
+      import('./pages/creer-match/creer-match.component')
+        .then(component => component.CreerMatchComponent),
     canActivate: [joueurGuard]
   },
   {
     path: 'joueur/matches-publics',
-    component: MatchesPublicsComponent,
+    loadComponent: () =>
+      import('./pages/matches-publics/matches-publics.component')
+        .then(component => component.MatchesPublicsComponent),
     canActivate: [joueurGuard]
   },
   {
     path: 'joueur/mes-reservations',
-    component: MesReservationsComponent,
+    loadComponent: () =>
+      import('./pages/mes-reservations/mes-reservations.component')
+        .then(component => component.MesReservationsComponent),
     canActivate: [joueurGuard]
   },
   {
     path: 'joueur/mes-dettes',
-    component: MesDettesComponent,
+    loadComponent: () =>
+      import('./pages/mes-dettes/mes-dettes.component')
+        .then(component => component.MesDettesComponent),
     canActivate: [joueurGuard]
   },
   {
     path: 'joueur/historique-transactions',
-    component: HistoriqueTransactionsComponent,
+    loadComponent: () =>
+      import(
+        './pages/historique-transactions/historique-transactions.component'
+        )
+        .then(component => component.HistoriqueTransactionsComponent),
     canActivate: [joueurGuard]
   },
   {
     path: 'joueur/mon-solde',
-    component: MonSoldeComponent,
+    loadComponent: () =>
+      import('./pages/mon-solde/mon-solde.component')
+        .then(component => component.MonSoldeComponent),
     canActivate: [joueurGuard]
   },
   {
     path: 'joueur/invitations-recues',
-    component: InvitationsRecuesComponent,
+    loadComponent: () =>
+      import('./pages/invitations-recues/invitations-recues.component')
+        .then(component => component.InvitationsRecuesComponent),
     canActivate: [joueurGuard]
   },
-
-  { path: 'admin/login', component: AdminLoginComponent },
-
+  {
+    path: 'admin/login',
+    loadComponent: () =>
+      import('./pages/admin-login/admin-login.component')
+        .then(component => component.AdminLoginComponent)
+  },
   {
     path: 'admin/dashboard',
-    component: AdminDashboardComponent,
+    loadComponent: () =>
+      import('./pages/admin-dashboard/admin-dashboard.component')
+        .then(component => component.AdminDashboardComponent),
     canActivate: [adminGuard]
   },
   {
     path: 'admin/traitement-veille',
-    component:
-      AdminTraitementVeilleComponent,
+    loadComponent: () =>
+      import(
+        './pages/admin-traitement-veille/admin-traitement-veille.component'
+        )
+        .then(component => component.AdminTraitementVeilleComponent),
     canActivate: [adminGlobalGuard]
   },
   {
     path: 'admin/fermetures',
-    component: AdminFermeturesComponent,
+    loadComponent: () =>
+      import('./pages/admin-fermetures/admin-fermetures.component')
+        .then(component => component.AdminFermeturesComponent),
     canActivate: [adminGuard]
   },
   {
     path: 'admin/statistiques',
-    component: AdminStatistiquesComponent,
+    loadComponent: () =>
+      import('./pages/admin-statistiques/admin-statistiques.component')
+        .then(component => component.AdminStatistiquesComponent),
     canActivate: [adminGuard]
   },
   {
     path: 'admin/membres',
-    component: AdminMembresComponent,
+    loadComponent: () =>
+      import('./pages/admin-membres/admin-membres.component')
+        .then(component => component.AdminMembresComponent),
     canActivate: [adminGuard]
   },
-
   { path: '**', redirectTo: 'accueil' }
 ];

@@ -2,11 +2,17 @@ import {
   Component,
   OnInit
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { AccueilFacadeService } from '../../services/accueil-facade.service';
 
 @Component({
   selector: 'app-accueil',
   standalone: true,
+  imports: [
+    MatButtonModule,
+    MatCardModule
+  ],
   providers: [AccueilFacadeService],
   template: `
     <section class="page">
@@ -27,25 +33,32 @@ import { AccueilFacadeService } from '../../services/accueil-facade.service';
       }
 
       @if (facade.messageErreur()) {
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <p class="erreur">
             {{ facade.messageErreur() }}
           </p>
 
           <button
+            mat-flat-button
             type="button"
             (click)="facade.reessayer()"
           >
             Réessayer
           </button>
-        </div>
+        </mat-card>
       }
 
       @if (
         facade.donneesDemonstration();
         as donneesDemonstration
       ) {
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Légende des matricules</h3>
 
           <table>
@@ -77,9 +90,12 @@ import { AccueilFacadeService } from '../../services/accueil-facade.service';
               }
             </tbody>
           </table>
-        </div>
+        </mat-card>
 
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Sites de démonstration</h3>
 
           <ul>
@@ -93,9 +109,12 @@ import { AccueilFacadeService } from '../../services/accueil-facade.service';
               </li>
             }
           </ul>
-        </div>
+        </mat-card>
 
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Joueurs de démonstration</h3>
 
           <ul>
@@ -110,9 +129,12 @@ import { AccueilFacadeService } from '../../services/accueil-facade.service';
               </li>
             }
           </ul>
-        </div>
+        </mat-card>
 
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Administrateurs de démonstration</h3>
 
           <ul>
@@ -130,7 +152,7 @@ import { AccueilFacadeService } from '../../services/accueil-facade.service';
               </li>
             }
           </ul>
-        </div>
+        </mat-card>
       }
     </section>
   `

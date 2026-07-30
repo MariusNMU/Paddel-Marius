@@ -1,7 +1,6 @@
 :host {
   display: block;
   min-height: 100vh;
-  font-family: Arial, sans-serif;
   background: #eef6ff;
   color: #0f172a;
 }
@@ -86,107 +85,9 @@
 
 .main-content {
   flex: 1;
+  min-width: 0;
   padding: 32px;
   box-sizing: border-box;
-}
-
-.page {
-  background: #ffffff;
-  border: 1px solid #dbeafe;
-  border-radius: 14px;
-  padding: 24px;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
-}
-
-.page h2 {
-  margin-top: 0;
-  color: #003b95;
-}
-
-.formulaire,
-form {
-  display: grid;
-  gap: 12px;
-  max-width: 520px;
-  margin-top: 18px;
-}
-
-label {
-  font-weight: 700;
-  color: #1e293b;
-}
-
-input,
-select {
-  padding: 10px 12px;
-  border: 1px solid #bfdbfe;
-  border-radius: 8px;
-  font-size: 14px;
-}
-
-button:not(.mat-mdc-button-base) {
-  width: fit-content;
-  padding: 10px 16px;
-  border: none;
-  border-radius: 8px;
-  background: #003b95;
-  color: white;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-button:not(.mat-mdc-button-base):disabled {
-  background: #94a3b8;
-  cursor: not-allowed;
-}
-
-.erreur {
-  margin-top: 16px;
-  color: #b91c1c;
-  font-weight: 700;
-}
-
-.resultat,
-.bloc-info {
-  margin-top: 20px;
-  padding: 16px;
-  border: 1px solid #dbeafe;
-  border-radius: 12px;
-  background: #f8fbff;
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin: 20px 0;
-}
-
-.actions a {
-  display: inline-block;
-  padding: 10px 14px;
-  border-radius: 8px;
-  background: #003b95;
-  color: #ffffff;
-  text-decoration: none;
-  font-weight: 700;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 12px;
-}
-
-th,
-td {
-  padding: 10px;
-  border-bottom: 1px solid #dbeafe;
-  text-align: left;
-}
-
-th {
-  color: #003b95;
 }
 
 @media (max-width: 900px) {
@@ -204,6 +105,7 @@ th {
     padding: 16px;
   }
 }
+
 .menu-button {
   width: 100%;
   justify-content: flex-start;
@@ -216,6 +118,7 @@ th {
 .menu-button:hover {
   background: #fee2e2;
 }
+
 .menu a.invitation-alerte {
   background: #fee2e2;
   color: #991b1b;

@@ -118,6 +118,18 @@ export const routes: Routes = [
     canActivate: [adminGuard]
   },
   {
+    path: 'admin/etat-operationnel',
+    loadComponent: () =>
+      import(
+        './pages/admin-etat-operationnel/admin-etat-operationnel.component'
+        )
+        .then(
+          component =>
+            component.AdminEtatOperationnelComponent
+        ),
+    canActivate: [adminGuard]
+  },
+  {
     path: 'admin/membres',
     loadComponent: () =>
       import('./pages/admin-membres/admin-membres.component')

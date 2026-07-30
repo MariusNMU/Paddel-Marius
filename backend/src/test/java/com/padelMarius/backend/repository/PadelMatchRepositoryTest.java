@@ -137,6 +137,48 @@ class PadelMatchRepositoryTest {
         assertEquals(matchConcerne.getId(), resultats.getFirst().getId());
     }
 
+    @Test
+    void shouldFindSiteMatchesForOneDayOrderedByStartTime() {
+        Site site = creerSite("ETAT");
+        Terrain terrainT1 = creerTerrain(site, "T1");
+        Terrain terrainT2 = creerTerrain(site, "T2");
+        Terrain autreTerrain = creerTerrain(site, "T3");
+
+        PadelMatch matchMidi = creerMatch(
+                terrainT2,
+                LocalDateTime.of(2026, 7, 20, 12, 0)
+        );
+
+        PadelMatch matchMatin = creerMatch(
+                terrainT1,
+                LocalDateTime.of(2026, 7, 20, 9, 0)
+        );
+
+        creerMatch(
+                autreTerrain,
+                LocalDateTime.of(2026, 7, 20, 10, 0)
+        );
+
+        creerMatch(
+                terrainT1,
+                LocalDateTime.of(2026, 7, 21, 9, 0)
+        );
+
+        List<PadelMatch> matchesTrouves = padelMatchRepository
+                .findByTerrainInAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBeforeOrderByDateHeureDebutAsc(
+                        List.of(terrainT1, terrainT2),
+                        LocalDateTime.of(2026, 7, 20, 0, 0),
+                        LocalDateTime.of(2026, 7, 21, 0, 0)
+                );
+
+        assertThat(matchesTrouves)
+                .extracting(PadelMatch::getId)
+                .containsExactly(
+                        matchMatin.getId(),
+                        matchMidi.getId()
+                );
+    }
+
     private Site creerSite(String code) {
         return siteRepository.save(Site.builder()
                 .code(code)

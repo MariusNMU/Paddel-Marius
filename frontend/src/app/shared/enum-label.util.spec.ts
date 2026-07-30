@@ -8,6 +8,13 @@ describe('enumLabel', () => {
     expect(enumLabel('ANNULE')).toBe('Annulé');
   });
 
+  it('doit traduire les états opérationnels des terrains', () => {
+    expect(enumLabel('DISPONIBLE')).toBe('Disponible');
+    expect(enumLabel('RESERVE')).toBe('Réservé');
+    expect(enumLabel('FERME')).toBe('Fermé');
+    expect(enumLabel('INACTIF')).toBe('Inactif');
+  });
+
   it('doit traduire les modes de création et de visibilité', () => {
     expect(enumLabel('PRIVE')).toBe('Privé');
     expect(enumLabel('PUBLIC')).toBe('Public');

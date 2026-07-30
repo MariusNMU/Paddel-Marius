@@ -80,6 +80,23 @@ import { enumLabel } from '../../shared/enum-label.util';
               </a>
             </mat-card>
 
+            <mat-card
+              appearance="outlined"
+              class="admin-action-card"
+            >
+              <h4>État des matchs et terrains</h4>
+              <p>
+                Consulter l’occupation, les fermetures et l’état
+                des matchs pour une date et un site.
+              </p>
+              <a
+                mat-flat-button
+                routerLink="/admin/etat-operationnel"
+              >
+                Ouvrir la vue opérationnelle
+              </a>
+            </mat-card>
+
             @if (
               admin.roleAdministrateur
               === 'GLOBAL'

@@ -177,6 +177,29 @@ class SecurityConfigTest {
                 .andExpect(status().isOk());
     }
 
+    @Test
+    void shouldAllowSiteAdminAccessToOwnSiteOperationalState() throws Exception {
+        String adminToken = authenticateAdminAndReadToken("admin-bruxelles");
+
+        mockMvc.perform(get("/api/admin/etat-operationnel")
+                        .header(AUTHORIZATION, bearer(adminToken))
+                        .param("date", "2026-05-20")
+                        .param("siteId", "1001"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldRejectSiteAdminAccessToAnotherSiteOperationalState() throws Exception {
+        String adminToken = authenticateAdminAndReadToken("admin-bruxelles");
+
+        mockMvc.perform(get("/api/admin/etat-operationnel")
+                        .header(AUTHORIZATION, bearer(adminToken))
+                        .param("date", "2026-05-20")
+                        .param("siteId", "1002"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCES_REFUSE"));
+    }
+
     private String authenticatePlayerAndReadToken() throws Exception {
         MvcResult result = mockMvc.perform(post("/api/auth/joueur")
                         .contentType(MediaType.APPLICATION_JSON)

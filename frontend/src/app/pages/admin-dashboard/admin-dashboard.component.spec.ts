@@ -140,6 +140,11 @@ describe(
           .toContain(
             'Traitement de veille'
           );
+
+        expect(contenu)
+          .toContain(
+            'État des matchs et terrains'
+          );
       }
     );
 
@@ -168,6 +173,11 @@ describe(
           .not.toContain(
           'Traitement de veille'
         );
+
+        expect(contenu)
+          .toContain(
+            'État des matchs et terrains'
+          );
       }
     );
 

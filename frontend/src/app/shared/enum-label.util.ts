@@ -4,6 +4,11 @@ const ENUM_LABELS: Record<string, string> = {
   TERMINE: 'Terminé',
   ANNULE: 'Annulé',
 
+  DISPONIBLE: 'Disponible',
+  RESERVE: 'Réservé',
+  FERME: 'Fermé',
+  INACTIF: 'Inactif',
+
   PRIVE: 'Privé',
   PUBLIC: 'Public',
 

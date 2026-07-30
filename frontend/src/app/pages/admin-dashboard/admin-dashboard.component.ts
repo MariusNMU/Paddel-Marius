@@ -1,4 +1,6 @@
 import { Component } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { RouterLink } from '@angular/router';
 import { AuthFacadeService } from '../../services/auth-facade.service';
 import { enumLabel } from '../../shared/enum-label.util';
@@ -6,13 +8,20 @@ import { enumLabel } from '../../shared/enum-label.util';
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [RouterLink],
+  imports: [
+    MatButtonModule,
+    MatCardModule,
+    RouterLink
+  ],
   template: `
     <section class="page">
       <h2>Dashboard admin</h2>
 
       @if (authFacade.admin(); as admin) {
-        <div class="dashboard-header">
+        <mat-card
+          appearance="outlined"
+          class="dashboard-header"
+        >
           <div>
             <h3>Administrateur connecté</h3>
             <p class="admin-name">
@@ -27,9 +36,12 @@ import { enumLabel } from '../../shared/enum-label.util';
             <p>Rôle</p>
             <strong>{{ enumLabel(admin.roleAdministrateur) }}</strong>
           </div>
-        </div>
+        </mat-card>
 
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Périmètre d'accès</h3>
 
           @if (admin.siteId) {
@@ -42,26 +54,40 @@ import { enumLabel } from '../../shared/enum-label.util';
               Cet administrateur a un accès global à tous les sites.
             </p>
           }
-        </div>
+        </mat-card>
 
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Actions principales</h3>
 
           <div class="admin-actions-grid">
-            <article class="admin-action-card">
+            <mat-card
+              appearance="outlined"
+              class="admin-action-card"
+            >
               <h4>Statistiques</h4>
               <p>
                 Consulter les matches, paiements, dettes ouvertes,
                 chiffre d'affaires et taux de remplissage.
               </p>
-              <a routerLink="/admin/statistiques">Ouvrir les statistiques</a>
-            </article>
+              <a
+                mat-flat-button
+                routerLink="/admin/statistiques"
+              >
+                Ouvrir les statistiques
+              </a>
+            </mat-card>
 
             @if (
               admin.roleAdministrateur
-                === 'GLOBAL'
-            ) {
-              <article class="admin-action-card">
+              === 'GLOBAL'
+              ) {
+              <mat-card
+                appearance="outlined"
+                class="admin-action-card"
+              >
                 <h4>Traitement de veille</h4>
 
                 <p>
@@ -69,15 +95,21 @@ import { enumLabel } from '../../shared/enum-label.util';
                   libère les places non payées et applique les règles de pénalité.
                 </p>
 
-                <a routerLink="/admin/traitement-veille">
+                <a
+                  mat-flat-button
+                  routerLink="/admin/traitement-veille"
+                >
                   Lancer le traitement
                 </a>
-              </article>
+              </mat-card>
             }
           </div>
-        </div>
+        </mat-card>
 
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Rappel pour la démo</h3>
 
           <ul>
@@ -86,9 +118,14 @@ import { enumLabel } from '../../shared/enum-label.util';
             <li>Le frontend ne contient aucun SQL.</li>
             <li>Le frontend consomme uniquement l'API REST du backend.</li>
           </ul>
-        </div>
+        </mat-card>
 
-        <button type="button" class="danger-button" (click)="deconnecter()">
+        <button
+          mat-flat-button
+          type="button"
+          class="danger-button"
+          (click)="deconnecter()"
+        >
           Déconnecter l'admin
         </button>
       } @else {
@@ -97,7 +134,9 @@ import { enumLabel } from '../../shared/enum-label.util';
         </p>
 
         <p>
-          <a routerLink="/admin/login">Aller à la connexion admin</a>
+          <a mat-button routerLink="/admin/login">
+            Aller à la connexion admin
+          </a>
         </p>
       }
     </section>

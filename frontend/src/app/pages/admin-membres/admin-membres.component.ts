@@ -1,13 +1,24 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { AdminMembresFacadeService } from '../../services/admin-membres-facade.service';
 import { enumLabel } from '../../shared/enum-label.util';
 
 @Component({
   selector: 'app-admin-membres',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule
+  ],
   providers: [AdminMembresFacadeService],
   template: `
     <section class="page">
@@ -18,12 +29,16 @@ import { enumLabel } from '../../shared/enum-label.util';
         Les données sont chargées via l'API REST du backend.
       </p>
 
-      <div class="bloc-info">
+      <mat-card
+        appearance="outlined"
+        class="bloc-info"
+      >
         <h3>Recherche</h3>
 
         @if (facade.estAdminGlobal()) {
           <div class="actions-membres">
             <button
+              mat-flat-button
               type="button"
               (click)="afficherTousLesMembres()"
               [disabled]="facade.chargementMembres()"
@@ -32,6 +47,7 @@ import { enumLabel } from '../../shared/enum-label.util';
             </button>
 
             <button
+              mat-stroked-button
               type="button"
               (click)="afficherMembresDuSiteSelectionne()"
               [disabled]="
@@ -44,26 +60,33 @@ import { enumLabel } from '../../shared/enum-label.util';
             </button>
           </div>
 
-          <label for="siteId">Site</label>
-
-          <select
-            id="siteId"
-            name="siteId"
-            [ngModel]="facade.siteId()"
-            (ngModelChange)="facade.modifierSiteId($event)"
-            [disabled]="facade.chargementSites() || facade.sites().length === 0"
-          >
-            <option [ngValue]="null">
-              Sélectionner un site
-            </option>
-
-            <option
-              *ngFor="let site of facade.sites()"
-              [ngValue]="site.siteId"
+          <mat-form-field appearance="outline">
+            <mat-label>Site</mat-label>
+            <select
+              matNativeControl
+              id="siteId"
+              name="siteId"
+              [ngModel]="facade.siteId()"
+              (ngModelChange)="
+                facade.modifierSiteId($event)
+              "
+              [disabled]="
+                facade.chargementSites()
+                || facade.sites().length === 0
+              "
             >
-              {{ site.nom }}
-            </option>
-          </select>
+              <option [ngValue]="null">
+                Sélectionner un site
+              </option>
+
+              <option
+                *ngFor="let site of facade.sites()"
+                [ngValue]="site.siteId"
+              >
+                {{ site.nom }}
+              </option>
+            </select>
+          </mat-form-field>
 
           <p class="aide">
             Le filtre par site affiche les membres rattachés au site choisi.
@@ -78,18 +101,23 @@ import { enumLabel } from '../../shared/enum-label.util';
             </p>
           }
         }
-      </div>
+      </mat-card>
 
       <p *ngIf="facade.messageErreur()" class="erreur">
         {{ facade.messageErreur() }}
       </p>
 
-      <div *ngIf="facade.chargementMembres()" class="bloc-info">
+      <mat-card
+        *ngIf="facade.chargementMembres()"
+        appearance="outlined"
+        class="bloc-info"
+      >
         Chargement des membres...
-      </div>
+      </mat-card>
 
-      <div
+      <mat-card
         *ngIf="!facade.chargementMembres() && facade.membres().length > 0"
+        appearance="outlined"
         class="resultat"
       >
         <h3>{{ facade.titreResultat() }}</h3>
@@ -140,18 +168,19 @@ import { enumLabel } from '../../shared/enum-label.util';
             </tbody>
           </table>
         </div>
-      </div>
+      </mat-card>
 
-      <div
+      <mat-card
         *ngIf="
           !facade.chargementMembres()
           && !facade.messageErreur()
           && facade.membres().length === 0
         "
+        appearance="outlined"
         class="bloc-info"
       >
         Aucun membre à afficher.
-      </div>
+      </mat-card>
     </section>
   `,
   styles: [`
@@ -165,6 +194,11 @@ import { enumLabel } from '../../shared/enum-label.util';
     .aide {
       color: #64748b;
       font-size: 14px;
+    }
+
+    mat-form-field {
+      width: 100%;
+      max-width: 420px;
     }
 
     .table-wrapper {

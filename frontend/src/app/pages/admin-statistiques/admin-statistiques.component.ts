@@ -4,13 +4,25 @@ import {
   OnInit
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { RouterLink } from '@angular/router';
 import { AdminStatistiquesFacadeService } from '../../services/admin-statistiques-facade.service';
 
 @Component({
   selector: 'app-admin-statistiques',
   standalone: true,
-  imports: [DatePipe, FormsModule, RouterLink],
+  imports: [
+    DatePipe,
+    FormsModule,
+    MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    RouterLink
+  ],
   providers: [AdminStatistiquesFacadeService],
   template: `
     <section class="page">
@@ -22,7 +34,9 @@ import { AdminStatistiquesFacadeService } from '../../services/admin-statistique
         </p>
 
         <p>
-          <a routerLink="/admin/login">Connexion admin</a>
+          <a mat-button routerLink="/admin/login">
+            Connexion admin
+          </a>
         </p>
       } @else {
         <p>
@@ -30,76 +44,115 @@ import { AdminStatistiquesFacadeService } from '../../services/admin-statistique
           matches, paiements, chiffre d'affaires, dettes et taux de remplissage.
         </p>
 
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Périodes rapides</h3>
 
           <div class="actions">
-            <button type="button" (click)="selectionnerPeriode('moisCourant')">
+            <button
+              mat-stroked-button
+              type="button"
+              (click)="selectionnerPeriode('moisCourant')"
+            >
               Mois courant
             </button>
 
-            <button type="button" (click)="selectionnerPeriode('prochainsJours')">
+            <button
+              mat-stroked-button
+              type="button"
+              (click)="selectionnerPeriode('prochainsJours')"
+            >
               7 prochains jours
             </button>
 
-            <button type="button" (click)="selectionnerPeriode('demo')">
+            <button
+              mat-stroked-button
+              type="button"
+              (click)="selectionnerPeriode('demo')"
+            >
               Période démo complète
             </button>
           </div>
-        </div>
+        </mat-card>
 
         <form (ngSubmit)="chargerStatistiques()" class="formulaire">
-          <label for="dateDebut">Date début</label>
-          <input
-            id="dateDebut"
-            name="dateDebut"
-            type="date"
-            [ngModel]="facade.dateDebut()"
-            (ngModelChange)="facade.modifierDateDebut($event)"
-            required
-          >
+          <mat-form-field appearance="outline">
+            <mat-label>Date début</mat-label>
+            <input
+              matInput
+              id="dateDebut"
+              name="dateDebut"
+              type="date"
+              [ngModel]="facade.dateDebut()"
+              (ngModelChange)="
+                facade.modifierDateDebut($event)
+              "
+              required
+            >
+          </mat-form-field>
 
-          <label for="dateFin">Date fin</label>
-          <input
-            id="dateFin"
-            name="dateFin"
-            type="date"
-            [ngModel]="facade.dateFin()"
-            (ngModelChange)="facade.modifierDateFin($event)"
-            required
-          >
+          <mat-form-field appearance="outline">
+            <mat-label>Date fin</mat-label>
+            <input
+              matInput
+              id="dateFin"
+              name="dateFin"
+              type="date"
+              [ngModel]="facade.dateFin()"
+              (ngModelChange)="
+                facade.modifierDateFin($event)
+              "
+              required
+            >
+          </mat-form-field>
 
           @if (facade.estAdminGlobal()) {
-            <label for="siteId">Vue</label>
-
-            <select
-              id="siteId"
-              name="siteId"
-              [ngModel]="facade.siteId()"
-              (ngModelChange)="facade.modifierSiteId($event)"
-              [disabled]="facade.chargementSites()"
-            >
-              <option [ngValue]="null">
-                Tous les sites
-              </option>
-
-              @for (
-                site of facade.sites();
-                track site.siteId
-              ) {
-                <option [ngValue]="site.siteId">
-                  {{ site.nom }}
+            <mat-form-field appearance="outline">
+              <mat-label>Vue</mat-label>
+              <select
+                matNativeControl
+                id="siteId"
+                name="siteId"
+                [ngModel]="facade.siteId()"
+                (ngModelChange)="
+                  facade.modifierSiteId($event)
+                "
+                [disabled]="facade.chargementSites()"
+              >
+                <option [ngValue]="null">
+                  Tous les sites
                 </option>
-              }
-            </select>
+
+                @for (
+                  site of facade.sites();
+                  track site.siteId
+                  ) {
+                  <option [ngValue]="site.siteId">
+                    {{ site.nom }}
+                  </option>
+                }
+              </select>
+            </mat-form-field>
           } @else if (facade.admin(); as admin) {
-            <div class="bloc-info">
+            <mat-card
+              appearance="outlined"
+              class="bloc-info"
+            >
               <strong>Vue limitée à ton site :</strong>
               {{ admin.nomSite || 'Site' }}
-            </div>
+            </mat-card>
           }
 
-          <button type="submit" [disabled]="facade.chargement() || facade.chargementSites()">
+          <button
+            mat-flat-button
+            type="submit"
+            [disabled]="
+              facade.chargement()
+              || facade.chargementSites()
+            "
+          >
             {{ facade.chargement() ? 'Chargement...' : 'Charger les statistiques' }}
           </button>
         </form>
@@ -109,7 +162,10 @@ import { AdminStatistiquesFacadeService } from '../../services/admin-statistique
         }
 
         @if (facade.statistiques(); as stats) {
-          <div class="bloc-info">
+          <mat-card
+            appearance="outlined"
+            class="bloc-info"
+          >
             <h3>Vue affichée</h3>
 
             <p>
@@ -130,51 +186,54 @@ import { AdminStatistiquesFacadeService } from '../../services/admin-statistique
                 <strong>globale tous sites</strong>
               </p>
             }
-          </div>
+          </mat-card>
 
           <div class="stats-grid">
-            <article class="stat-card">
+            <mat-card appearance="outlined" class="stat-card">
               <span>Matches</span>
               <strong>{{ stats.nombreMatches }}</strong>
-            </article>
+            </mat-card>
 
-            <article class="stat-card">
+            <mat-card appearance="outlined" class="stat-card">
               <span>À venir</span>
               <strong>{{ stats.nombreMatchesAVenir }}</strong>
-            </article>
+            </mat-card>
 
-            <article class="stat-card">
+            <mat-card appearance="outlined" class="stat-card">
               <span>Terminés</span>
               <strong>{{ stats.nombreMatchesTermines }}</strong>
-            </article>
+            </mat-card>
 
-            <article class="stat-card">
+            <mat-card appearance="outlined" class="stat-card">
               <span>Paiements</span>
               <strong>{{ stats.nombrePaiements }}</strong>
-            </article>
+            </mat-card>
 
-            <article class="stat-card">
+            <mat-card appearance="outlined" class="stat-card">
               <span>Chiffre d'affaires</span>
               <strong>{{ stats.chiffreAffaires }} €</strong>
-            </article>
+            </mat-card>
 
-            <article class="stat-card warning">
+            <mat-card appearance="outlined" class="stat-card warning">
               <span>Dettes ouvertes</span>
               <strong>{{ stats.nombreDettesOuvertes }}</strong>
-            </article>
+            </mat-card>
 
-            <article class="stat-card warning">
+            <mat-card appearance="outlined" class="stat-card warning">
               <span>Montant dettes</span>
               <strong>{{ stats.montantDettesOuvertes }} €</strong>
-            </article>
+            </mat-card>
 
-            <article class="stat-card">
+            <mat-card appearance="outlined" class="stat-card">
               <span>Taux remplissage</span>
               <strong>{{ stats.tauxRemplissage }} %</strong>
-            </article>
+            </mat-card>
           </div>
 
-          <div class="bloc-info">
+          <mat-card
+            appearance="outlined"
+            class="bloc-info"
+          >
             <h3>Détail complet</h3>
 
             <table>
@@ -221,11 +280,13 @@ import { AdminStatistiquesFacadeService } from '../../services/admin-statistique
               </tr>
               </tbody>
             </table>
-          </div>
+          </mat-card>
         }
 
         <p>
-          <a routerLink="/admin/dashboard">Retour dashboard admin</a>
+          <a mat-button routerLink="/admin/dashboard">
+            Retour dashboard admin
+          </a>
         </p>
       }
     </section>
@@ -262,6 +323,10 @@ import { AdminStatistiquesFacadeService } from '../../services/admin-statistique
 
     .stat-card.warning strong {
       color: #991b1b;
+    }
+
+    form mat-form-field {
+      width: 100%;
     }
   `]
 })

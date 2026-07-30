@@ -1,13 +1,25 @@
 import { DatePipe } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { RouterLink } from '@angular/router';
 import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitement-veille-facade.service';
 
 @Component({
   selector: 'app-admin-traitement-veille',
   standalone: true,
-  imports: [DatePipe, FormsModule, RouterLink],
+  imports: [
+    DatePipe,
+    FormsModule,
+    MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    RouterLink
+  ],
   providers: [
     AdminTraitementVeilleFacadeService
   ],
@@ -21,7 +33,7 @@ import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitem
         </p>
 
         <p>
-          <a routerLink="/admin/login">
+          <a mat-button routerLink="/admin/login">
             Connexion admin
           </a>
         </p>
@@ -31,7 +43,7 @@ import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitem
         </p>
 
         <p>
-          <a routerLink="/admin/dashboard">
+          <a mat-button routerLink="/admin/dashboard">
             Retour dashboard admin
           </a>
         </p>
@@ -42,7 +54,10 @@ import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitem
           et création éventuelle de pénalités.
         </p>
 
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Ce que fait le traitement</h3>
 
           <ul>
@@ -59,13 +74,17 @@ import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitem
               Une pénalité peut être créée pour l'organisateur responsable.
             </li>
           </ul>
-        </div>
+        </mat-card>
 
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Dates rapides de démonstration</h3>
 
           <div class="actions">
             <button
+              mat-stroked-button
               type="button"
               (click)="facade.selectionnerDateRelative(0)"
             >
@@ -73,6 +92,7 @@ import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitem
             </button>
 
             <button
+              mat-stroked-button
               type="button"
               (click)="facade.selectionnerDateRelative(2)"
             >
@@ -80,32 +100,38 @@ import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitem
             </button>
 
             <button
+              mat-stroked-button
               type="button"
               (click)="facade.selectionnerDateRelative(3)"
             >
               Avant match démo privé
             </button>
           </div>
-        </div>
+        </mat-card>
 
         <form
           (ngSubmit)="facade.lancerTraitement()"
           class="formulaire"
         >
-          <label for="dateTraitement">
-            Date de traitement
-          </label>
-
-          <input
-            id="dateTraitement"
-            name="dateTraitement"
-            type="date"
-            [ngModel]="facade.dateTraitement()"
-            (ngModelChange)="facade.selectionnerDate($event)"
-            required
-          >
+          <mat-form-field appearance="outline">
+            <mat-label>
+              Date de traitement
+            </mat-label>
+            <input
+              matInput
+              id="dateTraitement"
+              name="dateTraitement"
+              type="date"
+              [ngModel]="facade.dateTraitement()"
+              (ngModelChange)="
+                facade.selectionnerDate($event)
+              "
+              required
+            >
+          </mat-form-field>
 
           <button
+            mat-flat-button
             type="submit"
             [disabled]="facade.chargement()"
           >
@@ -124,7 +150,10 @@ import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitem
         }
 
         @if (facade.resultat(); as traitement) {
-          <div class="bloc-info">
+          <mat-card
+            appearance="outlined"
+            class="bloc-info"
+          >
             <h3>Vue affichée</h3>
 
             <p>
@@ -140,41 +169,54 @@ import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitem
                 {{ traitement.dateMatchTraitee | date:'dd/MM/yyyy' }}
               </strong>
             </p>
-          </div>
+          </mat-card>
 
           <div class="traitement-grid">
-            <article class="traitement-card">
+            <mat-card
+              appearance="outlined"
+              class="traitement-card"
+            >
               <span>Matches analysés</span>
               <strong>
                 {{ traitement.matchesAnalyses }}
               </strong>
-            </article>
+            </mat-card>
 
-            <article class="traitement-card">
+            <mat-card
+              appearance="outlined"
+              class="traitement-card"
+            >
               <span>Passés publics</span>
               <strong>
                 {{ traitement.matchesPassesPublics }}
               </strong>
-            </article>
+            </mat-card>
 
-            <article class="traitement-card">
+            <mat-card
+              appearance="outlined"
+              class="traitement-card"
+            >
               <span>Participations libérées</span>
               <strong>
                 {{ traitement.participationsLiberees }}
               </strong>
-            </article>
+            </mat-card>
 
-            <article
+            <mat-card
+              appearance="outlined"
               class="traitement-card warning"
             >
               <span>Pénalités créées</span>
               <strong>
                 {{ traitement.penalitesCreees }}
               </strong>
-            </article>
+            </mat-card>
           </div>
 
-          <div class="bloc-info">
+          <mat-card
+            appearance="outlined"
+            class="bloc-info"
+          >
             <h3>Détail complet</h3>
 
             <table>
@@ -217,11 +259,11 @@ import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitem
               </tr>
               </tbody>
             </table>
-          </div>
+          </mat-card>
         }
 
         <p>
-          <a routerLink="/admin/dashboard">
+          <a mat-button routerLink="/admin/dashboard">
             Retour dashboard admin
           </a>
         </p>
@@ -266,6 +308,10 @@ import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitem
 
     .traitement-card.warning strong {
       color: #991b1b;
+    }
+
+    form mat-form-field {
+      width: 100%;
     }
   `]
 })

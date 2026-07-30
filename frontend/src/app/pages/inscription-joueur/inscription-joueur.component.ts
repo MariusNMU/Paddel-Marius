@@ -4,6 +4,10 @@ import {
   OnInit
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { RouterLink } from '@angular/router';
 import { InscriptionJoueurFacadeService } from '../../services/inscription-joueur-facade.service';
 import { enumLabel } from '../../shared/enum-label.util';
@@ -14,6 +18,10 @@ import { enumLabel } from '../../shared/enum-label.util';
   imports: [
     CommonModule,
     FormsModule,
+    MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
     RouterLink
   ],
   providers: [
@@ -29,7 +37,10 @@ import { enumLabel } from '../../shared/enum-label.util';
         par le backend selon la catégorie choisie.
       </p>
 
-      <div class="bloc-info">
+      <mat-card
+        appearance="outlined"
+        class="bloc-info"
+      >
         <h3>Catégories disponibles</h3>
 
         <ul>
@@ -51,148 +62,158 @@ import { enumLabel } from '../../shared/enum-label.util';
             les règles métier.
           </li>
         </ul>
-      </div>
+      </mat-card>
 
       <form
         (ngSubmit)="facade.envoyerDemande()"
       >
-        <label for="nom">Nom</label>
+        <mat-form-field appearance="outline">
+          <mat-label>Nom</mat-label>
+          <input
+            matInput
+            id="nom"
+            name="nom"
+            type="text"
+            [ngModel]="facade.nom()"
+            (ngModelChange)="
+              facade.modifierNom($event)
+            "
+            required
+          >
+        </mat-form-field>
 
-        <input
-          id="nom"
-          name="nom"
-          type="text"
-          [ngModel]="facade.nom()"
-          (ngModelChange)="
-            facade.modifierNom($event)
-          "
-          required
-        >
+        <mat-form-field appearance="outline">
+          <mat-label>Prénom</mat-label>
+          <input
+            matInput
+            id="prenom"
+            name="prenom"
+            type="text"
+            [ngModel]="facade.prenom()"
+            (ngModelChange)="
+              facade.modifierPrenom($event)
+            "
+            required
+          >
+        </mat-form-field>
 
-        <label for="prenom">Prénom</label>
+        <mat-form-field appearance="outline">
+          <mat-label>Mot de passe</mat-label>
+          <input
+            matInput
+            id="motDePasse"
+            name="motDePasse"
+            type="password"
+            autocomplete="new-password"
+            [ngModel]="facade.motDePasse()"
+            (ngModelChange)="
+              facade.modifierMotDePasse($event)
+            "
+            required
+            minlength="12"
+            maxlength="72"
+          >
+          <mat-hint>
+            Entre 12 et 72 caractères.
+          </mat-hint>
+        </mat-form-field>
 
-        <input
-          id="prenom"
-          name="prenom"
-          type="text"
-          [ngModel]="facade.prenom()"
-          (ngModelChange)="
-            facade.modifierPrenom($event)
-          "
-          required
-        >
+        <mat-form-field appearance="outline">
+          <mat-label>
+            Confirmer le mot de passe
+          </mat-label>
+          <input
+            matInput
+            id="confirmationMotDePasse"
+            name="confirmationMotDePasse"
+            type="password"
+            autocomplete="new-password"
+            [ngModel]="
+              facade.confirmationMotDePasse()
+            "
+            (ngModelChange)="
+              facade
+                .modifierConfirmationMotDePasse(
+                  $event
+                )
+            "
+            required
+            minlength="12"
+            maxlength="72"
+          >
+        </mat-form-field>
 
-        <label for="motDePasse">
-          Mot de passe
-        </label>
-
-        <input
-          id="motDePasse"
-          name="motDePasse"
-          type="password"
-          autocomplete="new-password"
-          [ngModel]="facade.motDePasse()"
-          (ngModelChange)="
-            facade.modifierMotDePasse($event)
-          "
-          required
-          minlength="12"
-          maxlength="72"
-        >
-
-        <p class="aide">
-          Entre 12 et 72 caractères.
-        </p>
-
-        <label for="confirmationMotDePasse">
-          Confirmer le mot de passe
-        </label>
-
-        <input
-          id="confirmationMotDePasse"
-          name="confirmationMotDePasse"
-          type="password"
-          autocomplete="new-password"
-          [ngModel]="
-            facade.confirmationMotDePasse()
-          "
-          (ngModelChange)="
-            facade
-              .modifierConfirmationMotDePasse(
+        <mat-form-field appearance="outline">
+          <mat-label>Catégorie</mat-label>
+          <select
+            matNativeControl
+            id="categorieMembre"
+            name="categorieMembre"
+            [ngModel]="
+              facade.categorieMembre()
+            "
+            (ngModelChange)="
+              facade.modifierCategorieMembre(
                 $event
               )
-          "
-          required
-          minlength="12"
-          maxlength="72"
-        >
+            "
+          >
+            <option value="GLOBAL">
+              Global
+            </option>
 
-        <label for="categorieMembre">
-          Catégorie
-        </label>
+            <option value="SITE">
+              Site
+            </option>
 
-        <select
-          id="categorieMembre"
-          name="categorieMembre"
-          [ngModel]="
-            facade.categorieMembre()
-          "
-          (ngModelChange)="
-            facade.modifierCategorieMembre(
-              $event
-            )
-          "
-        >
-          <option value="GLOBAL">
-            Global
-          </option>
-
-          <option value="SITE">
-            Site
-          </option>
-
-          <option value="LIBRE">
-            Libre
-          </option>
-        </select>
+            <option value="LIBRE">
+              Libre
+            </option>
+          </select>
+        </mat-form-field>
 
         @if (
           facade.categorieMembre()
           === 'SITE'
-        ) {
-          <label for="siteRattachementId">
-            Site de rattachement
-          </label>
-
-          <select
-            id="siteRattachementId"
-            name="siteRattachementId"
-            [ngModel]="
-              facade.siteRattachementId()
-            "
-            (ngModelChange)="
-              facade
-                .modifierSiteRattachementId(
-                  $event
-                )
-            "
-            [disabled]="
-              facade.chargementSites()
-              || facade.sites().length === 0
-            "
-          >
-            <option
-              *ngFor="
-                let site of facade.sites()
+          ) {
+          <mat-form-field appearance="outline">
+            <mat-label>
+              Site de rattachement
+            </mat-label>
+            <select
+              matNativeControl
+              id="siteRattachementId"
+              name="siteRattachementId"
+              [ngModel]="
+                facade.siteRattachementId()
               "
-              [ngValue]="site.siteId"
+              (ngModelChange)="
+                facade
+                  .modifierSiteRattachementId(
+                    $event
+                  )
+              "
+              [disabled]="
+                facade.chargementSites()
+                || facade.sites().length === 0
+              "
             >
-              {{ site.nom }}
-            </option>
-          </select>
+              <option
+                *ngFor="
+                  let site of facade.sites()
+                "
+                [ngValue]="site.siteId"
+              >
+                {{ site.nom }}
+              </option>
+            </select>
+          </mat-form-field>
         }
 
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Résumé de la demande</h3>
 
           <p>
@@ -223,7 +244,7 @@ import { enumLabel } from '../../shared/enum-label.util';
           @if (
             facade.categorieMembre()
             === 'SITE'
-          ) {
+            ) {
             <p>
               <strong>Site :</strong>
               {{
@@ -231,9 +252,10 @@ import { enumLabel } from '../../shared/enum-label.util';
               }}
             </p>
           }
-        </div>
+        </mat-card>
 
         <button
+          mat-flat-button
           type="submit"
           [disabled]="
             facade.chargement()
@@ -261,8 +283,11 @@ import { enumLabel } from '../../shared/enum-label.util';
       @if (
         facade.membreCree();
         as membreCree
-      ) {
-        <div class="resultat">
+        ) {
+        <mat-card
+          appearance="outlined"
+          class="resultat"
+        >
           <h3>
             Joueur créé avec succès
           </h3>
@@ -319,12 +344,13 @@ import { enumLabel } from '../../shared/enum-label.util';
           </p>
 
           <a
+            mat-flat-button
             routerLink="/joueur"
             class="lien-action"
           >
             Aller à la connexion joueur
           </a>
-        </div>
+        </mat-card>
       }
     </section>
   `,
@@ -352,6 +378,10 @@ import { enumLabel } from '../../shared/enum-label.util';
       display: inline-block;
       margin-top: 12px;
       font-weight: 600;
+    }
+
+    form mat-form-field {
+      width: 100%;
     }
   `]
 })

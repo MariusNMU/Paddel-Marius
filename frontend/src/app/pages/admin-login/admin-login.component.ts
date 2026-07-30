@@ -1,5 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { RouterLink } from '@angular/router';
 import { AuthFacadeService } from '../../services/auth-facade.service';
 import { enumLabel } from '../../shared/enum-label.util';
@@ -7,7 +11,14 @@ import { enumLabel } from '../../shared/enum-label.util';
 @Component({
   selector: 'app-admin-login',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [
+    FormsModule,
+    MatButtonModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatInputModule,
+    RouterLink
+  ],
   template: `
     <section class="page">
       <h2>Connexion admin</h2>
@@ -18,7 +29,10 @@ import { enumLabel } from '../../shared/enum-label.util';
       </p>
 
       @if (authFacade.admin(); as admin) {
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Admin connecté</h3>
 
           <p>
@@ -37,13 +51,22 @@ import { enumLabel } from '../../shared/enum-label.util';
           </p>
 
           <div class="actions">
-            <a routerLink="/admin/dashboard">Aller au dashboard</a>
+            <a
+              mat-flat-button
+              routerLink="/admin/dashboard"
+            >
+              Aller au dashboard
+            </a>
 
-            <button type="button" (click)="deconnecterAdmin()">
+            <button
+              mat-stroked-button
+              type="button"
+              (click)="deconnecterAdmin()"
+            >
               Déconnecter l'admin
             </button>
           </div>
-        </div>
+        </mat-card>
       } @else {
         @if (authFacade.messageSuccesAdmin()) {
           <p class="succes">
@@ -51,7 +74,10 @@ import { enumLabel } from '../../shared/enum-label.util';
           </p>
         }
 
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Compte de test</h3>
 
           <p>
@@ -62,30 +88,35 @@ import { enumLabel } from '../../shared/enum-label.util';
           <a routerLink="/accueil" class="lien-action">
             Voir les informations de démonstration
           </a>
-        </div>
+        </mat-card>
 
         <form (ngSubmit)="connecter()" class="formulaire">
-          <label for="login">Login</label>
-          <input
-            id="login"
-            name="login"
-            type="text"
-            [(ngModel)]="login"
-            placeholder="Votre login admin"
-            required
-          >
+          <mat-form-field appearance="outline">
+            <mat-label>Login</mat-label>
+            <input
+              matInput
+              id="login"
+              name="login"
+              type="text"
+              [(ngModel)]="login"
+              required
+            >
+          </mat-form-field>
 
-          <label for="motDePasse">Mot de passe</label>
-          <input
-            id="motDePasse"
-            name="motDePasse"
-            type="password"
-            [(ngModel)]="motDePasse"
-            placeholder="Votre mot de passe"
-            required
-          >
+          <mat-form-field appearance="outline">
+            <mat-label>Mot de passe</mat-label>
+            <input
+              matInput
+              id="motDePasse"
+              name="motDePasse"
+              type="password"
+              [(ngModel)]="motDePasse"
+              required
+            >
+          </mat-form-field>
 
           <button
+            mat-flat-button
             type="submit"
             [disabled]="authFacade.chargementAdmin()"
           >
@@ -105,7 +136,9 @@ import { enumLabel } from '../../shared/enum-label.util';
       }
 
       <p>
-        <a routerLink="/accueil">Retour à la Homepage</a>
+        <a mat-button routerLink="/accueil">
+          Retour à la Homepage
+        </a>
       </p>
     </section>
   `,
@@ -120,6 +153,10 @@ import { enumLabel } from '../../shared/enum-label.util';
       display: inline-block;
       margin-top: 12px;
       font-weight: 600;
+    }
+
+    .formulaire mat-form-field {
+      width: 100%;
     }
   `]
 })

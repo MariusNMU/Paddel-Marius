@@ -3,6 +3,8 @@ import {
   Component,
   OnInit
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { RouterLink } from '@angular/router';
 import { InvitationsRecuesFacadeService } from '../../services/invitations-recues-facade.service';
 import { enumLabel } from '../../shared/enum-label.util';
@@ -10,7 +12,12 @@ import { enumLabel } from '../../shared/enum-label.util';
 @Component({
   selector: 'app-invitations-recues',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [
+    CommonModule,
+    MatButtonModule,
+    MatCardModule,
+    RouterLink
+  ],
   providers: [
     InvitationsRecuesFacadeService
   ],
@@ -28,7 +35,10 @@ import { enumLabel } from '../../shared/enum-label.util';
           else aucunJoueurConnecte
         "
       >
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Joueur connecté</h3>
 
           <p>
@@ -41,6 +51,7 @@ import { enumLabel } from '../../shared/enum-label.util';
           </p>
 
           <button
+            mat-flat-button
             type="button"
             (click)="facade.chargerInvitations()"
             [disabled]="facade.chargement()"
@@ -51,7 +62,7 @@ import { enumLabel } from '../../shared/enum-label.util';
                 : 'Actualiser mes invitations'
             }}
           </button>
-        </div>
+        </mat-card>
 
         <p
           *ngIf="facade.messageErreur()"
@@ -82,57 +93,72 @@ import { enumLabel } from '../../shared/enum-label.util';
           *ngIf="facade.invitations().length > 0"
           class="invitations-grid"
         >
-          <article
+          <mat-card
             *ngFor="
               let invitation
               of facade.invitations()
             "
+            appearance="outlined"
             class="invitation-card"
           >
-            <h3>
-              Invitation au match du
-              {{ invitation.dateHeureDebut | date:'dd/MM/yyyy, HH:mm' }}
-            </h3>
-
-            <div class="resume-grid">
-              <p>
-                <strong>Site</strong><br>
-                {{ invitation.nomSite }}
-              </p>
-
-              <p>
-                <strong>Terrain</strong><br>
-                {{ invitation.numeroTerrain }}
-              </p>
-
-              <p>
-                <strong>Début</strong><br>
-                {{ invitation.dateHeureDebut | date:'dd/MM/yyyy, HH:mm' }}
-              </p>
-
-              <p>
-                <strong>Fin</strong><br>
-                {{ invitation.dateHeureFin | date:'dd/MM/yyyy, HH:mm' }}
-              </p>
-
-              <p>
-                <strong>Organisateur</strong><br>
-                {{ invitation.prenomOrganisateur }}
-                {{ invitation.nomOrganisateur }}
-              </p>
-
-              <p>
-                <strong>Statut</strong><br>
+            <mat-card-header>
+              <mat-card-title>
+                Invitation au match du
                 {{
-                  enumLabel(
-                    invitation.statutParticipation
-                  )
+                  invitation.dateHeureDebut
+                    | date:'dd/MM/yyyy, HH:mm'
                 }}
-              </p>
-            </div>
+              </mat-card-title>
+            </mat-card-header>
 
-            <div class="actions">
+            <mat-card-content>
+              <div class="resume-grid">
+                <p>
+                  <strong>Site</strong><br>
+                  {{ invitation.nomSite }}
+                </p>
+
+                <p>
+                  <strong>Terrain</strong><br>
+                  {{ invitation.numeroTerrain }}
+                </p>
+
+                <p>
+                  <strong>Début</strong><br>
+                  {{
+                    invitation.dateHeureDebut
+                      | date:'dd/MM/yyyy, HH:mm'
+                  }}
+                </p>
+
+                <p>
+                  <strong>Fin</strong><br>
+                  {{
+                    invitation.dateHeureFin
+                      | date:'dd/MM/yyyy, HH:mm'
+                  }}
+                </p>
+
+                <p>
+                  <strong>Organisateur</strong><br>
+                  {{ invitation.prenomOrganisateur }}
+                  {{ invitation.nomOrganisateur }}
+                </p>
+
+                <p>
+                  <strong>Statut</strong><br>
+                  {{
+                    enumLabel(
+                      invitation.statutParticipation
+                    )
+                  }}
+                </p>
+              </div>
+            </mat-card-content>
+
+            <mat-card-actions>
               <button
+                mat-flat-button
                 type="button"
                 (click)="
                   facade.confirmerEtPayer(
@@ -148,13 +174,14 @@ import { enumLabel } from '../../shared/enum-label.util';
                 {{
                   facade
                     .actionEnCoursParticipationId()
-                    === invitation.participationId
-                      ? 'Paiement...'
-                      : 'Confirmer et payer la participation'
+                  === invitation.participationId
+                    ? 'Paiement...'
+                    : 'Confirmer et payer la participation'
                 }}
               </button>
 
               <button
+                mat-stroked-button
                 type="button"
                 class="bouton-secondaire"
                 (click)="
@@ -169,18 +196,21 @@ import { enumLabel } from '../../shared/enum-label.util';
                 {{
                   facade
                     .actionEnCoursParticipationId()
-                    === invitation.participationId
-                      ? 'Traitement...'
-                      : 'Décliner'
+                  === invitation.participationId
+                    ? 'Traitement...'
+                    : 'Décliner'
                 }}
               </button>
-            </div>
-          </article>
+            </mat-card-actions>
+          </mat-card>
         </div>
       </ng-container>
 
       <ng-template #aucunJoueurConnecte>
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Aucun joueur connecté</h3>
 
           <p>
@@ -188,12 +218,13 @@ import { enumLabel } from '../../shared/enum-label.util';
           </p>
 
           <a
+            mat-stroked-button
             routerLink="/joueur"
             class="lien-action"
           >
             Aller à la connexion joueur
           </a>
-        </div>
+        </mat-card>
       </ng-template>
     </section>
   `,
@@ -216,18 +247,13 @@ import { enumLabel } from '../../shared/enum-label.util';
     }
 
     .invitation-card {
-      border: 1px solid #bfdbfe;
-      border-radius: 12px;
-      background: #f8fbff;
-      padding: 16px;
-      box-shadow:
-        0 4px 12px
-        rgba(15, 23, 42, 0.06);
+      height: 100%;
     }
 
-    .invitation-card h3 {
-      margin: 0 0 12px;
+    .invitation-card mat-card-title {
       color: #003b95;
+      font-size: 1.1rem;
+      line-height: 1.35;
     }
 
     .resume-grid {

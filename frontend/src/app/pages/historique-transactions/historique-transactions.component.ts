@@ -3,6 +3,8 @@ import {
   Component,
   OnInit
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { RouterLink } from '@angular/router';
 import { HistoriqueTransactionsFacadeService } from '../../services/historique-transactions-facade.service';
 import { enumLabel } from '../../shared/enum-label.util';
@@ -12,6 +14,8 @@ import { enumLabel } from '../../shared/enum-label.util';
   standalone: true,
   imports: [
     CommonModule,
+    MatButtonModule,
+    MatCardModule,
     RouterLink
   ],
   providers: [
@@ -27,7 +31,10 @@ import { enumLabel } from '../../shared/enum-label.util';
       </p>
 
       @if (!facade.joueur()) {
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Aucun joueur connecté</h3>
 
           <p>
@@ -35,16 +42,20 @@ import { enumLabel } from '../../shared/enum-label.util';
           </p>
 
           <a
+            mat-stroked-button
             routerLink="/joueur"
             class="lien-action"
           >
             Aller à la connexion joueur
           </a>
-        </div>
+        </mat-card>
       }
 
       @if (facade.joueur(); as joueur) {
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Joueur connecté</h3>
 
           <p>
@@ -57,9 +68,10 @@ import { enumLabel } from '../../shared/enum-label.util';
             {{ joueur.nom }}
             {{ joueur.prenom }}
           </p>
-        </div>
+        </mat-card>
 
         <button
+          mat-flat-button
           type="button"
           (click)="facade.chargerHistorique()"
           [disabled]="facade.chargement()"
@@ -83,14 +95,17 @@ import { enumLabel } from '../../shared/enum-label.util';
         && facade.rechercheEffectuee()
         && !facade.chargement()
         && !facade.messageErreur()
-      ) {
+        ) {
         <p>
           Aucune transaction trouvée pour ce joueur.
         </p>
       }
 
       @if (facade.transactions().length > 0) {
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Résumé</h3>
 
           <div class="resume-grid">
@@ -111,57 +126,57 @@ import { enumLabel } from '../../shared/enum-label.util';
               }} €
             </p>
           </div>
-        </div>
+        </mat-card>
 
         <table>
           <thead>
-            <tr>
-              <th>Date</th>
-              <th>Nature</th>
-              <th>Montant</th>
-              <th>Statut</th>
-            </tr>
+          <tr>
+            <th>Date</th>
+            <th>Nature</th>
+            <th>Montant</th>
+            <th>Statut</th>
+          </tr>
           </thead>
 
           <tbody>
-            <tr
-              *ngFor="
+          <tr
+            *ngFor="
                 let transaction
                 of facade.transactions()
               "
-            >
-              <td>
-                {{
-                  transaction.dateHeurePaiement
-                    | date:'dd/MM/yyyy, HH:mm'
-                }}
-              </td>
+          >
+            <td>
+              {{
+                transaction.dateHeurePaiement
+                  | date:'dd/MM/yyyy, HH:mm'
+              }}
+            </td>
 
-              <td>
-                {{
-                  enumLabel(
-                    transaction
-                      .naturePaiement
-                  )
-                }}
-              </td>
+            <td>
+              {{
+                enumLabel(
+                  transaction
+                    .naturePaiement
+                )
+              }}
+            </td>
 
-              <td>
-                {{
-                  transaction.montant
-                    | number:'1.2-2'
-                }} €
-              </td>
+            <td>
+              {{
+                transaction.montant
+                  | number:'1.2-2'
+              }} €
+            </td>
 
-              <td>
-                {{
-                  enumLabel(
-                    transaction
-                      .statutPaiement
-                  )
-                }}
-              </td>
-            </tr>
+            <td>
+              {{
+                enumLabel(
+                  transaction
+                    .statutPaiement
+                )
+              }}
+            </td>
+          </tr>
           </tbody>
         </table>
       }

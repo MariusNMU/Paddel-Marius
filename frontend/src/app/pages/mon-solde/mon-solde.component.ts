@@ -3,6 +3,8 @@ import {
   Component,
   OnInit
 } from '@angular/core';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
 import { RouterLink } from '@angular/router';
 import { MonSoldeFacadeService } from '../../services/mon-solde-facade.service';
 import { enumLabel } from '../../shared/enum-label.util';
@@ -12,6 +14,8 @@ import { enumLabel } from '../../shared/enum-label.util';
   standalone: true,
   imports: [
     CommonModule,
+    MatButtonModule,
+    MatCardModule,
     RouterLink
   ],
   providers: [
@@ -26,7 +30,10 @@ import { enumLabel } from '../../shared/enum-label.util';
         Ce solde sert à payer les participations, régler les dettes et recevoir les remboursements.
       </p>
 
-      <div class="bloc-info">
+      <mat-card
+        appearance="outlined"
+        class="bloc-info"
+      >
         <h3>Règles du solde crédit</h3>
 
         <ul>
@@ -61,10 +68,13 @@ import { enumLabel } from '../../shared/enum-label.util';
             Une annulation de match par fermeture rembourse les joueurs ayant payé.
           </li>
         </ul>
-      </div>
+      </mat-card>
 
       @if (!facade.joueur()) {
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Aucun joueur connecté</h3>
 
           <p>
@@ -72,16 +82,20 @@ import { enumLabel } from '../../shared/enum-label.util';
           </p>
 
           <a
+            mat-stroked-button
             routerLink="/joueur"
             class="lien-action"
           >
             Aller à la connexion joueur
           </a>
-        </div>
+        </mat-card>
       }
 
       @if (facade.joueur(); as joueur) {
-        <div class="bloc-info">
+        <mat-card
+          appearance="outlined"
+          class="bloc-info"
+        >
           <h3>Joueur connecté</h3>
 
           <p>
@@ -103,9 +117,10 @@ import { enumLabel } from '../../shared/enum-label.util';
               )
             }}
           </p>
-        </div>
+        </mat-card>
 
         <button
+          mat-flat-button
           type="button"
           (click)="facade.chargerSolde()"
           [disabled]="facade.chargement()"
@@ -125,7 +140,10 @@ import { enumLabel } from '../../shared/enum-label.util';
       }
 
       @if (facade.solde(); as soldeActuel) {
-        <div class="resultat solde-card">
+        <mat-card
+          appearance="outlined"
+          class="resultat solde-card"
+        >
           <h3>Solde disponible</h3>
 
           <p class="montant-principal">
@@ -151,7 +169,7 @@ import { enumLabel } from '../../shared/enum-label.util';
               }} €
             </p>
           </div>
-        </div>
+        </mat-card>
       }
     </section>
   `,

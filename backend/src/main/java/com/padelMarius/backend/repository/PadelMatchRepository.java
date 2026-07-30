@@ -41,6 +41,12 @@ public interface PadelMatchRepository extends JpaRepository<PadelMatch, Long> {
             LocalDateTime fin
     );
 
+    List<PadelMatch> findByTerrainInAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBeforeOrderByDateHeureDebutAsc(
+            List<Terrain> terrains,
+            LocalDateTime debut,
+            LocalDateTime fin
+    );
+
     List<PadelMatch> findByVisibiliteCouranteAndEtatCycleAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBefore(
             VisibiliteMatch visibiliteCourante,
             EtatCycleMatch etatCycle,

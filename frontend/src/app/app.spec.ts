@@ -189,8 +189,8 @@ describe('App', () => {
 
       expect(texte)
         .not.toContain(
-          'Traitement de veille'
-        );
+        'Traitement de veille'
+      );
     }
   );
 
@@ -215,6 +215,28 @@ describe('App', () => {
       expect(texte)
         .toContain(
           'Traitement de veille'
+        );
+    }
+  );
+
+  it(
+    'doit afficher la vue des terrains à tout administrateur connecté',
+    () => {
+      facade.adminConnecte
+        .mockReturnValue(true);
+
+      const fixture =
+        TestBed.createComponent(App);
+
+      fixture.detectChanges();
+
+      const texte =
+        fixture.nativeElement
+          .textContent as string;
+
+      expect(texte)
+        .toContain(
+          'État des terrains'
         );
     }
   );

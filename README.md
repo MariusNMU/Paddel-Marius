@@ -904,7 +904,7 @@ cd backend
 docker compose stop postgres
 ```
 
-## 15. Points importants 
+## 15. Points importants
 
 - Le frontend Angular ne contient aucun SQL.
 - Le frontend ne se connecte jamais directement à la base de données.

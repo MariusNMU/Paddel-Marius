@@ -1,6 +1,10 @@
 export type ModeCreation = 'PRIVE' | 'PUBLIC';
 export type VisibiliteMatch = 'PRIVE' | 'PUBLIC';
-export type EtatCycleMatch = 'A_VENIR' | 'DEMARRE' | 'TERMINE';
+export type EtatCycleMatch =
+  'A_VENIR'
+  | 'DEMARRE'
+  | 'TERMINE'
+  | 'ANNULE';
 
 export interface CreerMatchRequest {
   terrainId: number;

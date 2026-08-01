@@ -216,6 +216,9 @@ L'espace administrateur permet de :
 - déclencher le traitement de veille ;
 - déclencher le traitement d'échéance.
 
+Les deux traitements administratifs sont accessibles dans Angular uniquement
+à un administrateur `GLOBAL`. Le backend applique également cette autorisation.
+
 ---
 
 ## 6. Règles métier principales

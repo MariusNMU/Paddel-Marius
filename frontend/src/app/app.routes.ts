@@ -104,6 +104,18 @@ export const routes: Routes = [
     canActivate: [adminGlobalGuard]
   },
   {
+    path: 'admin/traitement-echeance',
+    loadComponent: () =>
+      import(
+        './pages/admin-traitement-echeance/admin-traitement-echeance.component'
+        )
+        .then(
+          component =>
+            component.AdminTraitementEcheanceComponent
+        ),
+    canActivate: [adminGlobalGuard]
+  },
+  {
     path: 'admin/fermetures',
     loadComponent: () =>
       import('./pages/admin-fermetures/admin-fermetures.component')

@@ -143,6 +143,11 @@ describe(
 
         expect(contenu)
           .toContain(
+            'Traitement d\'échéance'
+          );
+
+        expect(contenu)
+          .toContain(
             'État des matchs et terrains'
           );
       }
@@ -172,6 +177,11 @@ describe(
         expect(contenu)
           .not.toContain(
           'Traitement de veille'
+        );
+
+        expect(contenu)
+          .not.toContain(
+          'Traitement d\'échéance'
         );
 
         expect(contenu)

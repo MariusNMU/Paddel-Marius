@@ -119,6 +119,25 @@ import { enumLabel } from '../../shared/enum-label.util';
                   Lancer le traitement
                 </a>
               </mat-card>
+
+              <mat-card
+                appearance="outlined"
+                class="admin-action-card"
+              >
+                <h4>Traitement d'échéance</h4>
+
+                <p>
+                  Faire évoluer les matches démarrés ou terminés
+                  et créer les dettes nécessaires à l'heure courante.
+                </p>
+
+                <a
+                  mat-flat-button
+                  routerLink="/admin/traitement-echeance"
+                >
+                  Lancer le traitement
+                </a>
+              </mat-card>
             }
           </div>
         </mat-card>

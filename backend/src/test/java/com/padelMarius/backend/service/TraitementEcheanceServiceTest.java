@@ -146,6 +146,35 @@ class TraitementEcheanceServiceTest {
     }
 
     @Test
+    void traiterMatchesArrivesAEcheance_shouldCountLateMatchOnlyOnceWhenStartedAndFinishedInSameRun() {
+        PadelMatch match = creerMatch(
+                300L,
+                ModeCreation.PUBLIC,
+                BigDecimal.ZERO
+        );
+
+        when(padelMatchRepository.findArrivesAEcheanceForUpdate(
+                eq(EtatCycleMatch.A_VENIR),
+                any(LocalDateTime.class)
+        )).thenReturn(List.of(match));
+
+        when(padelMatchRepository.findATerminerForUpdate(
+                eq(EtatCycleMatch.DEMARRE),
+                any(LocalDateTime.class)
+        )).thenReturn(List.of(match));
+
+        stubDetteNonCreee(300L);
+
+        TraitementEcheanceResponse response =
+                service.traiterMatchesArrivesAEcheance();
+
+        assertEquals(1, response.matchesAnalyses());
+        assertEquals(1, response.matchesDemarres());
+        assertEquals(1, response.matchesTermines());
+        assertEquals(EtatCycleMatch.TERMINE, match.getEtatCycle());
+    }
+
+    @Test
     void traiterMatchesArrivesAEcheance_shouldCreatePenaltyForOrganizerWhenPrivateOriginMatchStillIncomplete() {
         PadelMatch match = creerMatch(100L, ModeCreation.PRIVE, BigDecimal.ZERO);
         Membre organisateur = creerMembre(20L, "G0001");

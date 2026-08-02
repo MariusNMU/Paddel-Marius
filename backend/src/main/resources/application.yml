@@ -40,6 +40,10 @@ padel:
     planification-active: ${PADEL_ECHEANCES_PLANIFICATION_ACTIVE:true}
     delai-initial-ms: ${PADEL_ECHEANCES_DELAI_INITIAL_MS:60000}
     intervalle-ms: ${PADEL_ECHEANCES_INTERVALLE_MS:60000}
+  traitement-veille:
+    planification-active: ${PADEL_VEILLE_PLANIFICATION_ACTIVE:true}
+    delai-initial-ms: ${PADEL_VEILLE_DELAI_INITIAL_MS:30000}
+    intervalle-ms: ${PADEL_VEILLE_INTERVALLE_MS:3600000}
   demo:
     enabled: ${PADEL_DEMO_ENABLED:true}
     mot-de-passe-joueur: password

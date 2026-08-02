@@ -78,6 +78,7 @@ describe(
         '2026-07-20T17:00:00',
       matchesAnalyses: 3,
       matchesDemarres: 2,
+      matchesTermines: 1,
       dettesCreees: 1
     };
 

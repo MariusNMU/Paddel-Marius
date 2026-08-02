@@ -94,6 +94,7 @@ public class TraitementEcheanceService {
                 maintenant,
                 matches.size() + matchesDemarresATerminer.size(),
                 matchesDemarres,
+                matchesTermines,
                 dettesCreees
         );
     }

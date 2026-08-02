@@ -146,6 +146,16 @@ import {
 
             <mat-card
               appearance="outlined"
+              class="traitement-card"
+            >
+              <span>Matches terminés</span>
+              <strong>
+                {{ traitement.matchesTermines }}
+              </strong>
+            </mat-card>
+
+            <mat-card
+              appearance="outlined"
               class="traitement-card warning"
             >
               <span>Dettes créées</span>

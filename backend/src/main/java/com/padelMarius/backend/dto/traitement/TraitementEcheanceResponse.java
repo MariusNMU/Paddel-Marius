@@ -6,6 +6,7 @@ public record TraitementEcheanceResponse(
         LocalDateTime dateHeureTraitement,
         int matchesAnalyses,
         int matchesDemarres,
+        int matchesTermines,
         int dettesCreees
 ) {
 }

@@ -567,6 +567,7 @@ Lancer le traitement d'échéance
 date et heure du traitement
 matches analysés
 matches démarrés
+matches terminés
 dettes créées
 ```
 

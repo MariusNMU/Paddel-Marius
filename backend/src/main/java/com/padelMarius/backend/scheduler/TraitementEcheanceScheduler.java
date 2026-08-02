@@ -36,9 +36,11 @@ public class TraitementEcheanceScheduler {
             LOGGER.info(
                     "Traitement automatique des échéances terminé : "
                             + "{} match(s) analysé(s), "
-                            + "{} démarré(s), {} dette(s) créée(s).",
+                            + "{} démarré(s), {} terminé(s), "
+                            + "{} dette(s) créée(s).",
                     resultat.matchesAnalyses(),
                     resultat.matchesDemarres(),
+                    resultat.matchesTermines(),
                     resultat.dettesCreees()
             );
         } catch (RuntimeException exception) {

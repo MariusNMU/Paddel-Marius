@@ -71,13 +71,25 @@ public class MembreInscriptionService {
                 );
             }
 
-            return siteRepository.findById(request.siteRattachementId())
+            Site site = siteRepository.findById(request.siteRattachementId())
                     .orElseThrow(() -> new RessourceIntrouvableException(
                             "Site introuvable avec l'id " + request.siteRattachementId()
                     ));
+
+            verifierSiteActif(site);
+
+            return site;
         }
 
         return null;
+    }
+
+    private void verifierSiteActif(Site site) {
+        if (!site.isActif()) {
+            throw new ConfigurationMetierException(
+                    "Le site demandé est inactif."
+            );
+        }
     }
 
     private String genererMatricule(CategorieMembre categorieMembre) {

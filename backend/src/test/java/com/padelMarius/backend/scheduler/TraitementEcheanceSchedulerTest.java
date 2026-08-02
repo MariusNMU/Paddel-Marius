@@ -25,6 +25,7 @@ class TraitementEcheanceSchedulerTest {
                         LocalDateTime.of(2026, 8, 2, 12, 0),
                         2,
                         1,
+                        1,
                         1
                 ));
 

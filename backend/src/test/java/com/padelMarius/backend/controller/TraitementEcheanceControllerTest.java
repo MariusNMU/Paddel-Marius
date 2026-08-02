@@ -33,6 +33,7 @@ class TraitementEcheanceControllerTest {
                 LocalDateTime.of(2026, 5, 17, 17, 0),
                 2,
                 1,
+                1,
                 1
         );
 
@@ -47,6 +48,7 @@ class TraitementEcheanceControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.matchesAnalyses").value(2))
                 .andExpect(jsonPath("$.matchesDemarres").value(1))
+                .andExpect(jsonPath("$.matchesTermines").value(1))
                 .andExpect(jsonPath("$.dettesCreees").value(1));
     }
 }

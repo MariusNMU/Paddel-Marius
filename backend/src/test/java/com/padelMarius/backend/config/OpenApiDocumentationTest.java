@@ -76,7 +76,7 @@ class OpenApiDocumentationTest {
     }
 
     @Test
-    void shouldExposeStableMatchAndPaymentSchemas() throws Exception {
+    void shouldExposeStableMatchPaymentAndDeadlineSchemas() throws Exception {
         MvcResult result = mockMvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
                 .andReturn();
@@ -114,6 +114,19 @@ class OpenApiDocumentationTest {
                         "PAYE",
                         "ANNULE"
                 );
+
+        JsonNode traitementEcheanceProperties = schemas
+                .path("TraitementEcheanceResponse")
+                .path("properties");
+
+        assertThat(traitementEcheanceProperties.has("matchesAnalyses"))
+                .isTrue();
+        assertThat(traitementEcheanceProperties.has("matchesDemarres"))
+                .isTrue();
+        assertThat(traitementEcheanceProperties.has("matchesTermines"))
+                .isTrue();
+        assertThat(traitementEcheanceProperties.has("dettesCreees"))
+                .isTrue();
     }
 
     @Test

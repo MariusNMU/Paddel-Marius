@@ -37,6 +37,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -216,6 +217,33 @@ class DisponibiliteServiceTest {
         assertThrows(
                 RessourceIntrouvableException.class,
                 () -> disponibiliteService.consulterDisponibilites(999L, date)
+        );
+    }
+
+    @Test
+    void shouldRejectInactiveSiteBeforeCalculatingAvailability() {
+        LocalDate date = LocalDate.of(2026, 5, 8);
+        Site site = creerSite(1L);
+        site.setActif(false);
+
+        when(siteRepository.findById(1L))
+                .thenReturn(Optional.of(site));
+
+        ConfigurationMetierException exception = assertThrows(
+                ConfigurationMetierException.class,
+                () -> disponibiliteService.consulterDisponibilites(1L, date)
+        );
+
+        assertEquals(
+                "Le site demandé est inactif.",
+                exception.getMessage()
+        );
+
+        verifyNoInteractions(
+                fermetureRepository,
+                horaireAnnuelSiteRepository,
+                terrainRepository,
+                padelMatchRepository
         );
     }
 

@@ -99,6 +99,7 @@ class TraitementEcheanceServiceTest {
 
         assertEquals(1, response.matchesAnalyses());
         assertEquals(1, response.matchesDemarres());
+        assertEquals(0, response.matchesTermines());
         assertEquals(1, response.dettesCreees());
         assertEquals(EtatCycleMatch.DEMARRE, match.getEtatCycle());
 
@@ -134,6 +135,7 @@ class TraitementEcheanceServiceTest {
 
         assertEquals(1, response.matchesAnalyses());
         assertEquals(0, response.matchesDemarres());
+        assertEquals(1, response.matchesTermines());
         assertEquals(0, response.dettesCreees());
         assertEquals(EtatCycleMatch.TERMINE, matchDemarre.getEtatCycle());
 

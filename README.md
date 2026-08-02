@@ -235,6 +235,8 @@ démonstration. La planification peut être configurée avec
 - Chaque terrain appartient à un seul site.
 - Les horaires de réservation sont définis par site et par année civile.
 - Les heures de début et de fin de réservation peuvent être différentes selon le site.
+- Un membre `SITE` ne peut pas être inscrit sur un site inactif.
+- Les disponibilités d'un site inactif ne peuvent pas être consultées.
 - Une fermeture peut être globale ou locale.
 - Une fermeture globale concerne tous les sites.
 - Une fermeture locale concerne un seul site.

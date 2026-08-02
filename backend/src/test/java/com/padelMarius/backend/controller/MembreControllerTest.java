@@ -4,6 +4,7 @@ import com.padelMarius.backend.dto.membre.InscriptionMembreRequest;
 import com.padelMarius.backend.dto.membre.MembreResponse;
 import com.padelMarius.backend.dto.membre.SoldeJoueurResponse;
 import com.padelMarius.backend.entity.CategorieMembre;
+import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.service.MembreInscriptionService;
 import com.padelMarius.backend.service.MembreSoldeService;
 import org.junit.jupiter.api.Test;
@@ -143,6 +144,36 @@ class MembreControllerTest {
                                         + "Le mot de passe doit contenir "
                                         + "entre 12 et 72 caractères."
                         ));
+    }
+
+    @Test
+    void inscrireMembre_shouldReturnConflict_whenSiteIsInactive()
+            throws Exception {
+        String json = """
+                {
+                  "nom": "Martin",
+                  "prenom": "Luc",
+                  "categorieMembre": "SITE",
+                  "siteRattachementId": 1001,
+                  "motDePasse": "MotDePasse2026!",
+                  "confirmationMotDePasse": "MotDePasse2026!"
+                }
+                """;
+
+        when(membreInscriptionService.inscrireMembre(
+                any(InscriptionMembreRequest.class)
+        )).thenThrow(new ConfigurationMetierException(
+                "Le site demandé est inactif."
+        ));
+
+        mockMvc.perform(post("/api/membres/inscription")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code")
+                        .value("CONFIGURATION_METIER_INVALIDE"))
+                .andExpect(jsonPath("$.message")
+                        .value("Le site demandé est inactif."));
     }
 
     @Test

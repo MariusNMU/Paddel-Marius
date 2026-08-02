@@ -1,6 +1,7 @@
 package com.padelMarius.backend.integration;
 
 import com.padelMarius.backend.dto.dette.PayerDetteRequest;
+import com.padelMarius.backend.dto.fermeture.CreerFermetureRequest;
 import com.padelMarius.backend.entity.CategorieMembre;
 import com.padelMarius.backend.entity.Dette;
 import com.padelMarius.backend.entity.EtatCycleMatch;
@@ -11,6 +12,7 @@ import com.padelMarius.backend.entity.NaturePaiement;
 import com.padelMarius.backend.entity.PadelMatch;
 import com.padelMarius.backend.entity.Paiement;
 import com.padelMarius.backend.entity.Participation;
+import com.padelMarius.backend.entity.PorteeFermeture;
 import com.padelMarius.backend.entity.RoleParticipation;
 import com.padelMarius.backend.entity.Site;
 import com.padelMarius.backend.entity.StatutDette;
@@ -27,6 +29,7 @@ import com.padelMarius.backend.repository.ParticipationRepository;
 import com.padelMarius.backend.repository.SiteRepository;
 import com.padelMarius.backend.repository.TerrainRepository;
 import com.padelMarius.backend.service.DetteService;
+import com.padelMarius.backend.service.AdminFermetureService;
 import com.padelMarius.backend.service.PaiementService;
 import com.padelMarius.backend.service.TraitementEcheanceService;
 import org.junit.jupiter.api.BeforeEach;
@@ -132,6 +135,9 @@ class ConcurrencePostgreSqlITest {
 
     @Autowired
     private PaiementService paiementService;
+
+    @Autowired
+    private AdminFermetureService adminFermetureService;
 
     @Autowired
     private DetteService detteService;
@@ -341,6 +347,73 @@ class ConcurrencePostgreSqlITest {
                         SOLDE_INITIAL_JOUEUR.subtract(
                                 MONTANT_PARTICIPATION_STANDARD
                         )
+                );
+    }
+
+    @Test
+    void fermeture_et_paiement_concurrents_doivent_laisser_un_etat_financier_coherent()
+            throws Exception {
+        Terrain terrain = creerTerrain();
+        Membre joueur = creerMembre(SOLDE_INITIAL_JOUEUR);
+
+        PadelMatch match = creerMatch(
+                terrain,
+                maintenant().plusDays(1),
+                EtatCycleMatch.A_VENIR
+        );
+        Participation participation = creerParticipation(
+                match,
+                joueur,
+                RoleParticipation.JOUEUR,
+                StatutParticipation.EN_ATTENTE_PAIEMENT
+        );
+
+        CreerFermetureRequest fermeture = new CreerFermetureRequest(
+                match.getDateHeureDebut().toLocalDate(),
+                PorteeFermeture.GLOBALE,
+                null,
+                "Fermeture concurrente de test"
+        );
+
+        List<ResultatConcurrent> resultats = executerEnParallele(
+                List.of(
+                        () -> {
+                            paiementService.payerParticipationStandard(
+                                    participation.getId()
+                            );
+                            return null;
+                        },
+                        () -> {
+                            adminFermetureService.creerFermeture(fermeture);
+                            return null;
+                        }
+                )
+        );
+
+        List<Throwable> erreurs = resultats.stream()
+                .filter(resultat -> !resultat.reussi())
+                .map(ResultatConcurrent::erreur)
+                .toList();
+
+        assertThat(erreurs)
+                .allMatch(ConfigurationMetierException.class::isInstance);
+
+        PadelMatch matchRecharge = padelMatchRepository
+                .findById(match.getId())
+                .orElseThrow();
+        Membre joueurRecharge = membreRepository
+                .findById(joueur.getId())
+                .orElseThrow();
+        List<Paiement> paiements = paiementRepository.findAll();
+
+        assertThat(matchRecharge.getEtatCycle())
+                .isEqualTo(EtatCycleMatch.ANNULE);
+        assertThat(joueurRecharge.getSoldeCredit())
+                .isEqualByComparingTo(SOLDE_INITIAL_JOUEUR);
+        assertThat(paiements.size()).isLessThanOrEqualTo(1);
+        assertThat(paiements)
+                .allMatch(paiement ->
+                        paiement.getStatutPaiement() == StatutPaiement.ANNULE
                 );
     }
 

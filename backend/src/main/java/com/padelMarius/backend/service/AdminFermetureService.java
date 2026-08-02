@@ -4,30 +4,32 @@ import com.padelMarius.backend.dto.fermeture.CreerFermetureRequest;
 import com.padelMarius.backend.dto.fermeture.FermetureAdminResponse;
 import com.padelMarius.backend.entity.EtatCycleMatch;
 import com.padelMarius.backend.entity.Fermeture;
+import com.padelMarius.backend.entity.Membre;
+import com.padelMarius.backend.entity.NaturePaiement;
 import com.padelMarius.backend.entity.PadelMatch;
+import com.padelMarius.backend.entity.Paiement;
 import com.padelMarius.backend.entity.PorteeFermeture;
 import com.padelMarius.backend.entity.Site;
+import com.padelMarius.backend.entity.StatutPaiement;
 import com.padelMarius.backend.entity.Terrain;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.repository.FermetureRepository;
+import com.padelMarius.backend.repository.MembreRepository;
 import com.padelMarius.backend.repository.PadelMatchRepository;
+import com.padelMarius.backend.repository.PaiementRepository;
 import com.padelMarius.backend.repository.SiteRepository;
 import com.padelMarius.backend.repository.TerrainRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.padelMarius.backend.entity.Membre;
-import com.padelMarius.backend.entity.NaturePaiement;
-import com.padelMarius.backend.entity.Paiement;
-import com.padelMarius.backend.entity.StatutPaiement;
-import com.padelMarius.backend.repository.PaiementRepository;
 
 import java.math.BigDecimal;
-
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +40,7 @@ public class AdminFermetureService {
     private final TerrainRepository terrainRepository;
     private final PadelMatchRepository padelMatchRepository;
     private final PaiementRepository paiementRepository;
+    private final MembreRepository membreRepository;
 
     @Transactional
     public FermetureAdminResponse creerFermeture(CreerFermetureRequest request) {
@@ -170,21 +173,49 @@ public class AdminFermetureService {
 
         return terrainRepository.findBySiteAndActifTrue(site);
     }
+
     private ResultatRemboursement rembourserPaiementsDuMatch(PadelMatch match) {
-        List<Paiement> paiements = paiementRepository
-                .findByParticipation_Match_IdAndNaturePaiementAndStatutPaiement(
+        List<Paiement> paiements = paiementRepository.findPayesDuMatchForUpdate(
                         match.getId(),
                         NaturePaiement.PARTICIPATION,
                         StatutPaiement.PAYE
                 );
 
+        List<Long> membreIds = paiements.stream()
+                .map(Paiement::getMembre)
+                .filter(membre -> membre != null && membre.getId() != null)
+                .map(Membre::getId)
+                .distinct()
+                .sorted()
+                .toList();
+
+        Map<Long, Membre> membresVerrouilles = new LinkedHashMap<>();
+
+        if (!membreIds.isEmpty()) {
+            membreRepository.findAllByIdForUpdate(membreIds)
+                    .forEach(membre -> membresVerrouilles.put(
+                            membre.getId(),
+                            membre
+                    ));
+        }
+
+        if (membresVerrouilles.size() != membreIds.size()) {
+            throw new ConfigurationMetierException(
+                    "Impossible de verrouiller tous les membres à rembourser."
+            );
+        }
+
         int nombreRemboursements = 0;
         BigDecimal montantTotal = BigDecimal.ZERO;
 
         for (Paiement paiement : paiements) {
-            Membre membre = paiement.getMembre();
+            Membre membre = paiement.getMembre() == null
+                    ? null
+                    : membresVerrouilles.get(paiement.getMembre().getId());
 
-            if (membre != null && paiement.getMontant() != null) {
+            if (paiement.getStatutPaiement() == StatutPaiement.PAYE
+                    && membre != null
+                    && paiement.getMontant() != null) {
                 BigDecimal soldeActuel = membre.getSoldeCredit() != null
                         ? membre.getSoldeCredit()
                         : BigDecimal.ZERO;
@@ -212,6 +243,7 @@ public class AdminFermetureService {
             BigDecimal montantTotalRembourse
     ) {
     }
+
     private ResultatAnnulation annulerMatchesAVenir(
             CreerFermetureRequest request,
             List<Terrain> terrainsConcernes
@@ -223,8 +255,7 @@ public class AdminFermetureService {
         LocalDateTime debutJour = request.dateFermeture().atStartOfDay();
         LocalDateTime finJour = request.dateFermeture().atTime(LocalTime.MAX);
 
-        List<PadelMatch> matches = padelMatchRepository
-                .findByTerrainInAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBeforeAndEtatCycle(
+        List<PadelMatch> matches = padelMatchRepository.findPourFermetureForUpdate(
                         terrainsConcernes,
                         debutJour,
                         finJour,

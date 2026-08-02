@@ -125,11 +125,7 @@ import { enumLabel } from '../../shared/enum-label.util';
               <strong>Dettes réglées</strong>
               <br>
               {{
-                (
-                  paiement
-                    .montantDettesReglees
-                  ?? 0
-                )
+                paiement.montantDettesReglees
                   | number:'1.2-2'
               }}
               €
@@ -139,11 +135,7 @@ import { enumLabel } from '../../shared/enum-label.util';
               <strong>Total débité</strong>
               <br>
               {{
-                (
-                  paiement
-                    .montantTotalDebite
-                  ?? paiement.montant
-                )
+                paiement.montantTotalDebite
                   | number:'1.2-2'
               }}
               €

@@ -557,6 +557,13 @@ Cette opération crée la participation et effectue le paiement dans la même tr
 
 La génération d'une dette n'est pas exposée librement aux joueurs. Elle est déclenchée par le backend lors des traitements métier.
 
+Le cycle `A_VENIR` vers `DEMARRE`, puis `DEMARRE` vers `TERMINE`, est mis à
+jour par `TraitementEcheanceScheduler`. La tâche appelle la couche service à
+intervalle configurable. L'endpoint administrateur reste disponible pour un
+déclenchement manuel. Les opérations de participation et de paiement vérifient
+également l'heure réelle du match : la planification ne remplace donc pas les
+contrôles métier directs.
+
 ### 5.2. Contrat d'erreur API
 
 Les erreurs API importantes suivent le format :

@@ -572,8 +572,10 @@ dettes créées
 
 Le traitement d'échéance fait évoluer le cycle des matches : A_VENIR vers
 DEMARRE, puis DEMARRE vers TERMINE. Il peut aussi déclencher les dettes et
-les pénalités selon l'état du match. L'API reste disponible dans Swagger via
-`POST /api/admin/matches/traitement-echeance`.
+les pénalités selon l'état du match. Le backend l'exécute automatiquement ;
+l'écran Angular et l'API Swagger `POST /api/admin/matches/traitement-echeance`
+permettent à un administrateur `GLOBAL` de déclencher manuellement le même
+service pendant la démonstration.
 
 ### Étape 15 — Montrer la documentation technique
 

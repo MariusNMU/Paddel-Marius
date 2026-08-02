@@ -45,7 +45,7 @@ describe('enumLabel', () => {
   it('doit traduire tous les statuts de paiement', () => {
     expect(enumLabel('EN_ATTENTE')).toBe('En attente');
     expect(enumLabel('PAYE')).toBe('Payé');
-    expect(enumLabel('REFUSE')).toBe('Refusé');
+    expect(enumLabel('ANNULE')).toBe('Annulé');
   });
 
   it('doit garder la valeur technique si aucun libellé n existe encore', () => {

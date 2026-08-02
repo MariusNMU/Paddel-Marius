@@ -32,6 +32,17 @@ public interface MembreRepository extends JpaRepository<Membre, Long> {
             @Param("matricule") String matricule
     );
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select membre
+            from Membre membre
+            where membre.id in :membreIds
+            order by membre.id
+            """)
+    List<Membre> findAllByIdForUpdate(
+            @Param("membreIds") List<Long> membreIds
+    );
+
     Optional<Membre> findByMatricule(String matricule);
 
     boolean existsByMatricule(String matricule);

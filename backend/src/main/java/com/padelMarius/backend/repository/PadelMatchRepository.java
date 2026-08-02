@@ -67,11 +67,21 @@ public interface PadelMatchRepository extends JpaRepository<PadelMatch, Long> {
             @Param("dateHeureDebut") LocalDateTime dateHeureDebut
     );
 
-    List<PadelMatch> findByTerrainInAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBeforeAndEtatCycle(
-            List<Terrain> terrains,
-            LocalDateTime debut,
-            LocalDateTime fin,
-            EtatCycleMatch etatCycle
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select padelMatch
+            from PadelMatch padelMatch
+            where padelMatch.terrain in :terrains
+              and padelMatch.dateHeureDebut >= :debut
+              and padelMatch.dateHeureDebut < :fin
+              and padelMatch.etatCycle = :etatCycle
+            order by padelMatch.id
+            """)
+    List<PadelMatch> findPourFermetureForUpdate(
+            @Param("terrains") List<Terrain> terrains,
+            @Param("debut") LocalDateTime debut,
+            @Param("fin") LocalDateTime fin,
+            @Param("etatCycle") EtatCycleMatch etatCycle
     );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

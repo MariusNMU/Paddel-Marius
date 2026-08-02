@@ -6,8 +6,10 @@ import com.padelMarius.backend.dto.paiement.HistoriquePaiementResponse;
 import com.padelMarius.backend.dto.paiement.PaiementResponse;
 import com.padelMarius.backend.dto.paiement.PayerParticipationRequest;
 import com.padelMarius.backend.entity.Dette;
+import com.padelMarius.backend.entity.EtatCycleMatch;
 import com.padelMarius.backend.entity.Membre;
 import com.padelMarius.backend.entity.NaturePaiement;
+import com.padelMarius.backend.entity.PadelMatch;
 import com.padelMarius.backend.entity.Paiement;
 import com.padelMarius.backend.entity.Participation;
 import com.padelMarius.backend.entity.StatutDette;
@@ -17,6 +19,7 @@ import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.repository.DetteRepository;
 import com.padelMarius.backend.repository.MembreRepository;
+import com.padelMarius.backend.repository.PadelMatchRepository;
 import com.padelMarius.backend.repository.PaiementRepository;
 import com.padelMarius.backend.repository.ParticipationRepository;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +43,7 @@ public class PaiementService {
     private final PaiementRepository paiementRepository;
     private final DetteRepository detteRepository;
     private final MembreRepository membreRepository;
+    private final PadelMatchRepository padelMatchRepository;
     private final DetteService detteService;
     private final Clock clock;
 
@@ -53,22 +57,17 @@ public class PaiementService {
 
     @Transactional
     public PaiementResponse payerParticipation(Long participationId, PayerParticipationRequest request) {
-        Long membreId = participationRepository.findMembreIdById(participationId)
+        Participation participation =
+                participationRepository.findByIdForUpdate(participationId)
                 .orElseThrow(() -> new RessourceIntrouvableException(
                         "Participation introuvable avec l'id " + participationId
                 ));
 
-        Membre membre = membreRepository.findByIdForUpdate(membreId)
-                .orElseThrow(() -> new RessourceIntrouvableException(
-                        "Membre introuvable avec l'id " + membreId
-                ));
+        PadelMatch match = verrouillerMatch(participation);
+        Membre membre = verrouillerMembre(participation);
 
-        Participation participation =
-                participationRepository.findByIdForUpdate(participationId)
-                        .orElseThrow(() -> new RessourceIntrouvableException(
-                                "Participation introuvable avec l'id "
-                                        + participationId
-                        ));
+        participation.setMatch(match);
+        participation.setMembre(membre);
 
         verifierPaiementPossible(participation, request);
 
@@ -128,6 +127,38 @@ public class PaiementService {
         );
     }
 
+    private PadelMatch verrouillerMatch(Participation participation) {
+        if (participation.getMatch() == null
+                || participation.getMatch().getId() == null) {
+            throw new ConfigurationMetierException(
+                    "La participation doit être liée à un match."
+            );
+        }
+
+        Long matchId = participation.getMatch().getId();
+
+        return padelMatchRepository.findByIdForUpdate(matchId)
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        "Match introuvable avec l'id " + matchId
+                ));
+    }
+
+    private Membre verrouillerMembre(Participation participation) {
+        if (participation.getMembre() == null
+                || participation.getMembre().getId() == null) {
+            throw new ConfigurationMetierException(
+                    "La participation doit être liée à un membre."
+            );
+        }
+
+        Long membreId = participation.getMembre().getId();
+
+        return membreRepository.findByIdForUpdate(membreId)
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        "Membre introuvable avec l'id " + membreId
+                ));
+    }
+
     @Transactional(readOnly = true)
     public List<HistoriquePaiementResponse> consulterHistoriquePaiements(String matricule) {
         String matriculeNormalise = normaliserMatricule(matricule);
@@ -170,10 +201,26 @@ public class PaiementService {
             throw new ConfigurationMetierException("Cette participation est déjà confirmée.");
         }
 
+        verifierMatchOuvertAuPaiement(participation.getMatch());
+
         if (paiementRepository.existsByParticipationId(participation.getId())) {
             throw new ConfigurationMetierException("Cette participation possède déjà un paiement.");
         }
     }
+
+    private void verifierMatchOuvertAuPaiement(PadelMatch match) {
+        LocalDateTime maintenant = LocalDateTime.now(clock);
+
+        if (match == null
+                || match.getEtatCycle() != EtatCycleMatch.A_VENIR
+                || match.getDateHeureDebut() == null
+                || !match.getDateHeureDebut().isAfter(maintenant)) {
+            throw new ConfigurationMetierException(
+                    "Le match n'accepte plus de paiement."
+            );
+        }
+    }
+
     private void debiterSolde(Membre membre, BigDecimal montant) {
         if (membre.getSoldeCredit() == null) {
             throw new ConfigurationMetierException("Le solde du membre n'est pas initialisé.");

@@ -79,7 +79,7 @@ class PadelMatchRepositoryTest {
     }
 
     @Test
-    void findByTerrainInAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBeforeAndEtatCycle_shouldReturnOnlyFutureMatchesForSelectedTerrains() {
+    void findPourFermetureForUpdate_shouldReturnOnlyFutureMatchesForSelectedTerrains() {
         Site site = siteRepository.save(Site.builder()
                 .code("TEST-FERM")
                 .nom("Site fermeture")
@@ -126,7 +126,7 @@ class PadelMatchRepositoryTest {
         ));
 
         List<PadelMatch> resultats = padelMatchRepository
-                .findByTerrainInAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBeforeAndEtatCycle(
+                .findPourFermetureForUpdate(
                         List.of(terrainConcerne),
                         LocalDateTime.of(2026, 8, 15, 0, 0),
                         LocalDateTime.of(2026, 8, 16, 0, 0),

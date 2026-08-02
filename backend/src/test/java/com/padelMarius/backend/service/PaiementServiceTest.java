@@ -23,6 +23,7 @@ import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.repository.DetteRepository;
 import com.padelMarius.backend.repository.MembreRepository;
+import com.padelMarius.backend.repository.PadelMatchRepository;
 import com.padelMarius.backend.repository.PaiementRepository;
 import com.padelMarius.backend.repository.ParticipationRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,6 +66,9 @@ class PaiementServiceTest {
     private MembreRepository membreRepository;
 
     @Mock
+    private PadelMatchRepository padelMatchRepository;
+
+    @Mock
     private DetteService detteService;
 
     private PaiementService paiementService;
@@ -84,6 +88,7 @@ class PaiementServiceTest {
                 paiementRepository,
                 detteRepository,
                 membreRepository,
+                padelMatchRepository,
                 detteService,
                 clockFixe
         );
@@ -140,6 +145,123 @@ class PaiementServiceTest {
         verify(paiementRepository).save(any(Paiement.class));
         verify(participationRepository).save(participation);
         verify(detteService).actualiserDettePourMatch(any(PadelMatch.class));
+    }
+
+    @Test
+    void payerParticipation_shouldCreatePayment_justBeforeMatchStart() {
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        PadelMatch match = creerMatch(100L, terrain);
+        match.setDateHeureDebut(LocalDateTime.of(2026, 5, 7, 12, 0, 1));
+        match.setDateHeureFin(LocalDateTime.of(2026, 5, 7, 13, 30, 1));
+
+        Membre membre = creerMembre(21L, "G0002");
+        Participation participation = creerParticipation(
+                300L,
+                match,
+                membre,
+                StatutParticipation.EN_ATTENTE_PAIEMENT
+        );
+
+        configurerParticipationVerrouillee(participation);
+        when(paiementRepository.existsByParticipationId(300L))
+                .thenReturn(false);
+        when(detteRepository.findByMembreResponsableIdAndStatutDette(
+                membre.getId(),
+                StatutDette.OUVERTE
+        )).thenReturn(List.of());
+        when(paiementRepository.save(any(Paiement.class)))
+                .thenAnswer(invocation -> {
+                    Paiement paiement = invocation.getArgument(0);
+                    ReflectionTestUtils.setField(paiement, "id", 400L);
+                    return paiement;
+                });
+        when(participationRepository.save(any(Participation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        PaiementResponse response = paiementService.payerParticipationStandard(300L);
+
+        assertEquals(400L, response.paiementId());
+        assertEquals(StatutParticipation.CONFIRMEE, response.statutParticipation());
+    }
+
+    @Test
+    void payerParticipation_shouldRejectMatchAfterStartTime() {
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        PadelMatch match = creerMatch(100L, terrain);
+        match.setDateHeureDebut(LocalDateTime.of(2026, 5, 7, 11, 59, 59));
+
+        Membre membre = creerMembre(21L, "G0002");
+        Participation participation = creerParticipation(
+                300L,
+                match,
+                membre,
+                StatutParticipation.EN_ATTENTE_PAIEMENT
+        );
+
+        configurerParticipationVerrouillee(participation);
+
+        ConfigurationMetierException exception = assertThrows(
+                ConfigurationMetierException.class,
+                () -> paiementService.payerParticipationStandard(300L)
+        );
+
+        assertEquals(
+                "Le match n'accepte plus de paiement.",
+                exception.getMessage()
+        );
+        verify(paiementRepository, never()).save(any());
+    }
+
+    @Test
+    void payerParticipation_shouldRejectMatchAtExactStartTime() {
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        PadelMatch match = creerMatch(100L, terrain);
+        match.setDateHeureDebut(LocalDateTime.of(2026, 5, 7, 12, 0));
+
+        Membre membre = creerMembre(21L, "G0002");
+        Participation participation = creerParticipation(
+                300L,
+                match,
+                membre,
+                StatutParticipation.EN_ATTENTE_PAIEMENT
+        );
+
+        configurerParticipationVerrouillee(participation);
+
+        assertThrows(
+                ConfigurationMetierException.class,
+                () -> paiementService.payerParticipationStandard(300L)
+        );
+
+        verify(paiementRepository, never()).save(any());
+    }
+
+    @Test
+    void payerParticipation_shouldRejectCancelledMatch() {
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        PadelMatch match = creerMatch(100L, terrain);
+        match.setEtatCycle(EtatCycleMatch.ANNULE);
+
+        Membre membre = creerMembre(21L, "G0002");
+        Participation participation = creerParticipation(
+                300L,
+                match,
+                membre,
+                StatutParticipation.EN_ATTENTE_PAIEMENT
+        );
+
+        configurerParticipationVerrouillee(participation);
+
+        assertThrows(
+                ConfigurationMetierException.class,
+                () -> paiementService.payerParticipationStandard(300L)
+        );
+
+        verify(paiementRepository, never()).save(any());
     }
 
     @Test
@@ -281,7 +403,7 @@ class PaiementServiceTest {
 
     @Test
     void payerParticipation_shouldThrowNotFound_whenParticipationDoesNotExist() {
-        when(participationRepository.findMembreIdById(999L))
+        when(participationRepository.findByIdForUpdate(999L))
                 .thenReturn(Optional.empty());
 
         assertThrows(
@@ -444,12 +566,12 @@ class PaiementServiceTest {
         Long participationId = participation.getId();
         Membre membre = participation.getMembre();
 
-        when(participationRepository.findMembreIdById(participationId))
-                .thenReturn(Optional.of(membre.getId()));
-        when(membreRepository.findByIdForUpdate(membre.getId()))
-                .thenReturn(Optional.of(membre));
         when(participationRepository.findByIdForUpdate(participationId))
                 .thenReturn(Optional.of(participation));
+        when(padelMatchRepository.findByIdForUpdate(participation.getMatch().getId()))
+                .thenReturn(Optional.of(participation.getMatch()));
+        when(membreRepository.findByIdForUpdate(membre.getId()))
+                .thenReturn(Optional.of(membre));
     }
 
     private Site creerSite(Long id) {

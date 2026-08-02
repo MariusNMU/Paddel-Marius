@@ -104,4 +104,34 @@ class MembreRepositoryTest {
         assertEquals(1, membresBruxelles.size());
         assertEquals("S3001", membresBruxelles.get(0).getMatricule());
     }
+
+    @Test
+    void findAllByIdForUpdate_shouldReturnMembersOrderedById() {
+        Membre premier = membreRepository.saveAndFlush(Membre.builder()
+                .matricule("G4001")
+                .nom("Premier")
+                .prenom("Membre")
+                .motDePasseHash("hash-test")
+                .categorieMembre(CategorieMembre.GLOBAL)
+                .actif(true)
+                .build());
+
+        Membre second = membreRepository.saveAndFlush(Membre.builder()
+                .matricule("G4002")
+                .nom("Second")
+                .prenom("Membre")
+                .motDePasseHash("hash-test")
+                .categorieMembre(CategorieMembre.GLOBAL)
+                .actif(true)
+                .build());
+
+        List<Membre> membres = membreRepository.findAllByIdForUpdate(
+                List.of(second.getId(), premier.getId())
+        );
+
+        assertEquals(
+                List.of(premier.getId(), second.getId()),
+                membres.stream().map(Membre::getId).toList()
+        );
+    }
 }

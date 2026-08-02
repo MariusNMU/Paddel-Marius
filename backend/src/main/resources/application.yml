@@ -36,6 +36,10 @@ springdoc:
     tags-sorter: alpha
 
 padel:
+  traitement-echeance:
+    planification-active: ${PADEL_ECHEANCES_PLANIFICATION_ACTIVE:true}
+    delai-initial-ms: ${PADEL_ECHEANCES_DELAI_INITIAL_MS:60000}
+    intervalle-ms: ${PADEL_ECHEANCES_INTERVALLE_MS:60000}
   demo:
     enabled: ${PADEL_DEMO_ENABLED:true}
     mot-de-passe-joueur: password

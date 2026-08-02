@@ -1,4 +1,5 @@
 import { routes } from './app.routes';
+import { adminGlobalGuard } from './guards/admin-global.guard';
 
 describe('routes', () => {
   it(
@@ -14,7 +15,25 @@ describe('routes', () => {
         .toHaveLength(0);
 
       expect(routesParesseuses)
-        .toHaveLength(18);
+        .toHaveLength(19);
+    }
+  );
+
+  it(
+    'doit réserver le traitement d échéance à l admin global',
+    () => {
+      const route =
+        routes.find(
+          element =>
+            element.path
+            === 'admin/traitement-echeance'
+        );
+
+      expect(route)
+        .toBeDefined();
+
+      expect(route?.canActivate)
+        .toContain(adminGlobalGuard);
     }
   );
 });

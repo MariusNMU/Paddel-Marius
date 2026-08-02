@@ -370,6 +370,7 @@ admin-dashboard
 admin-statistiques
 admin-membres
 admin-traitement-veille
+admin-traitement-echeance
 admin-fermetures
 ```
 

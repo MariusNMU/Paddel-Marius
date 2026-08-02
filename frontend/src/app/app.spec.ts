@@ -170,7 +170,7 @@ describe('App', () => {
   );
 
   it(
-    'doit masquer le traitement de veille à l admin SITE',
+    'doit masquer les traitements à l admin SITE',
     () => {
       facade.adminConnecte
         .mockReturnValue(true);
@@ -191,11 +191,16 @@ describe('App', () => {
         .not.toContain(
         'Traitement de veille'
       );
+
+      expect(texte)
+        .not.toContain(
+        'Traitement d\'échéance'
+      );
     }
   );
 
   it(
-    'doit afficher le traitement de veille à l admin GLOBAL',
+    'doit afficher les traitements à l admin GLOBAL',
     () => {
       facade.adminConnecte
         .mockReturnValue(true);
@@ -215,6 +220,11 @@ describe('App', () => {
       expect(texte)
         .toContain(
           'Traitement de veille'
+        );
+
+      expect(texte)
+        .toContain(
+          'Traitement d\'échéance'
         );
     }
   );

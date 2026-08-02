@@ -549,13 +549,31 @@ matches passés publics
 
 Le traitement de veille applique les règles avant les matches, notamment le passage public d'un match privé incomplet et la libération des participations non payées.
 
-Ouvrir aussi, si disponible dans l'interface ou via Swagger :
+Ouvrir ensuite :
 
-```http
-POST /api/admin/matches/traitement-echeance
+```txt
+Traitement d'échéance
 ```
 
-Le traitement d'échéance fait évoluer le cycle des matches : A_VENIR vers DEMARRE, puis DEMARRE vers TERMINE. Il peut aussi déclencher les dettes et les pénalités selon l'état du match.
+Cliquer sur :
+
+```txt
+Lancer le traitement d'échéance
+```
+
+À montrer :
+
+```txt
+date et heure du traitement
+matches analysés
+matches démarrés
+dettes créées
+```
+
+Le traitement d'échéance fait évoluer le cycle des matches : A_VENIR vers
+DEMARRE, puis DEMARRE vers TERMINE. Il peut aussi déclencher les dettes et
+les pénalités selon l'état du match. L'API reste disponible dans Swagger via
+`POST /api/admin/matches/traitement-echeance`.
 
 ### Étape 15 — Montrer la documentation technique
 

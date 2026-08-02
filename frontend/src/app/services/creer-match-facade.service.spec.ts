@@ -77,12 +77,14 @@ describe('CreerMatchFacadeService', () => {
     numeroTerrain: 'T2',
     siteId: 2,
     nomSite: 'Site Beta',
+    matriculeOrganisateur: 'G1001',
     dateHeureDebut: '2026-06-20T09:00:00',
     dateHeureFin: '2026-06-20T10:30:00',
     modeCreation: 'PRIVE',
     visibiliteCourante: 'PRIVE',
     prixTotal: 60,
-    etatCycle: 'A_VENIR'
+    etatCycle: 'A_VENIR',
+    participationOrganisateurId: 4001
   };
 
   const invitation: InvitationPriveeResponse = {

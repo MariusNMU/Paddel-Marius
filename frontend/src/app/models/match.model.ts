@@ -19,10 +19,12 @@ export interface MatchResponse {
   numeroTerrain: string;
   siteId: number;
   nomSite: string;
+  matriculeOrganisateur: string;
   dateHeureDebut: string;
   dateHeureFin: string;
   modeCreation: ModeCreation;
   visibiliteCourante: VisibiliteMatch;
   prixTotal: number;
   etatCycle: EtatCycleMatch;
+  participationOrganisateurId: number;
 }

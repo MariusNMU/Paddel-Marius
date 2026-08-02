@@ -1,29 +1,43 @@
+export type NaturePaiement =
+  'PARTICIPATION'
+  | 'REGLEMENT_DETTE';
+
+export type StatutPaiement =
+  'EN_ATTENTE'
+  | 'PAYE'
+  | 'ANNULE';
+
+export type StatutParticipation =
+  'EN_ATTENTE_PAIEMENT'
+  | 'CONFIRMEE'
+  | 'LIBEREE';
+
 export interface PayerParticipationRequest {
   montant: number;
 }
 
 export interface PaiementResponse {
   paiementId: number;
-  participationId?: number;
+  participationId: number;
   membreId: number;
-  matriculeMembre?: string;
+  matriculeMembre: string;
   montant: number;
-  montantDettesReglees?: number;
-  montantTotalDebite?: number;
-  naturePaiement: string;
-  statutPaiement: string;
-  statutParticipation?: string;
+  montantDettesReglees: number;
+  montantTotalDebite: number;
+  naturePaiement: NaturePaiement;
+  statutPaiement: StatutPaiement;
+  statutParticipation: StatutParticipation;
   dateHeurePaiement: string;
-  dateConfirmationParticipation?: string;
+  dateConfirmationParticipation: string;
 }
 
 export interface HistoriquePaiementResponse {
   paiementId: number;
   membreId: number;
   matriculeMembre: string;
-  naturePaiement: string;
+  naturePaiement: NaturePaiement;
   montant: number;
-  statutPaiement: string;
+  statutPaiement: StatutPaiement;
   dateHeurePaiement: string;
   participationId: number | null;
   detteId: number | null;

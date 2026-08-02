@@ -1,6 +1,9 @@
+import {
+  NaturePaiement,
+  StatutPaiement
+} from './paiement.model';
+
 export type StatutDette = 'OUVERTE' | 'REGLEE';
-export type NaturePaiement = 'PARTICIPATION' | 'REGLEMENT_DETTE';
-export type StatutPaiement = 'PAYE' | 'REFUSE';
 
 export interface DetteResponse {
   detteId: number;

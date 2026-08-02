@@ -14,15 +14,6 @@ import java.util.Optional;
 
 public interface ParticipationRepository extends JpaRepository<Participation, Long> {
 
-    @Query("""
-            select participation.membre.id
-            from Participation participation
-            where participation.id = :participationId
-            """)
-    Optional<Long> findMembreIdById(
-            @Param("participationId") Long participationId
-    );
-
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             select participation

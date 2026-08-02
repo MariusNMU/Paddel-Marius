@@ -47,7 +47,7 @@ class PaiementRepositoryTest {
     private SiteRepository siteRepository;
 
     @Test
-    void findByParticipationMatchIdAndNaturePaiementAndStatutPaiementDevraitRetournerSeulementLesPaiementsPayesDuMatch() {
+    void findPayesDuMatchForUpdate_shouldReturnOnlyPaidPaymentsForMatch() {
         DonneesTest donnees = creerDonneesTest();
 
         Participation participationPayeeMatch1 = creerParticipation(
@@ -103,7 +103,7 @@ class PaiementRepositoryTest {
         ));
         paiementRepository.flush();
 
-        List<Paiement> resultat = paiementRepository.findByParticipation_Match_IdAndNaturePaiementAndStatutPaiement(
+        List<Paiement> resultat = paiementRepository.findPayesDuMatchForUpdate(
                 donnees.match1().getId(),
                 NaturePaiement.PARTICIPATION,
                 StatutPaiement.PAYE

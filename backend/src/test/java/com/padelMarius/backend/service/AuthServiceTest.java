@@ -97,6 +97,38 @@ class AuthServiceTest {
     }
 
     @Test
+    void authentifierJoueur_shouldPreservePasswordWithSurroundingSpaces() {
+        Membre membre = creerMembre(
+                10L,
+                "G0001",
+                CategorieMembre.GLOBAL,
+                null,
+                true
+        );
+        membre.setMotDePasseHash(
+                passwordEncoder.encode(" motdepasse-avec-espaces ")
+        );
+
+        when(membreRepository.findByMatricule("G0001"))
+                .thenReturn(Optional.of(membre));
+        when(jwtService.genererTokenJoueur(membre))
+                .thenReturn(new JwtService.TokenGenere(
+                        "jwt-joueur",
+                        LocalDateTime.of(2026, 5, 30, 12, 0)
+                ));
+
+        AuthJoueurResponse response = authService.authentifierJoueur(
+                new ConnexionJoueurRequest(
+                        "G0001",
+                        " motdepasse-avec-espaces "
+                )
+        );
+
+        assertEquals("G0001", response.matricule());
+        assertEquals("jwt-joueur", response.token());
+    }
+
+    @Test
     void authentifierJoueur_shouldRejectUnknownMatricule() {
         when(membreRepository.findByMatricule("G9999"))
                 .thenReturn(Optional.empty());

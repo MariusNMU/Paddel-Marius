@@ -20,15 +20,17 @@ import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.repository.MembreRepository;
 import com.padelMarius.backend.repository.PadelMatchRepository;
 import com.padelMarius.backend.repository.ParticipationRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,6 +46,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ParticipationServiceTest {
 
+    private static final LocalDateTime MAINTENANT =
+            LocalDateTime.of(2026, 5, 20, 8, 0);
+
     @Mock
     private PadelMatchRepository padelMatchRepository;
 
@@ -57,8 +62,23 @@ class ParticipationServiceTest {
     private ReglesReservationMembreService
             reglesReservationMembreService;
 
-    @InjectMocks
     private ParticipationService participationService;
+
+    @BeforeEach
+    void setUp() {
+        Clock clockFixe = Clock.fixed(
+                MAINTENANT.atZone(ZoneId.systemDefault()).toInstant(),
+                ZoneId.systemDefault()
+        );
+
+        participationService = new ParticipationService(
+                padelMatchRepository,
+                membreRepository,
+                participationRepository,
+                reglesReservationMembreService,
+                clockFixe
+        );
+    }
 
     @Test
     void ajouterParticipantPrive_shouldCreateParticipation_whenRequestIsValid() {
@@ -147,6 +167,104 @@ class ParticipationServiceTest {
         assertEquals(StatutParticipation.EN_ATTENTE_PAIEMENT, response.statutParticipation());
 
         verify(participationRepository).save(any(Participation.class));
+    }
+
+    @Test
+    void inscrireParticipantPublic_shouldCreateParticipation_justBeforeMatchStart() {
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        PadelMatch match = creerMatch(
+                100L,
+                terrain,
+                VisibiliteMatch.PUBLIC,
+                ModeCreation.PUBLIC
+        );
+        match.setDateHeureDebut(MAINTENANT.plusSeconds(1));
+        match.setDateHeureFin(MAINTENANT.plusMinutes(90).plusSeconds(1));
+
+        Membre joueur = creerMembre(21L, "G0002");
+
+        when(padelMatchRepository.findByIdForUpdate(100L))
+                .thenReturn(Optional.of(match));
+        when(membreRepository.findByMatriculeForUpdate("G0002"))
+                .thenReturn(Optional.of(joueur));
+        when(participationRepository.findByMatchId(100L))
+                .thenReturn(List.of());
+        when(participationRepository.existsByMatchIdAndMembreId(100L, 21L))
+                .thenReturn(false);
+        when(participationRepository.findByMembreId(21L))
+                .thenReturn(List.of());
+        when(participationRepository.save(any(Participation.class)))
+                .thenAnswer(invocation -> {
+                    Participation participation = invocation.getArgument(0);
+                    ReflectionTestUtils.setField(participation, "id", 302L);
+                    return participation;
+                });
+
+        ParticipationResponse response = participationService
+                .inscrireParticipantPublic(
+                        100L,
+                        new InscriptionPubliqueRequest("G0002")
+                );
+
+        assertEquals(302L, response.participationId());
+        assertEquals(MAINTENANT, response.dateAffectation());
+    }
+
+    @Test
+    void ajouterParticipantPrive_shouldRejectMatchAfterStartTime() {
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        PadelMatch match = creerMatch(
+                100L,
+                terrain,
+                VisibiliteMatch.PRIVE,
+                ModeCreation.PRIVE
+        );
+        match.setDateHeureDebut(MAINTENANT.minusSeconds(1));
+
+        when(padelMatchRepository.findByIdForUpdate(100L))
+                .thenReturn(Optional.of(match));
+
+        ConfigurationMetierException exception = assertThrows(
+                ConfigurationMetierException.class,
+                () -> participationService.ajouterParticipantPrive(
+                        100L,
+                        new AjouterParticipantPriveRequest("G0002")
+                )
+        );
+
+        assertEquals(
+                "Le match n'accepte plus de nouvelle participation.",
+                exception.getMessage()
+        );
+        verify(participationRepository, never()).save(any());
+    }
+
+    @Test
+    void inscrireParticipantPublic_shouldRejectMatchAtExactStartTime() {
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        PadelMatch match = creerMatch(
+                100L,
+                terrain,
+                VisibiliteMatch.PUBLIC,
+                ModeCreation.PUBLIC
+        );
+        match.setDateHeureDebut(MAINTENANT);
+
+        when(padelMatchRepository.findByIdForUpdate(100L))
+                .thenReturn(Optional.of(match));
+
+        assertThrows(
+                ConfigurationMetierException.class,
+                () -> participationService.inscrireParticipantPublic(
+                        100L,
+                        new InscriptionPubliqueRequest("G0002")
+                )
+        );
+
+        verify(participationRepository, never()).save(any());
     }
 
     @Test

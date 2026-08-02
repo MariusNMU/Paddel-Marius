@@ -112,7 +112,7 @@ describe('AuthFacadeService', () => {
 
     expect(authApiService.connecterJoueur).toHaveBeenCalledWith({
       matricule: 'TEST001',
-      motDePasse: 'motdepasse-test'
+      motDePasse: ' motdepasse-test '
     });
     expect(authContextService.definirJoueur).toHaveBeenCalledWith(joueur);
     expect(service.messageSuccesJoueur()).toContain('Joueur connecté');

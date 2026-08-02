@@ -219,6 +219,12 @@ L'espace administrateur permet de :
 Les deux traitements administratifs sont accessibles dans Angular uniquement
 à un administrateur `GLOBAL`. Le backend applique également cette autorisation.
 
+Le backend traite aussi automatiquement les échéances toutes les 60 secondes.
+L'endpoint manuel reste disponible comme commande de secours et pour la
+démonstration. La planification peut être configurée avec
+`PADEL_ECHEANCES_PLANIFICATION_ACTIVE`, `PADEL_ECHEANCES_DELAI_INITIAL_MS` et
+`PADEL_ECHEANCES_INTERVALLE_MS`.
+
 ---
 
 ## 6. Règles métier principales

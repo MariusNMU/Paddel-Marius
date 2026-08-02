@@ -57,9 +57,8 @@ export class AuthFacadeService {
     this.messageSuccesJoueurSignal.set(null);
 
     const matriculeNettoye = matricule.trim();
-    const motDePasseNettoye = motDePasse.trim();
 
-    if (!matriculeNettoye || !motDePasseNettoye) {
+    if (!matriculeNettoye || !motDePasse.trim()) {
       this.messageErreurJoueurSignal.set(
         'Le matricule et le mot de passe sont obligatoires.'
       );
@@ -70,7 +69,7 @@ export class AuthFacadeService {
 
     this.authApiService.connecterJoueur({
       matricule: matriculeNettoye,
-      motDePasse: motDePasseNettoye
+      motDePasse
     }).pipe(
       tap(joueur => {
         this.authContextService.definirJoueur(joueur);

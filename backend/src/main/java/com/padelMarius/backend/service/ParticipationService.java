@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -37,6 +38,7 @@ public class ParticipationService {
     private final ParticipationRepository participationRepository;
     private final ReglesReservationMembreService
             reglesReservationMembreService;
+    private final Clock clock;
 
     @Transactional
     public ParticipationResponse ajouterParticipantPrive(
@@ -110,7 +112,11 @@ public class ParticipationService {
     }
 
     private void verifierMatchAVenir(PadelMatch match) {
-        if (match.getEtatCycle() != EtatCycleMatch.A_VENIR) {
+        LocalDateTime maintenant = LocalDateTime.now(clock);
+
+        if (match.getEtatCycle() != EtatCycleMatch.A_VENIR
+                || match.getDateHeureDebut() == null
+                || !match.getDateHeureDebut().isAfter(maintenant)) {
             throw new ConfigurationMetierException(
                     "Le match n'accepte plus de nouvelle participation."
             );
@@ -149,7 +155,7 @@ public class ParticipationService {
                 .roleParticipation(RoleParticipation.JOUEUR)
                 .modeEntree(modeEntree)
                 .statutParticipation(StatutParticipation.EN_ATTENTE_PAIEMENT)
-                .dateAffectation(LocalDateTime.now())
+                .dateAffectation(LocalDateTime.now(clock))
                 .build();
 
         Participation participationEnregistree = participationRepository.save(participation);

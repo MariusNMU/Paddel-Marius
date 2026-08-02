@@ -21,6 +21,7 @@ import com.padelMarius.backend.entity.VisibiliteMatch;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.repository.FermetureRepository;
+import com.padelMarius.backend.repository.MembreRepository;
 import com.padelMarius.backend.repository.PadelMatchRepository;
 import com.padelMarius.backend.repository.PaiementRepository;
 import com.padelMarius.backend.repository.SiteRepository;
@@ -63,6 +64,9 @@ class AdminFermetureServiceTest {
     @Mock
     private PaiementRepository paiementRepository;
 
+    @Mock
+    private MembreRepository membreRepository;
+
     private AdminFermetureService adminFermetureService;
 
     @BeforeEach
@@ -72,7 +76,8 @@ class AdminFermetureServiceTest {
                 siteRepository,
                 terrainRepository,
                 padelMatchRepository,
-                paiementRepository
+                paiementRepository,
+                membreRepository
         );
     }
 
@@ -110,14 +115,14 @@ class AdminFermetureServiceTest {
         when(terrainRepository.findAll())
                 .thenReturn(List.of(terrain));
 
-        when(padelMatchRepository.findByTerrainInAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBeforeAndEtatCycle(
+        when(padelMatchRepository.findPourFermetureForUpdate(
                 List.of(terrain),
                 dateFermeture.atStartOfDay(),
                 dateFermeture.atTime(LocalTime.MAX),
                 EtatCycleMatch.A_VENIR
         )).thenReturn(List.of(match));
 
-        when(paiementRepository.findByParticipation_Match_IdAndNaturePaiementAndStatutPaiement(
+        when(paiementRepository.findPayesDuMatchForUpdate(
                 match.getId(),
                 NaturePaiement.PARTICIPATION,
                 StatutPaiement.PAYE
@@ -168,14 +173,14 @@ class AdminFermetureServiceTest {
         when(terrainRepository.findBySiteAndActifTrue(site))
                 .thenReturn(List.of(terrain));
 
-        when(padelMatchRepository.findByTerrainInAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBeforeAndEtatCycle(
+        when(padelMatchRepository.findPourFermetureForUpdate(
                 List.of(terrain),
                 dateFermeture.atStartOfDay(),
                 dateFermeture.atTime(LocalTime.MAX),
                 EtatCycleMatch.A_VENIR
         )).thenReturn(List.of(match));
 
-        when(paiementRepository.findByParticipation_Match_IdAndNaturePaiementAndStatutPaiement(
+        when(paiementRepository.findPayesDuMatchForUpdate(
                 match.getId(),
                 NaturePaiement.PARTICIPATION,
                 StatutPaiement.PAYE
@@ -236,18 +241,21 @@ class AdminFermetureServiceTest {
         when(terrainRepository.findBySiteAndActifTrue(site))
                 .thenReturn(List.of(terrain));
 
-        when(padelMatchRepository.findByTerrainInAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBeforeAndEtatCycle(
+        when(padelMatchRepository.findPourFermetureForUpdate(
                 List.of(terrain),
                 dateFermeture.atStartOfDay(),
                 dateFermeture.atTime(LocalTime.MAX),
                 EtatCycleMatch.A_VENIR
         )).thenReturn(List.of(match));
 
-        when(paiementRepository.findByParticipation_Match_IdAndNaturePaiementAndStatutPaiement(
+        when(paiementRepository.findPayesDuMatchForUpdate(
                 match.getId(),
                 NaturePaiement.PARTICIPATION,
                 StatutPaiement.PAYE
         )).thenReturn(List.of(paiement));
+
+        when(membreRepository.findAllByIdForUpdate(List.of(joueur.getId())))
+                .thenReturn(List.of(joueur));
 
         FermetureAdminResponse response = adminFermetureService.creerFermeture(request);
 

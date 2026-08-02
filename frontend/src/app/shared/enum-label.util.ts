@@ -35,7 +35,6 @@ const ENUM_LABELS: Record<string, string> = {
 
   EN_ATTENTE: 'En attente',
   PAYE: 'Payé',
-  REFUSE: 'Refusé',
 
   PARTICIPATION: 'Participation',
   REGLEMENT_DETTE: 'Règlement de dette'

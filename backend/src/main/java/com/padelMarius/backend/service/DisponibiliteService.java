@@ -48,6 +48,8 @@ public class DisponibiliteService {
         Site site = siteRepository.findById(siteId)
                 .orElseThrow(() -> new RessourceIntrouvableException("Site introuvable avec l'id " + siteId));
 
+        verifierSiteActif(site);
+
         Optional<Fermeture> fermeture = trouverFermeture(site, date);
 
         if (fermeture.isPresent()) {
@@ -137,6 +139,14 @@ public class DisponibiliteService {
                 date,
                 PorteeFermeture.GLOBALE
         );
+    }
+
+    private void verifierSiteActif(Site site) {
+        if (!site.isActif()) {
+            throw new ConfigurationMetierException(
+                    "Le site demandé est inactif."
+            );
+        }
     }
 
     private void verifierHoraireValide(HoraireAnnuelSite horaire) {

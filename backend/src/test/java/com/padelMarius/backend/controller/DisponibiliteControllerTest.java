@@ -2,6 +2,7 @@ package com.padelMarius.backend.controller;
 
 import com.padelMarius.backend.dto.disponibilite.CreneauDisponibiliteResponse;
 import com.padelMarius.backend.dto.disponibilite.DisponibilitesResponse;
+import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.service.DisponibiliteService;
 import org.junit.jupiter.api.Test;
@@ -86,5 +87,25 @@ class DisponibiliteControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("RESSOURCE_INTROUVABLE"))
                 .andExpect(jsonPath("$.message").value("Site introuvable avec l'id 999"));
+    }
+
+    @Test
+    void shouldReturnConflictWhenSiteIsInactive() throws Exception {
+        LocalDate date = LocalDate.of(2026, 5, 8);
+
+        when(disponibiliteService.consulterDisponibilites(1L, date))
+                .thenThrow(new ConfigurationMetierException(
+                        "Le site demandé est inactif."
+                ));
+
+        mockMvc.perform(get("/api/disponibilites")
+                        .header("Authorization", AUTHORIZATION)
+                        .param("siteId", "1")
+                        .param("date", "2026-05-08"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code")
+                        .value("CONFIGURATION_METIER_INVALIDE"))
+                .andExpect(jsonPath("$.message")
+                        .value("Le site demandé est inactif."));
     }
 }

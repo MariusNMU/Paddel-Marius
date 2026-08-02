@@ -223,6 +223,36 @@ class MembreInscriptionServiceTest {
     }
 
     @Test
+    void inscrireMembre_shouldRejectInactiveSite() {
+        Site site = creerSite(1001L, "Padel Bruxelles");
+        site.setActif(false);
+
+        InscriptionMembreRequest request = new InscriptionMembreRequest(
+                "Martin",
+                "Luc",
+                CategorieMembre.SITE,
+                1001L,
+                "MotDePasse2026!",
+                "MotDePasse2026!"
+        );
+
+        when(siteRepository.findById(1001L))
+                .thenReturn(Optional.of(site));
+
+        ConfigurationMetierException exception = assertThrows(
+                ConfigurationMetierException.class,
+                () -> membreInscriptionService.inscrireMembre(request)
+        );
+
+        assertEquals(
+                "Le site demandé est inactif.",
+                exception.getMessage()
+        );
+
+        verify(membreRepository, never()).save(any(Membre.class));
+    }
+
+    @Test
     void inscrireMembre_shouldRejectDifferentPasswords() {
         InscriptionMembreRequest request =
                 new InscriptionMembreRequest(

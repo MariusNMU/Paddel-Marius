@@ -165,6 +165,78 @@ class MatchPublicServiceTest {
     }
 
     @Test
+    void listerMatchesPublicsDisponibles_shouldHideMatchOnInactiveSite() {
+        LocalDate date = LocalDate.of(2026, 6, 20);
+        Membre joueur = creerMembre(2001L, "G1001");
+        Site site = creerSite(1001L, "Padel Bruxelles");
+        site.setActif(false);
+
+        Terrain terrain = creerTerrain(1101L, site, "T1");
+        PadelMatch match = creerMatch(
+                3001L,
+                terrain,
+                LocalDateTime.of(2026, 6, 20, 9, 0)
+        );
+
+        when(membreRepository.findByMatricule("G1001"))
+                .thenReturn(Optional.of(joueur));
+
+        when(padelMatchRepository
+                .findByVisibiliteCouranteAndEtatCycleAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBefore(
+                        VisibiliteMatch.PUBLIC,
+                        EtatCycleMatch.A_VENIR,
+                        date.atStartOfDay(),
+                        date.plusDays(1).atStartOfDay()
+                ))
+                .thenReturn(List.of(match));
+
+        List<MatchPublicResponse> responses =
+                matchPublicService.listerMatchesPublicsDisponibles(
+                        1001L,
+                        date,
+                        "G1001"
+                );
+
+        assertTrue(responses.isEmpty());
+    }
+
+    @Test
+    void listerMatchesPublicsDisponibles_shouldHideMatchOnInactiveTerrain() {
+        LocalDate date = LocalDate.of(2026, 6, 20);
+        Membre joueur = creerMembre(2001L, "G1001");
+        Site site = creerSite(1001L, "Padel Bruxelles");
+        Terrain terrain = creerTerrain(1101L, site, "T1");
+        terrain.setActif(false);
+
+        PadelMatch match = creerMatch(
+                3001L,
+                terrain,
+                LocalDateTime.of(2026, 6, 20, 9, 0)
+        );
+
+        when(membreRepository.findByMatricule("G1001"))
+                .thenReturn(Optional.of(joueur));
+
+        when(padelMatchRepository
+                .findByVisibiliteCouranteAndEtatCycleAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBefore(
+                        VisibiliteMatch.PUBLIC,
+                        EtatCycleMatch.A_VENIR,
+                        date.atStartOfDay(),
+                        date.plusDays(1).atStartOfDay()
+                ))
+                .thenReturn(List.of(match));
+
+        List<MatchPublicResponse> responses =
+                matchPublicService.listerMatchesPublicsDisponibles(
+                        1001L,
+                        date,
+                        "G1001"
+                );
+
+        assertTrue(responses.isEmpty());
+    }
+
+    @Test
     void listerMatchesPublicsDisponibles_shouldKeepOtherSiteVisibleButNotJoinableForSiteMember() {
         LocalDate date =
                 LocalDate.of(2026, 6, 20);

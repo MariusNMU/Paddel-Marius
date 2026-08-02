@@ -25,7 +25,6 @@ import {
 import {
   AuthContextService
 } from './auth-context.service';
-import { SiteApiService } from './site-api.service';
 
 function dateIsoAujourdhui(): string {
   const date = new Date();
@@ -104,8 +103,6 @@ export class AdminEtatOperationnelFacadeService {
   constructor(
     private readonly etatOperationnelApiService:
     AdminEtatOperationnelApiService,
-    private readonly siteApiService:
-    SiteApiService,
     private readonly authContextService:
     AuthContextService
   ) {
@@ -269,8 +266,8 @@ export class AdminEtatOperationnelFacadeService {
   private chargerSites(): void {
     this.chargementSitesSignal.set(true);
 
-    this.siteApiService
-      .listerSitesActifs()
+    this.etatOperationnelApiService
+      .listerTousSites()
       .pipe(
         tap(sites => {
           this.sitesSignal.set(sites);

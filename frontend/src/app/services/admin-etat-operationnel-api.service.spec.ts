@@ -7,6 +7,7 @@ import { TestBed } from '@angular/core/testing';
 import {
   EtatOperationnelAdminResponse
 } from '../models/etat-operationnel.model';
+import { SiteResponse } from '../models/site.model';
 import {
   AdminEtatOperationnelApiService
 } from './admin-etat-operationnel-api.service';
@@ -41,6 +42,34 @@ describe(
     afterEach(() => {
       httpMock.verify();
     });
+
+    it(
+      'doit appeler l API admin qui liste tous les sites',
+      () => {
+        const response: SiteResponse[] = [
+          {
+            siteId: 1001,
+            code: 'BRU',
+            nom: 'Padel Bruxelles',
+            adresse: 'Rue du Padel 1'
+          }
+        ];
+
+        service.listerTousSites()
+          .subscribe(resultat => {
+            expect(resultat).toEqual(response);
+          });
+
+        const request = httpMock.expectOne(
+          '/api/admin/sites'
+        );
+
+        expect(request.request.method)
+          .toBe('GET');
+
+        request.flush(response);
+      }
+    );
 
     it(
       'doit appeler l API avec la date et le site',

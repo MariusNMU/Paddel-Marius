@@ -45,6 +45,54 @@ class ReglesReservationMembreServiceTest {
     }
 
     @Test
+    void devraitRefuserUneReservationSurUnTerrainInactif() {
+        Site site = creerSite("SITE-A");
+        Terrain terrain = creerTerrain(site);
+        terrain.setActif(false);
+        Membre membre = creerMembre(
+                "G0001",
+                CategorieMembre.GLOBAL,
+                null
+        );
+
+        LocalDateTime dateMatch =
+                LocalDateTime.of(2026, 5, 28, 9, 0);
+
+        assertThatThrownBy(() ->
+                service.verifierReglesReservation(
+                        membre,
+                        terrain,
+                        dateMatch
+                ))
+                .isInstanceOf(ConfigurationMetierException.class)
+                .hasMessage("Le terrain demandé est inactif.");
+    }
+
+    @Test
+    void devraitRefuserUneReservationSurUnSiteInactif() {
+        Site site = creerSite("SITE-A");
+        site.setActif(false);
+        Terrain terrain = creerTerrain(site);
+        Membre membre = creerMembre(
+                "G0001",
+                CategorieMembre.GLOBAL,
+                null
+        );
+
+        LocalDateTime dateMatch =
+                LocalDateTime.of(2026, 5, 28, 9, 0);
+
+        assertThatThrownBy(() ->
+                service.verifierReglesReservation(
+                        membre,
+                        terrain,
+                        dateMatch
+                ))
+                .isInstanceOf(ConfigurationMetierException.class)
+                .hasMessage("Le site du terrain demandé est inactif.");
+    }
+
+    @Test
     void globalDevraitEtreRefuseSiReservationPlusDe21JoursAvant() {
         Site site = creerSite("SITE-A");
         Terrain terrain = creerTerrain(site);

@@ -45,4 +45,34 @@ class SiteConsultationServiceTest {
         assertEquals("Site Alpha", responses.get(0).nom());
         assertEquals("Rue du Test 1", responses.get(0).adresse());
     }
+
+    @Test
+    void listerTousSites_shouldIncludeInactiveSites() {
+        Site siteActif = Site.builder()
+                .code("ALP")
+                .nom("Site Alpha")
+                .adresse("Rue du Test 1")
+                .actif(true)
+                .build();
+
+        Site siteInactif = Site.builder()
+                .code("BET")
+                .nom("Site Beta")
+                .adresse("Rue du Test 2")
+                .actif(false)
+                .build();
+
+        ReflectionTestUtils.setField(siteActif, "id", 1L);
+        ReflectionTestUtils.setField(siteInactif, "id", 2L);
+
+        when(siteRepository.findAllByOrderByNomAsc())
+                .thenReturn(List.of(siteActif, siteInactif));
+
+        List<SiteResponse> responses =
+                siteConsultationService.listerTousSites();
+
+        assertEquals(2, responses.size());
+        assertEquals(1L, responses.get(0).siteId());
+        assertEquals(2L, responses.get(1).siteId());
+    }
 }

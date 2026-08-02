@@ -8,6 +8,7 @@ import { environment } from '../../environments/environment';
 import {
   EtatOperationnelAdminResponse
 } from '../models/etat-operationnel.model';
+import { SiteResponse } from '../models/site.model';
 
 @Injectable({
   providedIn: 'root'
@@ -18,6 +19,12 @@ export class AdminEtatOperationnelApiService {
   constructor(
     private readonly http: HttpClient
   ) {
+  }
+
+  listerTousSites(): Observable<SiteResponse[]> {
+    return this.http.get<SiteResponse[]>(
+      `${this.apiUrl}/api/admin/sites`
+    );
   }
 
   consulterEtatOperationnel(

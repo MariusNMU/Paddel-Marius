@@ -8,6 +8,8 @@ import java.util.Optional;
 
 public interface SiteRepository extends JpaRepository<Site, Long> {
 
+    List<Site> findAllByOrderByNomAsc();
+
     List<Site> findByActifTrueOrderByNomAsc();
 
     Optional<Site> findByCode(String code);

@@ -31,7 +31,6 @@ import {
 import {
   AuthContextService
 } from './auth-context.service';
-import { SiteApiService } from './site-api.service';
 
 describe(
   'AdminEtatOperationnelFacadeService',
@@ -42,10 +41,7 @@ describe(
     let etatOperationnelApiService: {
       consulterEtatOperationnel:
         ReturnType<typeof vi.fn>;
-    };
-
-    let siteApiService: {
-      listerSitesActifs:
+      listerTousSites:
         ReturnType<typeof vi.fn>;
     };
 
@@ -125,11 +121,8 @@ describe(
         consulterEtatOperationnel:
           vi.fn(
             () => of(etatOperationnel)
-          )
-      };
-
-      siteApiService = {
-        listerSitesActifs:
+          ),
+        listerTousSites:
           vi.fn(() => of(sites))
       };
 
@@ -150,12 +143,6 @@ describe(
             AdminEtatOperationnelApiService,
             useValue:
             etatOperationnelApiService
-          },
-          {
-            provide:
-            SiteApiService,
-            useValue:
-            siteApiService
           },
           {
             provide:
@@ -190,8 +177,8 @@ describe(
           .toBe(1001);
 
         expect(
-          siteApiService
-            .listerSitesActifs
+          etatOperationnelApiService
+            .listerTousSites
         ).toHaveBeenCalledTimes(1);
 
         expect(
@@ -215,8 +202,8 @@ describe(
           .toEqual([]);
 
         expect(
-          siteApiService
-            .listerSitesActifs
+          etatOperationnelApiService
+            .listerTousSites
         ).not.toHaveBeenCalled();
 
         expect(
@@ -276,8 +263,8 @@ describe(
     it(
       'doit demander un site à l admin GLOBAL',
       () => {
-        siteApiService
-          .listerSitesActifs
+        etatOperationnelApiService
+          .listerTousSites
           .mockReturnValue(of([]));
 
         service.initialiser();

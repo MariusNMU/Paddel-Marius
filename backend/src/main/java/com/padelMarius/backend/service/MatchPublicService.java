@@ -90,6 +90,7 @@ public class MatchPublicService {
                         finJour
                 )
                 .stream()
+                .filter(this::estSurTerrainEtSiteActifs)
                 .filter(match -> appartientAuSite(match, siteId))
                 .map(match -> convertirEnMatchPublicResponse(
                         match,
@@ -98,6 +99,15 @@ public class MatchPublicService {
                 ))
                 .filter(response -> response.placesDisponibles() > 0)
                 .toList();
+    }
+
+    private boolean estSurTerrainEtSiteActifs(PadelMatch match) {
+        Terrain terrain = match.getTerrain();
+
+        return terrain != null
+                && terrain.isActif()
+                && terrain.getSite() != null
+                && terrain.getSite().isActif();
     }
 
     @Transactional

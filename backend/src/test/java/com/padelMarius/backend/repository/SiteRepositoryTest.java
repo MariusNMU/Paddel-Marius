@@ -47,4 +47,31 @@ class SiteRepositoryTest {
                         "Site Beta"
                 );
     }
+
+    @Test
+    void shouldFindActiveAndInactiveSitesOrderedByName() {
+        siteRepository.save(Site.builder()
+                .code("BET")
+                .nom("Site Beta")
+                .adresse("Rue du Test 2")
+                .actif(false)
+                .build());
+
+        siteRepository.save(Site.builder()
+                .code("ALP")
+                .nom("Site Alpha")
+                .adresse("Rue du Test 1")
+                .actif(true)
+                .build());
+
+        List<Site> sites =
+                siteRepository.findAllByOrderByNomAsc();
+
+        assertThat(sites)
+                .extracting(Site::getNom)
+                .containsExactly(
+                        "Site Alpha",
+                        "Site Beta"
+                );
+    }
 }

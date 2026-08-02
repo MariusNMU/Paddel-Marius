@@ -23,6 +23,13 @@ public class SiteConsultationService {
                 .toList();
     }
 
+    public List<SiteResponse> listerTousSites() {
+        return siteRepository.findAllByOrderByNomAsc()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     private SiteResponse toResponse(Site site) {
         return new SiteResponse(
                 site.getId(),

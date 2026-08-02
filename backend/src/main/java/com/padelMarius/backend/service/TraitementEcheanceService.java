@@ -27,8 +27,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import static com.padelMarius.backend.config.ReglesMetier.DUREE_PENALITE_JOURS;
 import static com.padelMarius.backend.config.ReglesMetier.NOMBRE_JOUEURS_MAXIMUM;
@@ -64,8 +66,11 @@ public class TraitementEcheanceService {
         int matchesDemarres = 0;
         int matchesTermines = 0;
         int dettesCreees = 0;
+        Set<Long> matchIdsAnalyses = new HashSet<>();
 
         for (PadelMatch match : matches) {
+            matchIdsAnalyses.add(match.getId());
+
             if (detteDoitEtreCreee(match)) {
                 detteService.genererDettePourMatch(match.getId());
                 dettesCreees++;
@@ -85,6 +90,7 @@ public class TraitementEcheanceService {
                 );
 
         for (PadelMatch match : matchesDemarresATerminer) {
+            matchIdsAnalyses.add(match.getId());
             match.setEtatCycle(EtatCycleMatch.TERMINE);
             padelMatchRepository.save(match);
             matchesTermines++;
@@ -92,7 +98,7 @@ public class TraitementEcheanceService {
 
         return new TraitementEcheanceResponse(
                 maintenant,
-                matches.size() + matchesDemarresATerminer.size(),
+                matchIdsAnalyses.size(),
                 matchesDemarres,
                 matchesTermines,
                 dettesCreees

@@ -55,6 +55,8 @@ public class ReglesReservationMembreService {
             );
         }
 
+        verifierTerrainEtSiteActifs(terrain);
+
         if (dateHeureDebut == null) {
             throw new ConfigurationMetierException(
                     "La date de début du match est obligatoire."
@@ -99,6 +101,26 @@ public class ReglesReservationMembreService {
                             "Catégorie de membre non supportée : "
                                     + categorie
                     );
+        }
+    }
+
+    private void verifierTerrainEtSiteActifs(Terrain terrain) {
+        if (!terrain.isActif()) {
+            throw new ConfigurationMetierException(
+                    "Le terrain demandé est inactif."
+            );
+        }
+
+        if (terrain.getSite() == null) {
+            throw new ConfigurationMetierException(
+                    "Le terrain demandé n'est rattaché à aucun site."
+            );
+        }
+
+        if (!terrain.getSite().isActif()) {
+            throw new ConfigurationMetierException(
+                    "Le site du terrain demandé est inactif."
+            );
         }
     }
 

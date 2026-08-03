@@ -448,7 +448,7 @@ MatchesPublicsFacadeService
 DisponibilitesFacadeService
 MesReservationsFacadeService
 MesDettesFacadeService
-AdminDashboardFacadeService
+AdminStatistiquesFacadeService
 AdminEtatOperationnelFacadeService
 ```
 
@@ -955,7 +955,7 @@ Ces tests sont utiles pour valider l'interface sans dépendre d'un backend lanc�
 
 ### 10.4. Cypress full stack
 
-Un test Cypress full stack valide un vrai parcours :
+Deux scénarios Cypress full stack valident l'application réelle :
 
 ```txt
 Angular réel
@@ -976,7 +976,9 @@ cd ..
 
 Il n'est pas nécessaire de démarrer manuellement PostgreSQL ou le backend.
 
-Ce test vérifie notamment la connexion joueur, la consultation des disponibilités, la création d'un match et la consultation des réservations.
+Le premier scénario vérifie les données de présentation exposées par le backend.
+Le second vérifie la connexion joueur, la consultation des disponibilités, la
+création d'un match et la consultation des réservations.
 
 ### 10.5. GitHub Actions
 

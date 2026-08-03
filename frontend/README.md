@@ -27,10 +27,9 @@ cd frontend
 npm.cmd ci
 ```
 
-Le projet utilise Node.js 22.12.0 ou plus récent dans la branche 22, ou Node.js
-24, avec npm 11.6.0, Angular 21, Angular Material et Vitest. Les champs
-`packageManager` et `engines` de `package.json` documentent ces versions
-reproductibles.
+Le projet utilise Node.js 22.12.0 ou plus récent dans la branche 22, npm
+11.6.0, Angular 21, Angular Material et Vitest. Les champs `packageManager` et
+`engines` de `package.json` documentent ces versions reproductibles.
 
 ## Démarrage
 
@@ -57,7 +56,7 @@ npm.cmd run cypress:run:fullstack
   interceptor.
 - Cypress mocké teste l'interface avec des réponses API simulées.
 - Cypress full stack démarre automatiquement Spring Boot avec H2 et Angular,
-  puis vérifie un parcours HTTP réel.
+  puis vérifie deux scénarios HTTP réels.
 
 Pour le fonctionnement complet, les règles métier, la sécurité et la
 démonstration, consulter `README.md`, `ARCHITECTURE.md`, `EXPLOITATION.md` et

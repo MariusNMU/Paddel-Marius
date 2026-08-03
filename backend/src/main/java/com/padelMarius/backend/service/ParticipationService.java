@@ -226,6 +226,9 @@ public class ParticipationService {
                 .map(Participation::getMatch)
                 .filter(Objects::nonNull)
                 .filter(matchExistant ->
+                        matchExistant.getEtatCycle() != EtatCycleMatch.ANNULE
+                )
+                .filter(matchExistant ->
                         !Objects.equals(
                                 matchExistant.getId(),
                                 nouveauMatch.getId()

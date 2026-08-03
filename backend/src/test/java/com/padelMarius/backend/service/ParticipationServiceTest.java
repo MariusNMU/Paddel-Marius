@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -494,6 +495,41 @@ class ParticipationServiceTest {
         );
 
         verify(participationRepository, never()).save(any());
+    }
+
+    @Test
+    void aUnConflitHoraire_shouldIgnoreCancelledMatch() {
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        PadelMatch nouveauMatch = creerMatch(
+                100L,
+                terrain,
+                VisibiliteMatch.PUBLIC,
+                ModeCreation.PUBLIC
+        );
+        Membre joueur = creerMembre(21L, "L0001");
+
+        PadelMatch matchAnnule = creerMatch(
+                101L,
+                terrain,
+                VisibiliteMatch.PUBLIC,
+                ModeCreation.PUBLIC
+        );
+        matchAnnule.setEtatCycle(EtatCycleMatch.ANNULE);
+
+        Participation participationAnnulee = creerParticipation(
+                201L,
+                matchAnnule,
+                joueur,
+                RoleParticipation.JOUEUR,
+                ModeEntreeParticipation.INSCRIPTION_PUBLIQUE,
+                StatutParticipation.CONFIRMEE
+        );
+
+        assertFalse(participationService.aUnConflitHoraire(
+                nouveauMatch,
+                List.of(participationAnnulee)
+        ));
     }
 
     @Test

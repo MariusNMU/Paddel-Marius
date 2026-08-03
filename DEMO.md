@@ -113,8 +113,8 @@ Joueur GLOBAL actif
 Compte conseillé pour le parcours principal
 
 G1002 / password
-Joueur GLOBAL actif avec dette ouverte
-Compte conseillé pour montrer le blocage par dette
+Joueur GLOBAL avec dette ouverte et pénalité active
+Compte conseillé pour montrer les blocages issus d'un ancien match privé incomplet
 
 S1001 / password
 Joueur SITE Bruxelles
@@ -126,8 +126,7 @@ L1001 / password
 Joueur LIBRE actif
 
 L1002 / password
-Joueur LIBRE avec pénalité active
-Compte conseillé pour montrer le blocage par pénalité
+Joueur LIBRE actif
 
 G9999 / password
 Joueur inactif
@@ -157,6 +156,7 @@ Administrateur inactif
 ```txt
 1001 : Padel Bruxelles
 1002 : Padel Namur
+1003 : Padel Liège — site inactif
 ```
 
 ### 5.2. Terrains
@@ -165,9 +165,12 @@ Administrateur inactif
 1101 : Bruxelles T1
 1102 : Bruxelles T2
 1103 : Bruxelles T3
+1104 : Bruxelles T4 — terrain inactif
 
 1201 : Namur T1
 1202 : Namur T2
+
+1301 : Liège T1 — indisponible car le site est inactif
 ```
 
 ### 5.3. Dates de démonstration
@@ -182,9 +185,10 @@ Repères utiles :
 match public de démonstration : aujourd'hui + 3 jours
 match privé de démonstration  : aujourd'hui + 4 jours
 match terminé                 : aujourd'hui - 7 jours
+match privé incomplet terminé : aujourd'hui - 6 jours
 fermeture globale démo        : aujourd'hui + 10 jours
 fermeture locale démo         : aujourd'hui + 15 jours
-pénalité active démo          : aujourd'hui - 1 jour à aujourd'hui + 6 jours
+pénalité active démo          : aujourd'hui - 6 jours à aujourd'hui + 1 jour
 ```
 
 ## 6. Scénario principal : 5 à 10 minutes
@@ -449,7 +453,7 @@ Le paiement de dette débite le solde du joueur. Une dette réglée ne bloque pl
 Se connecter avec :
 
 ```txt
-L1002 / password
+G1002 / password
 ```
 
 Essayer d'organiser un nouveau match.
@@ -460,7 +464,7 @@ Résultat attendu :
 la création est refusée parce que ce joueur a une pénalité active
 ```
 
-Une pénalité active bloque temporairement l'organisation d'un nouveau match. Le backend vérifie aussi la date de fin : une pénalité expirée ne doit plus bloquer le joueur.
+La pénalité et la dette sont toutes les deux rattachées au même ancien match privé incomplet et à son véritable organisateur. Une pénalité active bloque temporairement l'organisation d'un nouveau match. Le backend vérifie aussi la date de fin : une pénalité expirée ne doit plus bloquer le joueur.
 
 ### Étape 11 — Connexion administrateur
 

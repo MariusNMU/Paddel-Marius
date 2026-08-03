@@ -328,7 +328,7 @@ G1001 / password
 Joueur GLOBAL actif
 
 G1002 / password
-Joueur GLOBAL actif avec dette ouverte
+Joueur GLOBAL avec dette ouverte et pénalité active
 
 S1001 / password
 Joueur SITE Bruxelles
@@ -340,7 +340,7 @@ L1001 / password
 Joueur LIBRE actif
 
 L1002 / password
-Joueur LIBRE avec pénalité active
+Joueur LIBRE actif
 
 G9999 / password
 Joueur inactif pour tester le refus

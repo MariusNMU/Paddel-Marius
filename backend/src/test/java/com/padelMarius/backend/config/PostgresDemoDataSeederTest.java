@@ -97,6 +97,9 @@ class PostgresDemoDataSeederTest {
                         )
                         .toList();
 
+        List<SqlParameterSource> tousLesParametres =
+                parametresCaptor.getAllValues();
+
         assertThat(toutesLesRequetes).contains("INSERT INTO site");
         assertThat(toutesLesRequetes).contains("INSERT INTO terrain");
         assertThat(toutesLesRequetes).contains("INSERT INTO membre");
@@ -110,7 +113,7 @@ class PostgresDemoDataSeederTest {
         );
 
         assertThat(parametresHoraires)
-                .hasSize(4)
+                .hasSize(6)
                 .allSatisfy(parametres ->
                         assertThat(
                                 parametres.hasValue("id")
@@ -125,11 +128,41 @@ class PostgresDemoDataSeederTest {
                 "ON CONFLICT DO NOTHING"
         );
 
+        assertThat(parametresParId(tousLesParametres, 1003L)).anySatisfy(parametres -> {
+            assertThat(parametres.getValue("actif")).isEqualTo(false);
+        });
+
+        assertThat(parametresParId(tousLesParametres, 1104L)).anySatisfy(parametres -> {
+            assertThat(parametres.getValue("actif")).isEqualTo(false);
+        });
+
+        assertThat(parametresParId(tousLesParametres, 4001L)).anySatisfy(parametres -> {
+            assertThat(parametres.getValue("matchId")).isEqualTo(3004L);
+            assertThat(parametres.getValue("membreResponsableId")).isEqualTo(2002L);
+            assertThat(parametres.getValue("montantRestant"))
+                    .isEqualTo(new BigDecimal("45.00"));
+        });
+
+        assertThat(parametresParId(tousLesParametres, 5001L)).anySatisfy(parametres -> {
+            assertThat(parametres.getValue("matchSourceId")).isEqualTo(3004L);
+            assertThat(parametres.getValue("membreId")).isEqualTo(2002L);
+        });
+
         verify(passwordEncoder).encode("password");
         verify(passwordEncoder).encode("secret");
         verify(passwordEncoder).encode("secret-site");
 
         verify(jdbcOperations, atLeastOnce()).execute(anyString());
+    }
+
+    private List<SqlParameterSource> parametresParId(
+            List<SqlParameterSource> parametres,
+            Long id
+    ) {
+        return parametres.stream()
+                .filter(source -> source.hasValue("id"))
+                .filter(source -> id.equals(source.getValue("id")))
+                .toList();
     }
 
     @Test

@@ -51,7 +51,7 @@ padel:
       - matricule: G1001
         description: joueur GLOBAL actif
       - matricule: G1002
-        description: joueur GLOBAL actif avec dette ouverte
+        description: joueur GLOBAL avec dette ouverte et pénalité active cohérentes
       - matricule: S1001
         description: joueur SITE rattaché à Padel Bruxelles (1001)
       - matricule: S1002
@@ -59,7 +59,7 @@ padel:
       - matricule: L1001
         description: joueur LIBRE actif
       - matricule: L1002
-        description: joueur LIBRE avec pénalité active
+        description: joueur LIBRE actif
       - matricule: G9999
         description: joueur inactif pour tester le refus
     administrateurs:

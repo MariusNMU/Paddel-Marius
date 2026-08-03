@@ -109,7 +109,7 @@ import { enumLabel } from '../../shared/enum-label.util';
 
                 <p>
                   Lancer le traitement manuel qui analyse les matches du lendemain,
-                  libère les places non payées et applique les règles de pénalité.
+                  libère les places non payées et rend publics les matchs privés incomplets.
                 </p>
 
                 <a

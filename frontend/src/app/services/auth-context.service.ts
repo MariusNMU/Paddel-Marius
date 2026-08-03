@@ -16,6 +16,16 @@ function lireStockage<T>(cle: string): T | null {
   }
 }
 
+function sessionStockeeValide(session: { expirationToken?: string }): boolean {
+  if (!session.expirationToken) {
+    return false;
+  }
+
+  const expiration = Date.parse(session.expirationToken);
+
+  return Number.isFinite(expiration) && expiration > Date.now();
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -79,8 +89,23 @@ export class AuthContextService implements OnDestroy {
   }
 
   private initialiserDepuisStockage(): void {
-    const joueur = lireStockage<AuthJoueurResponse>(this.joueurKey);
-    const admin = lireStockage<AuthAdminResponse>(this.adminKey);
+    const joueurStocke = lireStockage<AuthJoueurResponse>(this.joueurKey);
+    const adminStocke = lireStockage<AuthAdminResponse>(this.adminKey);
+
+    const joueur = joueurStocke && sessionStockeeValide(joueurStocke)
+      ? joueurStocke
+      : null;
+    const admin = adminStocke && sessionStockeeValide(adminStocke)
+      ? adminStocke
+      : null;
+
+    if (joueurStocke && !joueur) {
+      localStorage.removeItem(this.joueurKey);
+    }
+
+    if (adminStocke && !admin) {
+      localStorage.removeItem(this.adminKey);
+    }
 
     if (joueur && admin) {
       localStorage.removeItem(this.joueurKey);

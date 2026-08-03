@@ -51,7 +51,7 @@ import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitem
         <p>
           Le traitement de veille sert à appliquer les règles métier avant les matches :
           passage public des matches privés incomplets, libération des places non payées
-          et création éventuelle de pénalités.
+          et préparation des réservations du lendemain.
         </p>
 
         <mat-card
@@ -69,9 +69,6 @@ import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitem
             </li>
             <li>
               Une participation non payée peut être libérée.
-            </li>
-            <li>
-              Une pénalité peut être créée pour l'organisateur responsable.
             </li>
           </ul>
         </mat-card>
@@ -202,15 +199,6 @@ import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitem
               </strong>
             </mat-card>
 
-            <mat-card
-              appearance="outlined"
-              class="traitement-card warning"
-            >
-              <span>Pénalités créées</span>
-              <strong>
-                {{ traitement.penalitesCreees }}
-              </strong>
-            </mat-card>
           </div>
 
           <mat-card
@@ -249,12 +237,6 @@ import { AdminTraitementVeilleFacadeService } from '../../services/admin-traitem
                 <th>Participations libérées</th>
                 <td>
                   {{ traitement.participationsLiberees }}
-                </td>
-              </tr>
-              <tr>
-                <th>Pénalités créées</th>
-                <td>
-                  {{ traitement.penalitesCreees }}
                 </td>
               </tr>
               </tbody>

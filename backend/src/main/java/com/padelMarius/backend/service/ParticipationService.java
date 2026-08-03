@@ -49,6 +49,9 @@ public class ParticipationService {
 
         verifierMatchAVenir(match);
         verifierMatchPrive(match);
+        reglesReservationMembreService.verifierTerrainEtSiteActifs(
+                match.getTerrain()
+        );
 
         String matricule = normaliserMatricule(request.matriculeJoueur());
         Membre membre = recupererMembre(matricule);
@@ -225,6 +228,9 @@ public class ParticipationService {
                 )
                 .map(Participation::getMatch)
                 .filter(Objects::nonNull)
+                .filter(matchExistant ->
+                        matchExistant.getEtatCycle() != EtatCycleMatch.ANNULE
+                )
                 .filter(matchExistant ->
                         !Objects.equals(
                                 matchExistant.getId(),

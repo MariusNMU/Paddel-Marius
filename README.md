@@ -477,6 +477,11 @@ http://localhost:8080/swagger-ui.html
 
 Dans un deuxième terminal :
 
+Le frontend est validé avec Node.js `22.12.0` ou une version ultérieure de la
+branche 22, et avec npm `11.6.0`. Le champ `packageManager`, les contraintes
+`engines` et la CI utilisent cette même version npm afin de garantir un
+`npm ci` reproductible.
+
 ```powershell
 cd frontend
 npm.cmd ci
@@ -692,7 +697,10 @@ cd ..
 
 ### 11.4. Tests Cypress mockés
 
-Les tests Cypress mockés valident les principaux parcours UI avec des réponses API simulées.
+Les neuf scénarios Cypress mockés valident la présentation, la connexion, les
+disponibilités, les matches publics, les invitations privées, les dettes, les
+statistiques, les fermetures et les traitements automatiques avec des réponses
+API simulées.
 
 ```powershell
 cd frontend
@@ -702,7 +710,8 @@ cd ..
 
 ### 11.5. Test Cypress full stack
 
-Le test Cypress full stack valide un vrai parcours :
+Les deux scénarios Cypress full stack valident la présentation de démonstration
+et un vrai parcours :
 
 ```txt
 Angular réel

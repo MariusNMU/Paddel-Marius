@@ -17,6 +17,8 @@ function formaterDateFr(dateIso: string): string {
 }
 
 const dateMatchPublic = dateIsoDansJours(3);
+const dateMatchPrive = dateIsoDansJours(4);
+const dateFermeture = dateIsoDansJours(7);
 const dateDebutStats = dateIsoDansJours(-14);
 const dateFinStats = dateIsoDansJours(14);
 
@@ -28,7 +30,9 @@ const joueurG1001 = {
   categorieMembre: 'GLOBAL',
   siteRattachementId: null,
   nomSiteRattachement: null,
-  actif: true
+  actif: true,
+  token: 'jwt-joueur-cypress',
+  expirationToken: '2099-12-31T23:59:59'
 };
 
 const adminGlobal = {
@@ -39,7 +43,9 @@ const adminGlobal = {
   roleAdministrateur: 'GLOBAL',
   siteId: null,
   nomSite: null,
-  actif: true
+  actif: true,
+  token: 'jwt-admin-cypress',
+  expirationToken: '2099-12-31T23:59:59'
 };
 
 const soldeG1001 = {
@@ -157,6 +163,53 @@ const statistiquesGlobales = {
   tauxRemplissage: 66.67
 };
 
+const invitationPrivee = {
+  participationId: 3202,
+  matchId: 3002,
+  siteId: 1001,
+  nomSite: 'Padel Bruxelles',
+  terrainId: 1102,
+  numeroTerrain: 'T2',
+  dateHeureDebut: `${dateMatchPrive}T18:00:00`,
+  dateHeureFin: `${dateMatchPrive}T19:30:00`,
+  organisateurId: 2001,
+  matriculeOrganisateur: 'G1001',
+  nomOrganisateur: 'Dupont',
+  prenomOrganisateur: 'Marie',
+  joueurInviteId: 2006,
+  matriculeInvite: 'L1001',
+  nomInvite: 'Leclerc',
+  prenomInvite: 'Sophie',
+  statutParticipation: 'EN_ATTENTE_PAIEMENT'
+};
+
+const paiementInvitation = {
+  paiementId: 6009,
+  participationId: 3202,
+  membreId: 2001,
+  matriculeMembre: 'G1001',
+  montant: 15,
+  montantDettesReglees: 0,
+  montantTotalDebite: 15,
+  naturePaiement: 'PARTICIPATION',
+  statutPaiement: 'PAYE',
+  statutParticipation: 'CONFIRMEE',
+  dateHeurePaiement: `${dateIsoDansJours(0)}T12:00:00`,
+  dateConfirmationParticipation: `${dateIsoDansJours(0)}T12:00:00`
+};
+
+const detteOuverte = {
+  detteId: 4001,
+  matchId: 3004,
+  membreResponsableId: 2001,
+  matriculeResponsable: 'G1001',
+  montantInitial: 45,
+  montantRestant: 45,
+  statutDette: 'OUVERTE',
+  dateCreation: `${dateIsoDansJours(-6)}T10:00:00`,
+  dateReglement: null
+};
+
 function intercepterSitesActifs(): void {
   cy.intercept('GET', '/api/sites', {
     statusCode: 200,
@@ -176,10 +229,10 @@ function intercepterReferentielsPublics(): void {
   intercepterParametresMetier();
 }
 
-function intercepterCompteurInvitationsRecues(): void {
+function intercepterCompteurInvitationsRecues(nombre = 0): void {
   cy.intercept('GET', '/api/membres/G1001/invitations/recues/count', {
     statusCode: 200,
-    body: 0
+    body: nombre
   }).as('compteurInvitationsRecues');
 }
 
@@ -211,8 +264,8 @@ function intercepterConnexionAdmin(): void {
   }).as('connexionAdmin');
 }
 
-function connecterJoueurG1001(): void {
-  intercepterCompteurInvitationsRecues();
+function connecterJoueurG1001(nombreInvitations = 0): void {
+  intercepterCompteurInvitationsRecues(nombreInvitations);
   intercepterConnexionJoueur();
 
   cy.visit('/joueur');
@@ -371,6 +424,99 @@ describe('Happy flows MVP Padel Marius', () => {
     cy.contains('Padel Bruxelles — Terrain T1').should('be.visible');
   });
 
+  it('paie une invitation privée et actualise immédiatement la notification', () => {
+    connecterJoueurG1001(1);
+
+    let chargementsInvitations = 0;
+
+    cy.intercept(
+      'GET',
+      '/api/membres/G1001/invitations/recues',
+      (request) => {
+        request.reply({
+          statusCode: 200,
+          body: chargementsInvitations++ === 0
+            ? [invitationPrivee]
+            : []
+        });
+      }
+    ).as('listeInvitationsRecues');
+
+    cy.intercept(
+      'POST',
+      '/api/participations/3202/paiements',
+      (request) => {
+        expect(request.body).to.deep.equal({ montant: 15 });
+
+        request.reply({
+          statusCode: 201,
+          body: paiementInvitation
+        });
+      }
+    ).as('paiementInvitation');
+
+    cy.contains('a', 'Invitations reçues')
+      .should('have.class', 'invitation-alerte')
+      .click();
+
+    cy.wait('@listeInvitationsRecues');
+    cy.contains('h2', 'Invitations reçues').should('be.visible');
+    cy.contains('Padel Bruxelles').should('be.visible');
+    cy.contains('button', 'Confirmer et payer la participation').click();
+
+    cy.wait('@paiementInvitation')
+      .its('response.statusCode')
+      .should('eq', 201);
+    cy.wait('@listeInvitationsRecues');
+
+    cy.contains('Invitation confirmée et participation payée.').should('be.visible');
+    cy.contains('a', 'Invitations reçues')
+      .should('not.have.class', 'invitation-alerte');
+    cy.contains('Aucune invitation reçue pour ce joueur.').should('be.visible');
+  });
+
+  it('consulte puis règle une dette ouverte', () => {
+    connecterJoueurG1001();
+
+    cy.intercept('GET', '/api/membres/G1001/dettes/ouvertes', {
+      statusCode: 200,
+      body: [detteOuverte]
+    }).as('listeDettesOuvertes');
+
+    cy.intercept('POST', '/api/dettes/4001/paiements', (request) => {
+      expect(request.body).to.deep.equal({ montant: 45 });
+
+      request.reply({
+        statusCode: 201,
+        body: {
+          paiementId: 6010,
+          detteId: 4001,
+          membreId: 2001,
+          matriculeMembre: 'G1001',
+          naturePaiement: 'REGLEMENT_DETTE',
+          montant: 45,
+          statutPaiement: 'PAYE',
+          statutDette: 'REGLEE',
+          dateHeurePaiement: `${dateIsoDansJours(0)}T12:00:00`,
+          dateReglementDette: `${dateIsoDansJours(0)}T12:00:00`
+        }
+      });
+    }).as('paiementDette');
+
+    cy.visit('/joueur/mes-dettes');
+    cy.wait('@listeDettesOuvertes');
+
+    cy.contains('h2', 'Mes dettes').should('be.visible');
+    cy.contains('45.00 €').should('be.visible');
+    cy.contains('button', 'Payer cette dette').click();
+
+    cy.wait('@paiementDette')
+      .its('response.statusCode')
+      .should('eq', 201);
+    cy.contains('Paiement réussi : dette 4001 payée pour 45 €.').should('be.visible');
+    cy.contains('Aucune dette ouverte').should('be.visible');
+  });
+
   it('connecte un admin puis consulte les statistiques globales', () => {
     connecterAdminGlobal();
     intercepterSitesActifs();
@@ -398,5 +544,95 @@ describe('Happy flows MVP Padel Marius', () => {
     cy.contains('105 €').should('be.visible');
     cy.contains('Dettes ouvertes').should('be.visible');
     cy.contains('Taux remplissage').should('be.visible');
+  });
+
+  it('connecte un admin puis crée une fermeture globale', () => {
+    connecterAdminGlobal();
+    intercepterSitesActifs();
+
+    cy.intercept('POST', '/api/admin/fermetures', (request) => {
+      expect(request.body).to.deep.equal({
+        dateFermeture,
+        portee: 'GLOBALE',
+        siteId: null,
+        motif: 'Fermeture Cypress'
+      });
+
+      request.reply({
+        statusCode: 201,
+        body: {
+          fermetureId: 7001,
+          dateFermeture,
+          portee: 'GLOBALE',
+          siteId: null,
+          nomSite: null,
+          motif: 'Fermeture Cypress',
+          nombreMatchesAnnules: 2,
+          nombreRemboursementsCredites: 1,
+          montantTotalRembourse: 15
+        }
+      });
+    }).as('creationFermeture');
+
+    cy.visit('/admin/fermetures');
+    cy.wait('@listeSitesActifs');
+
+    cy.get('input[name="dateFermeture"]').type(dateFermeture);
+    cy.get('select[name="portee"]').select('GLOBALE');
+    cy.get('input[name="motif"]').type('Fermeture Cypress');
+    cy.contains('button', 'Créer la fermeture').click();
+
+    cy.wait('@creationFermeture')
+      .its('response.statusCode')
+      .should('eq', 201);
+    cy.contains('Fermeture créée avec succès').should('be.visible');
+    cy.contains('Matches annulés').should('be.visible');
+    cy.contains('2').should('be.visible');
+  });
+
+  it('connecte un admin puis lance les traitements de veille et d échéance', () => {
+    connecterAdminGlobal();
+
+    cy.intercept(
+      'POST',
+      '/api/admin/matches/traitement-veille*',
+      {
+        statusCode: 200,
+        body: {
+          dateTraitement: dateIsoDansJours(0),
+          dateMatchTraitee: dateIsoDansJours(1),
+          matchesAnalyses: 3,
+          matchesPassesPublics: 1,
+          participationsLiberees: 2
+        }
+      }
+    ).as('traitementVeille');
+
+    cy.visit('/admin/traitement-veille');
+    cy.contains('button', 'Lancer le traitement de veille').click();
+    cy.wait('@traitementVeille');
+    cy.contains('Passés publics').should('be.visible');
+    cy.contains('Participations libérées').should('be.visible');
+
+    cy.intercept(
+      'POST',
+      '/api/admin/matches/traitement-echeance',
+      {
+        statusCode: 200,
+        body: {
+          dateHeureTraitement: `${dateIsoDansJours(0)}T12:00:00`,
+          matchesAnalyses: 3,
+          matchesDemarres: 1,
+          matchesTermines: 1,
+          dettesCreees: 1
+        }
+      }
+    ).as('traitementEcheance');
+
+    cy.visit('/admin/traitement-echeance');
+    cy.contains('button', 'Lancer le traitement d’échéance').click();
+    cy.wait('@traitementEcheance');
+    cy.contains('Résultat du traitement').should('be.visible');
+    cy.contains('Dettes créées').should('be.visible');
   });
 });

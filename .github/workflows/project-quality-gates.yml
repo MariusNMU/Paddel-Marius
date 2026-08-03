@@ -71,6 +71,58 @@ jobs:
       - name: Run PostgreSQL integration tests
         run: ./mvnw --batch-mode -Ppostgresql-integration clean verify
 
+  backend-smoke:
+    name: Backend startup smoke test
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Make Maven wrapper executable
+        run: chmod +x ./mvnw
+
+      - name: Start backend and call health endpoint
+        run: |
+          set -euo pipefail
+          ./mvnw --batch-mode spring-boot:run > backend-smoke.log 2>&1 &
+          backend_pid=$!
+
+          cleanup() {
+            kill "$backend_pid" 2>/dev/null || true
+            wait "$backend_pid" 2>/dev/null || true
+          }
+
+          trap cleanup EXIT
+
+          for attempt in {1..60}; do
+            if curl --fail --silent --show-error \
+              http://localhost:8080/api/health; then
+              exit 0
+            fi
+
+            if ! kill -0 "$backend_pid" 2>/dev/null; then
+              break
+            fi
+
+            sleep 2
+          done
+
+          cat backend-smoke.log
+          exit 1
+
   frontend-quality:
     name: Frontend build and tests
     runs-on: ubuntu-latest
@@ -103,3 +155,47 @@ jobs:
 
       - name: Run frontend tests
         run: npm run test -- --watch=false
+
+  frontend-cypress:
+    name: Cypress mocked and full-stack
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Make Maven wrapper executable
+        run: chmod +x ../backend/mvnw
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Use project npm version
+        run: |
+          npm install -g npm@11.6.0
+          npm --version
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Run mocked Cypress scenarios
+        run: npm run cypress:run
+
+      - name: Run full-stack Cypress scenarios
+        run: npm run cypress:run:fullstack

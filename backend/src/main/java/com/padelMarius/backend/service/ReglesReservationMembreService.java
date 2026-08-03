@@ -104,7 +104,7 @@ public class ReglesReservationMembreService {
         }
     }
 
-    private void verifierTerrainEtSiteActifs(Terrain terrain) {
+    public void verifierTerrainEtSiteActifs(Terrain terrain) {
         if (!terrain.isActif()) {
             throw new ConfigurationMetierException(
                     "Le terrain demandé est inactif."

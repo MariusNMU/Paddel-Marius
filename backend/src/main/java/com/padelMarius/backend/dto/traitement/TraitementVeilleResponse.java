@@ -7,7 +7,6 @@ public record TraitementVeilleResponse(
         LocalDate dateMatchTraitee,
         int matchesAnalyses,
         int matchesPassesPublics,
-        int participationsLiberees,
-        int penalitesCreees
+        int participationsLiberees
 ) {
 }

@@ -65,8 +65,7 @@ describe(
       dateMatchTraitee: '2026-07-21',
       matchesAnalyses: 3,
       matchesPassesPublics: 1,
-      participationsLiberees: 2,
-      penalitesCreees: 1
+      participationsLiberees: 2
     };
 
     beforeEach(async () => {
@@ -275,10 +274,6 @@ describe(
             'Participations libérées'
           );
 
-        expect(contenu)
-          .toContain(
-            'Pénalités créées'
-          );
       }
     );
   }

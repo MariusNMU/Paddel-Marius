@@ -65,6 +65,14 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 "Avenue des Sports 10, 5000 Namur",
                 true
         );
+
+        insererSite(
+                1003L,
+                "LIE",
+                "Padel Liège",
+                "Quai des Sports 5, 4000 Liège",
+                false
+        );
     }
 
     private void insererSite(
@@ -96,8 +104,10 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
         insererTerrain(1101L, 1001L, "T1", true);
         insererTerrain(1102L, 1001L, "T2", true);
         insererTerrain(1103L, 1001L, "T3", true);
+        insererTerrain(1104L, 1001L, "T4", false);
         insererTerrain(1201L, 1002L, "T1", true);
         insererTerrain(1202L, 1002L, "T2", true);
+        insererTerrain(1301L, 1003L, "T1", true);
     }
 
     private void insererTerrain(
@@ -149,6 +159,20 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 anneeCivile + 1,
                 LocalTime.of(9, 0),
                 LocalTime.of(21, 0)
+        );
+
+        insererHoraireAnnuel(
+                1003L,
+                anneeCivile,
+                LocalTime.of(10, 0),
+                LocalTime.of(20, 0)
+        );
+
+        insererHoraireAnnuel(
+                1003L,
+                anneeCivile + 1,
+                LocalTime.of(10, 0),
+                LocalTime.of(20, 0)
         );
     }
 
@@ -493,6 +517,7 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
         LocalDate dateMatchPublic = dateReference.plusDays(3);
         LocalDate dateMatchPrive = dateReference.plusDays(4);
         LocalDate dateMatchTermine = dateReference.minusDays(7);
+        LocalDate dateMatchPriveIncomplet = dateReference.minusDays(6);
 
         insererMatch(
                 3001L,
@@ -530,6 +555,19 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 new BigDecimal("60.00"),
                 dateReference.minusDays(8).atTime(9, 0),
                 null,
+                "TERMINE"
+        );
+
+        insererMatch(
+                3004L,
+                1102L,
+                dateMatchPriveIncomplet.atTime(11, 0),
+                dateMatchPriveIncomplet.atTime(12, 30),
+                "PRIVE",
+                "PUBLIC",
+                new BigDecimal("60.00"),
+                dateReference.minusDays(10).atTime(10, 0),
+                dateReference.minusDays(7).atTime(8, 0),
                 "TERMINE"
         );
     }
@@ -624,7 +662,7 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
         insererParticipation(
                 3201L,
                 3002L,
-                2002L,
+                2001L,
                 "ORGANISATEUR",
                 "CREATION",
                 "CONFIRMEE",
@@ -692,6 +730,18 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 dateReference.minusDays(8).atTime(9, 16),
                 null
         );
+
+        insererParticipation(
+                3401L,
+                3004L,
+                2002L,
+                "ORGANISATEUR",
+                "CREATION",
+                "CONFIRMEE",
+                dateReference.minusDays(10).atTime(10, 0),
+                dateReference.minusDays(10).atTime(10, 2),
+                null
+        );
     }
 
     private void insererParticipation(
@@ -754,11 +804,11 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
     private void insererDettes(LocalDate dateReference) {
         insererDette(
                 4001L,
-                3002L,
+                3004L,
                 2002L,
-                new BigDecimal("30.00"),
-                new BigDecimal("30.00"),
-                dateReference.minusDays(1).atTime(11, 0),
+                new BigDecimal("45.00"),
+                new BigDecimal("45.00"),
+                dateReference.minusDays(6).atTime(11, 0),
                 null,
                 "OUVERTE"
         );
@@ -812,12 +862,12 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
     private void insererPenalites(LocalDate dateReference) {
         insererPenalite(
                 5001L,
-                2006L,
-                3002L,
+                2002L,
+                3004L,
                 "RESERVATION_PRIVEE_INCOMPLETE",
                 "Pénalité de démonstration active",
-                dateReference.minusDays(1).atTime(11, 30),
-                dateReference.plusDays(6).atTime(11, 30),
+                dateReference.minusDays(6).atTime(11, 0),
+                dateReference.plusDays(1).atTime(11, 0),
                 "ACTIVE"
         );
     }
@@ -899,7 +949,7 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
 
         insererPaiement(
                 6003L,
-                2002L,
+                2001L,
                 "PARTICIPATION",
                 new BigDecimal("15.00"),
                 dateReference.minusDays(1).atTime(10, 16),
@@ -949,6 +999,17 @@ public class PostgresDemoDataSeeder implements CommandLineRunner {
                 dateReference.minusDays(8).atTime(9, 16),
                 "PAYE",
                 3304L,
+                null
+        );
+
+        insererPaiement(
+                6008L,
+                2002L,
+                "PARTICIPATION",
+                new BigDecimal("15.00"),
+                dateReference.minusDays(10).atTime(10, 2),
+                "PAYE",
+                3401L,
                 null
         );
     }

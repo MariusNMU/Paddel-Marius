@@ -16,15 +16,18 @@
 -- Sites
 INSERT INTO site (id, code, nom, adresse, actif) VALUES
                                                      (1001, 'BRU', 'Padel Bruxelles', 'Rue du Padel 1, 1000 Bruxelles', TRUE),
-                                                     (1002, 'NAM', 'Padel Namur', 'Avenue des Sports 10, 5000 Namur', TRUE);
+                                                     (1002, 'NAM', 'Padel Namur', 'Avenue des Sports 10, 5000 Namur', TRUE),
+                                                     (1003, 'LIE', 'Padel Liège', 'Quai des Sports 5, 4000 Liège', FALSE);
 
 -- Terrains
 INSERT INTO terrain (id, site_id, numero, actif) VALUES
                                                      (1101, 1001, 'T1', TRUE),
                                                      (1102, 1001, 'T2', TRUE),
                                                      (1103, 1001, 'T3', TRUE),
+                                                     (1104, 1001, 'T4', FALSE),
                                                      (1201, 1002, 'T1', TRUE),
-                                                     (1202, 1002, 'T2', TRUE);
+                                                     (1202, 1002, 'T2', TRUE),
+                                                     (1301, 1003, 'T1', TRUE);
 
 -- Horaires annuels de l'année courante et de l'année suivante.
 -- La seconde année sécurise les réservations à J+N proches du 31 décembre.
@@ -38,7 +41,9 @@ INSERT INTO horaire_annuel_site (
       (1301, 1001, EXTRACT(YEAR FROM CURRENT_DATE), TIME '08:00:00', TIME '22:00:00'),
       (1302, 1002, EXTRACT(YEAR FROM CURRENT_DATE), TIME '09:00:00', TIME '21:00:00'),
       (1303, 1001, EXTRACT(YEAR FROM CURRENT_DATE) + 1, TIME '08:00:00', TIME '22:00:00'),
-      (1304, 1002, EXTRACT(YEAR FROM CURRENT_DATE) + 1, TIME '09:00:00', TIME '21:00:00');
+      (1304, 1002, EXTRACT(YEAR FROM CURRENT_DATE) + 1, TIME '09:00:00', TIME '21:00:00'),
+      (1305, 1003, EXTRACT(YEAR FROM CURRENT_DATE), TIME '10:00:00', TIME '20:00:00'),
+      (1306, 1003, EXTRACT(YEAR FROM CURRENT_DATE) + 1, TIME '10:00:00', TIME '20:00:00');
 
 -- Fermetures futures
 INSERT INTO fermeture (
@@ -89,8 +94,9 @@ INSERT INTO administrateur (
 
 -- Matches
 -- 3001 : match public futur, utilisable pour la démo joueur.
--- 3002 : match privé futur avec dette de démonstration pour G1002.
+-- 3002 : match privé futur avec une invitation en attente, sans dette anticipée.
 -- 3003 : match terminé, utilisable pour les statistiques.
+-- 3004 : ancien match créé en privé, resté incomplet après son passage public.
 INSERT INTO padel_match (
     id,
     terrain_id,
@@ -138,6 +144,18 @@ INSERT INTO padel_match (
           DATEADD('MINUTE', 540, CAST(DATEADD('DAY', -8, CURRENT_DATE) AS TIMESTAMP)),
           NULL,
           'TERMINE'
+      ),
+      (
+          3004,
+          1102,
+          DATEADD('MINUTE', 660, CAST(DATEADD('DAY', -6, CURRENT_DATE) AS TIMESTAMP)),
+          DATEADD('MINUTE', 750, CAST(DATEADD('DAY', -6, CURRENT_DATE) AS TIMESTAMP)),
+          'PRIVE',
+          'PUBLIC',
+          60.00,
+          DATEADD('MINUTE', 600, CAST(DATEADD('DAY', -10, CURRENT_DATE) AS TIMESTAMP)),
+          DATEADD('MINUTE', 480, CAST(DATEADD('DAY', -7, CURRENT_DATE) AS TIMESTAMP)),
+          'TERMINE'
       );
 
 -- Participations
@@ -177,7 +195,7 @@ INSERT INTO participation (
       (
           3201,
           3002,
-          2002,
+          2001,
           'ORGANISATEUR',
           'CREATION',
           'CONFIRMEE',
@@ -239,6 +257,17 @@ INSERT INTO participation (
           DATEADD('MINUTE', 555, CAST(DATEADD('DAY', -8, CURRENT_DATE) AS TIMESTAMP)),
           DATEADD('MINUTE', 556, CAST(DATEADD('DAY', -8, CURRENT_DATE) AS TIMESTAMP)),
           NULL
+      ),
+      (
+          3401,
+          3004,
+          2002,
+          'ORGANISATEUR',
+          'CREATION',
+          'CONFIRMEE',
+          DATEADD('MINUTE', 600, CAST(DATEADD('DAY', -10, CURRENT_DATE) AS TIMESTAMP)),
+          DATEADD('MINUTE', 602, CAST(DATEADD('DAY', -10, CURRENT_DATE) AS TIMESTAMP)),
+          NULL
       );
 
 -- Dette ouverte de démonstration
@@ -254,11 +283,11 @@ INSERT INTO dette (
 ) VALUES
     (
         4001,
-        3002,
+        3004,
         2002,
-        30.00,
-        30.00,
-        DATEADD('MINUTE', 660, CAST(DATEADD('DAY', -1, CURRENT_DATE) AS TIMESTAMP)),
+        45.00,
+        45.00,
+        DATEADD('MINUTE', 660, CAST(DATEADD('DAY', -6, CURRENT_DATE) AS TIMESTAMP)),
         NULL,
         'OUVERTE'
     );
@@ -276,12 +305,12 @@ INSERT INTO penalite (
 ) VALUES
     (
         5001,
-        2006,
-        3002,
+        2002,
+        3004,
         'RESERVATION_PRIVEE_INCOMPLETE',
         'Pénalité de démonstration active',
-        DATEADD('MINUTE', 690, CAST(DATEADD('DAY', -1, CURRENT_DATE) AS TIMESTAMP)),
-        DATEADD('MINUTE', 690, CAST(DATEADD('DAY', 6, CURRENT_DATE) AS TIMESTAMP)),
+        DATEADD('MINUTE', 660, CAST(DATEADD('DAY', -6, CURRENT_DATE) AS TIMESTAMP)),
+        DATEADD('MINUTE', 660, CAST(DATEADD('DAY', 1, CURRENT_DATE) AS TIMESTAMP)),
         'ACTIVE'
     );
 
@@ -318,7 +347,7 @@ INSERT INTO paiement (
       ),
       (
           6003,
-          2002,
+          2001,
           'PARTICIPATION',
           15.00,
           DATEADD('MINUTE', 616, CAST(DATEADD('DAY', -1, CURRENT_DATE) AS TIMESTAMP)),
@@ -364,6 +393,16 @@ INSERT INTO paiement (
           DATEADD('MINUTE', 556, CAST(DATEADD('DAY', -8, CURRENT_DATE) AS TIMESTAMP)),
           'PAYE',
           3304,
+          NULL
+      ),
+      (
+          6008,
+          2002,
+          'PARTICIPATION',
+          15.00,
+          DATEADD('MINUTE', 602, CAST(DATEADD('DAY', -10, CURRENT_DATE) AS TIMESTAMP)),
+          'PAYE',
+          3401,
           NULL
       );
 

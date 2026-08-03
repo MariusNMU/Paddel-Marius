@@ -8,7 +8,6 @@ import com.padelMarius.backend.entity.ModeCreation;
 import com.padelMarius.backend.entity.ModeEntreeParticipation;
 import com.padelMarius.backend.entity.PadelMatch;
 import com.padelMarius.backend.entity.Participation;
-import com.padelMarius.backend.entity.Penalite;
 import com.padelMarius.backend.entity.RoleParticipation;
 import com.padelMarius.backend.entity.Site;
 import com.padelMarius.backend.entity.StatutParticipation;
@@ -17,7 +16,6 @@ import com.padelMarius.backend.entity.VisibiliteMatch;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.repository.PadelMatchRepository;
 import com.padelMarius.backend.repository.ParticipationRepository;
-import com.padelMarius.backend.repository.PenaliteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,9 +47,6 @@ class TraitementVeilleServiceTest {
     @Mock
     private ParticipationRepository participationRepository;
 
-    @Mock
-    private PenaliteRepository penaliteRepository;
-
     private TraitementVeilleService traitementVeilleService;
 
     private final LocalDate dateTraitement = LocalDate.of(2026, 5, 19);
@@ -69,7 +64,6 @@ class TraitementVeilleServiceTest {
         traitementVeilleService = new TraitementVeilleService(
                 padelMatchRepository,
                 participationRepository,
-                penaliteRepository,
                 clockFixe
         );
     }
@@ -111,11 +105,8 @@ class TraitementVeilleServiceTest {
         assertEquals(1, response.matchesAnalyses());
         assertEquals(1, response.matchesPassesPublics());
         assertEquals(0, response.participationsLiberees());
-        assertEquals(0, response.penalitesCreees());
-
         verify(padelMatchRepository).save(match);
         verify(participationRepository).findByMatchIdForUpdate(100L);
-        verify(penaliteRepository, never()).save(any(Penalite.class));
     }
 
     @Test
@@ -155,10 +146,7 @@ class TraitementVeilleServiceTest {
         assertEquals(1, response.matchesAnalyses());
         assertEquals(0, response.matchesPassesPublics());
         assertEquals(1, response.participationsLiberees());
-        assertEquals(0, response.penalitesCreees());
-
         verify(participationRepository).save(participationJoueurNonPaye);
-        verify(penaliteRepository, never()).save(any(Penalite.class));
     }
 
     @Test
@@ -187,9 +175,6 @@ class TraitementVeilleServiceTest {
         assertEquals(VisibiliteMatch.PUBLIC, match.getVisibiliteCourante());
         assertEquals(1, response.matchesAnalyses());
         assertEquals(0, response.matchesPassesPublics());
-        assertEquals(0, response.penalitesCreees());
-
-        verify(penaliteRepository, never()).save(any(Penalite.class));
         verify(padelMatchRepository, never()).save(any(PadelMatch.class));
     }
 
@@ -211,10 +196,7 @@ class TraitementVeilleServiceTest {
         assertEquals(2, response.matchesAnalyses());
         assertEquals(0, response.matchesPassesPublics());
         assertEquals(0, response.participationsLiberees());
-        assertEquals(0, response.penalitesCreees());
-
         verifyNoInteractions(participationRepository);
-        verifyNoInteractions(penaliteRepository);
         verify(padelMatchRepository, never()).save(any(PadelMatch.class));
     }
 
@@ -248,10 +230,7 @@ class TraitementVeilleServiceTest {
         assertEquals(ancienneDatePassagePublic, match.getDatePassagePublic());
         assertEquals(1, response.matchesAnalyses());
         assertEquals(1, response.matchesPassesPublics());
-        assertEquals(0, response.penalitesCreees());
-
         verify(padelMatchRepository).save(match);
-        verify(penaliteRepository, never()).save(any(Penalite.class));
     }
 
     @Test
@@ -263,11 +242,10 @@ class TraitementVeilleServiceTest {
 
         verifyNoInteractions(padelMatchRepository);
         verifyNoInteractions(participationRepository);
-        verifyNoInteractions(penaliteRepository);
     }
 
     private void stubRechercheMatchesDuLendemain(PadelMatch... matches) {
-        when(padelMatchRepository.findByDateHeureDebutGreaterThanEqualAndDateHeureDebutBefore(
+        when(padelMatchRepository.findPourVeilleForUpdate(
                 LocalDateTime.of(2026, 5, 20, 0, 0),
                 LocalDateTime.of(2026, 5, 21, 0, 0)
         )).thenReturn(List.of(matches));

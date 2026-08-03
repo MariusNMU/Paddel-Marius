@@ -68,8 +68,7 @@ describe(
       dateMatchTraitee: '2026-07-18',
       matchesAnalyses: 3,
       matchesPassesPublics: 1,
-      participationsLiberees: 2,
-      penalitesCreees: 1
+      participationsLiberees: 2
     };
 
     beforeEach(() => {

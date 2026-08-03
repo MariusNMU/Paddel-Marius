@@ -66,7 +66,8 @@ public class TraitementVeilleService {
                 continue;
             }
 
-            List<Participation> participations = participationRepository.findByMatchId(match.getId());
+            List<Participation> participations = participationRepository
+                    .findByMatchIdForUpdate(match.getId());
 
             participationsLiberees += libererParticipationsJoueurNonPayees(
                     participations,

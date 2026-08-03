@@ -101,7 +101,7 @@ class TraitementVeilleServiceTest {
 
         stubRechercheMatchesDuLendemain(match);
 
-        when(participationRepository.findByMatchId(100L))
+        when(participationRepository.findByMatchIdForUpdate(100L))
                 .thenReturn(List.of(participationOrganisateur, participationJoueur));
 
         TraitementVeilleResponse response = traitementVeilleService.traiterVeille(dateTraitement);
@@ -114,6 +114,7 @@ class TraitementVeilleServiceTest {
         assertEquals(0, response.penalitesCreees());
 
         verify(padelMatchRepository).save(match);
+        verify(participationRepository).findByMatchIdForUpdate(100L);
         verify(penaliteRepository, never()).save(any(Penalite.class));
     }
 
@@ -144,7 +145,7 @@ class TraitementVeilleServiceTest {
 
         stubRechercheMatchesDuLendemain(match);
 
-        when(participationRepository.findByMatchId(100L))
+        when(participationRepository.findByMatchIdForUpdate(100L))
                 .thenReturn(List.of(participationOrganisateur, participationJoueurNonPaye));
 
         TraitementVeilleResponse response = traitementVeilleService.traiterVeille(dateTraitement);
@@ -178,7 +179,7 @@ class TraitementVeilleServiceTest {
 
         stubRechercheMatchesDuLendemain(match);
 
-        when(participationRepository.findByMatchId(100L))
+        when(participationRepository.findByMatchIdForUpdate(100L))
                 .thenReturn(List.of(participationOrganisateur));
 
         TraitementVeilleResponse response = traitementVeilleService.traiterVeille(dateTraitement);
@@ -238,7 +239,7 @@ class TraitementVeilleServiceTest {
 
         stubRechercheMatchesDuLendemain(match);
 
-        when(participationRepository.findByMatchId(100L))
+        when(participationRepository.findByMatchIdForUpdate(100L))
                 .thenReturn(List.of(participationOrganisateur));
 
         TraitementVeilleResponse response = traitementVeilleService.traiterVeille(dateTraitement);

@@ -74,6 +74,36 @@ class ParticipationRepositoryTest {
     }
 
     @Test
+    void findByMatchIdForUpdateDevraitRetournerLesParticipationsDansUnOrdreStable() {
+        DonneesTest donnees = creerDonneesTest();
+
+        Participation organisateur = creerParticipation(
+                donnees.match(),
+                donnees.organisateur(),
+                RoleParticipation.ORGANISATEUR,
+                ModeEntreeParticipation.CREATION,
+                StatutParticipation.CONFIRMEE
+        );
+
+        Participation joueur = creerParticipation(
+                donnees.match(),
+                donnees.joueur1(),
+                RoleParticipation.JOUEUR,
+                ModeEntreeParticipation.INVITATION_PRIVEE,
+                StatutParticipation.EN_ATTENTE_PAIEMENT
+        );
+
+        participationRepository.saveAllAndFlush(List.of(organisateur, joueur));
+
+        List<Participation> resultat = participationRepository
+                .findByMatchIdForUpdate(donnees.match().getId());
+
+        assertThat(resultat)
+                .extracting(Participation::getId)
+                .containsExactly(organisateur.getId(), joueur.getId());
+    }
+
+    @Test
     void findByMembreIdDevraitRetournerLesParticipationsDuMembre() {
         DonneesTest donnees = creerDonneesTest();
 

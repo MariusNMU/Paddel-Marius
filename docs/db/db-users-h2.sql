@@ -1,15 +1,6 @@
 -- ============================================================
 -- Utilisateurs DB et droits - exemple H2
 -- Projet : Padel Marius
---
--- Objectif :
--- Fournir un artefact clair pour expliquer les users DB
--- et les droits associés pendant la remise / démo.
---
--- Important :
--- Ce script n'est pas exécuté automatiquement par le backend MVP.
--- Le MVP utilise H2 en mémoire avec le user sa pour permettre
--- la création automatique du schéma et le seed au démarrage.
 -- ============================================================
 
 -- ------------------------------------------------------------
@@ -70,6 +61,3 @@ GRANT SELECT ON penalite TO padel_readonly;
 -- padel_migration : droits élevés, uniquement pour schéma/migration
 -- padel_app       : droits CRUD, utilisé par le backend
 -- padel_readonly  : droits SELECT, utilisé pour audit/reporting
---
--- Le frontend n'a aucun user DB.
--- Le frontend consomme uniquement l'API REST du backend.

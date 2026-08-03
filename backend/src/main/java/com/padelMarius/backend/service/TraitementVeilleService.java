@@ -79,10 +79,6 @@ public class TraitementVeilleService {
 
                 passerMatchEnPublic(match, maintenant);
                 matchesPassesPublics++;
-
-                // La pénalité n'est plus créée à J-1.
-// À J-1, le match privé incomplet devient public.
-// La pénalité sera créée au moment du match si le match reste incomplet.
             }
         }
 

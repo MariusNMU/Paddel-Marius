@@ -32,8 +32,6 @@ END IF;
 END
 $$;
 
--- User lecture seule, utile pour expliquer la sécurité DB à l'oral.
--- Il n'est pas utilisé par le frontend.
 DO
 $$
 BEGIN

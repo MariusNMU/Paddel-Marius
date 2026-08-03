@@ -56,6 +56,6 @@ class LiquibaseMigrationTest {
                 "PENALITE",
                 "PAIEMENT"
         );
-        assertThat(nombreSites).isEqualTo(2);
+        assertThat(nombreSites).isEqualTo(3);
     }
 }

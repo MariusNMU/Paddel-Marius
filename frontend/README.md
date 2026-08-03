@@ -27,7 +27,10 @@ cd frontend
 npm.cmd ci
 ```
 
-Le projet utilise Node.js, npm 11.6.0, Angular 21, Angular Material et Vitest.
+Le projet utilise Node.js 22.12.0 ou plus récent dans la branche 22, ou Node.js
+24, avec npm 11.6.0, Angular 21, Angular Material et Vitest. Les champs
+`packageManager` et `engines` de `package.json` documentent ces versions
+reproductibles.
 
 ## Démarrage
 

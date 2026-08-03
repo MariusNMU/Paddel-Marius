@@ -477,6 +477,11 @@ http://localhost:8080/swagger-ui.html
 
 Dans un deuxième terminal :
 
+Le frontend est validé avec Node.js `22.12.0` ou une version ultérieure de la
+branche 22, ou avec Node.js 24, et avec npm `11.6.0`. Le champ `packageManager`,
+les contraintes `engines` et la CI utilisent cette même version npm afin de
+garantir un `npm ci` reproductible.
+
 ```powershell
 cd frontend
 npm.cmd ci

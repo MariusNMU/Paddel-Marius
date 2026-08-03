@@ -4,5 +4,4 @@ export interface TraitementVeilleResponse {
   matchesAnalyses: number;
   matchesPassesPublics: number;
   participationsLiberees: number;
-  penalitesCreees: number;
 }

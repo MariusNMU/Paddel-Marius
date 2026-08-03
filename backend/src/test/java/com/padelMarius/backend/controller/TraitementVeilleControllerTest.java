@@ -39,8 +39,7 @@ class TraitementVeilleControllerTest {
                 LocalDate.of(2026, 5, 20),
                 3,
                 1,
-                2,
-                1
+                2
         );
 
         when(traitementVeilleService.traiterVeille(LocalDate.of(2026, 5, 19)))
@@ -58,7 +57,7 @@ class TraitementVeilleControllerTest {
                 .andExpect(jsonPath("$.matchesAnalyses").value(3))
                 .andExpect(jsonPath("$.matchesPassesPublics").value(1))
                 .andExpect(jsonPath("$.participationsLiberees").value(2))
-                .andExpect(jsonPath("$.penalitesCreees").value(1));
+                .andExpect(jsonPath("$.penalitesCreees").doesNotExist());
     }
 
     @Test

@@ -43,12 +43,10 @@ public class TraitementVeilleScheduler {
                     "Traitement automatique J-1 terminé : "
                             + "{} match(s) analysé(s), "
                             + "{} passé(s) public(s), "
-                            + "{} participation(s) libérée(s), "
-                            + "{} pénalité(s) créée(s).",
+                            + "{} participation(s) libérée(s).",
                     resultat.matchesAnalyses(),
                     resultat.matchesPassesPublics(),
-                    resultat.participationsLiberees(),
-                    resultat.penalitesCreees()
+                    resultat.participationsLiberees()
             );
         } catch (RuntimeException exception) {
             LOGGER.error(

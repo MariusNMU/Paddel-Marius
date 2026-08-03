@@ -200,11 +200,12 @@ Paddel-Marius/
 - dashboard administrateur ;
 - consultation des statistiques ;
 - consultation des membres ;
+- consultation de l'état opérationnel des sites actifs et inactifs ;
 - création d'une fermeture globale ou locale ;
 - annulation des matches concernés par une fermeture ;
 - remboursement des joueurs concernés ;
-- traitement de veille ;
-- traitement d'échéance.
+- traitement de veille automatique avec déclenchement manuel disponible ;
+- traitement d'échéance automatique avec déclenchement manuel disponible.
 
 ---
 
@@ -220,10 +221,13 @@ Paddel-Marius/
 - une participation coûte 15 euros ;
 - un match contient maximum 4 joueurs ;
 - un match privé doit atteindre 4 joueurs ;
-- un match privé incomplet peut devenir public à J-1 ;
-- une participation non payée peut être libérée à J-1 ;
+- un match privé incomplet devient public lors du traitement automatique J-1 ;
+- une participation non payée peut être libérée par ce même traitement ;
+- les matches publics d'un site ou terrain inactif ne peuvent pas être vus ou
+  rejoints ;
 - l'organisateur peut recevoir une dette si le match n'est pas entièrement payé ;
 - une dette ouverte bloque une nouvelle réservation ;
+- les dettes ouvertes des statistiques sont filtrées selon la période du match ;
 - une pénalité active bloque une nouvelle réservation ;
 - une pénalité simple dure 7 jours ;
 - un membre `GLOBAL` peut réserver sur tous les sites ;
@@ -405,8 +409,8 @@ Dans un deuxième terminal :
 
 ```powershell
 cd frontend
-npm install
-npm start
+npm.cmd ci
+npm.cmd start
 ```
 
 Frontend disponible sur :
@@ -569,7 +573,7 @@ Depuis la racine du projet :
 
 ```powershell
 cd frontend
-npm run build
+npm.cmd run build
 cd ..
 ```
 
@@ -581,7 +585,7 @@ Depuis la racine du projet :
 
 ```powershell
 cd frontend
-npm run test
+npm.cmd run test -- --watch=false
 cd ..
 ```
 
@@ -593,7 +597,7 @@ Depuis la racine du projet :
 
 ```powershell
 cd frontend
-npm run cypress:run
+npm.cmd run cypress:run
 cd ..
 ```
 
@@ -618,18 +622,23 @@ Exemples d'endpoints :
 GET /api/health
 POST /api/auth/joueur
 POST /api/auth/admin
-GET /api/disponibilites?siteId=1001&date=2026-06-20
+GET /api/disponibilites?siteId=1001&date=<date-demo>
 POST /api/matches
-GET /api/matches/publics?siteId=1001&date=2026-06-20
+GET /api/matches/publics?siteId=1001&date=<date-demo>
 POST /api/matches/{matchId}/participants/public/payer
+POST /api/participations/{participationId}/paiements
 GET /api/membres/{matricule}/solde
 GET /api/membres/{matricule}/reservations
 GET /api/membres/{matricule}/dettes/ouvertes
 GET /api/membres/{matricule}/paiements
 POST /api/dettes/{detteId}/paiements
 POST /api/admin/fermetures
-GET /api/admin/statistiques?dateDebut=2026-05-01&dateFin=2026-06-30
+GET /api/admin/sites
+GET /api/admin/etat-operationnel?date=<date>&siteId=<site-id>
+GET /api/admin/statistiques?dateDebut=<date-debut>&dateFin=<date-fin>
 GET /api/admin/membres
+POST /api/admin/matches/traitement-veille?date=<date-traitement>
+POST /api/admin/matches/traitement-echeance
 ```
 
 Swagger permet de visualiser l'API quand le backend est démarré :
@@ -741,15 +750,15 @@ cd ..
 
 ```powershell
 cd frontend
-npm install
-npm start
+npm.cmd ci
+npm.cmd start
 ```
 
 ### Build frontend
 
 ```powershell
 cd frontend
-npm run build
+npm.cmd run build
 cd ..
 ```
 
@@ -757,7 +766,7 @@ cd ..
 
 ```powershell
 cd frontend
-npm run test
+npm.cmd run test -- --watch=false
 cd ..
 ```
 
@@ -765,7 +774,7 @@ cd ..
 
 ```powershell
 cd frontend
-npm run cypress:run
+npm.cmd run cypress:run
 cd ..
 ```
 

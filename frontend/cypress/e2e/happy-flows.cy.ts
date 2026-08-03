@@ -28,7 +28,9 @@ const joueurG1001 = {
   categorieMembre: 'GLOBAL',
   siteRattachementId: null,
   nomSiteRattachement: null,
-  actif: true
+  actif: true,
+  token: 'jwt-joueur-cypress',
+  expirationToken: '2099-12-31T23:59:59'
 };
 
 const adminGlobal = {
@@ -39,7 +41,9 @@ const adminGlobal = {
   roleAdministrateur: 'GLOBAL',
   siteId: null,
   nomSite: null,
-  actif: true
+  actif: true,
+  token: 'jwt-admin-cypress',
+  expirationToken: '2099-12-31T23:59:59'
 };
 
 const soldeG1001 = {

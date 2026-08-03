@@ -11,7 +11,8 @@ describe('AuthContextService', () => {
     categorieMembre: 'GLOBAL',
     siteRattachementId: null,
     nomSiteRattachement: null,
-    actif: true
+    actif: true,
+    expirationToken: '2099-12-31T23:59:59'
   };
 
   const admin: AuthAdminResponse = {
@@ -22,7 +23,8 @@ describe('AuthContextService', () => {
     roleAdministrateur: 'GLOBAL',
     siteId: null,
     nomSite: null,
-    actif: true
+    actif: true,
+    expirationToken: '2099-12-31T23:59:59'
   };
 
   function creerService(): AuthContextService {
@@ -190,6 +192,43 @@ describe('AuthContextService', () => {
 
     expect(service.joueur()).toEqual(joueur);
     expect(service.joueurConnecte()).toBe(true);
+  });
+
+  it('doit supprimer une session joueur expirée au démarrage', () => {
+    localStorage.setItem('padel-joueur', JSON.stringify({
+      ...joueur,
+      expirationToken: '2020-01-01T00:00:00'
+    }));
+
+    const service = creerService();
+
+    expect(service.joueur()).toBeNull();
+    expect(service.joueurConnecte()).toBe(false);
+    expect(localStorage.getItem('padel-joueur')).toBeNull();
+  });
+
+  it('doit supprimer une session admin expirée au démarrage', () => {
+    localStorage.setItem('padel-admin', JSON.stringify({
+      ...admin,
+      expirationToken: '2020-01-01T00:00:00'
+    }));
+
+    const service = creerService();
+
+    expect(service.admin()).toBeNull();
+    expect(service.adminConnecte()).toBe(false);
+    expect(localStorage.getItem('padel-admin')).toBeNull();
+  });
+
+  it('doit supprimer une session stockée sans expiration', () => {
+    const joueurSansExpiration = { ...joueur };
+    delete joueurSansExpiration.expirationToken;
+    localStorage.setItem('padel-joueur', JSON.stringify(joueurSansExpiration));
+
+    const service = creerService();
+
+    expect(service.joueur()).toBeNull();
+    expect(localStorage.getItem('padel-joueur')).toBeNull();
   });
 
   it('doit nettoyer une valeur localStorage invalide', () => {

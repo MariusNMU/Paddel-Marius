@@ -697,7 +697,10 @@ cd ..
 
 ### 11.4. Tests Cypress mockés
 
-Les tests Cypress mockés valident les principaux parcours UI avec des réponses API simulées.
+Les neuf scénarios Cypress mockés valident la présentation, la connexion, les
+disponibilités, les matches publics, les invitations privées, les dettes, les
+statistiques, les fermetures et les traitements automatiques avec des réponses
+API simulées.
 
 ```powershell
 cd frontend

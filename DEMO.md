@@ -690,9 +690,11 @@ cd ..
 Cette commande démarre automatiquement Spring Boot avec H2, Angular et
 Cypress, puis arrête les processus lancés.
 
-Les Cypress mockés valident les principaux parcours UI avec API simulée. Les
-deux scénarios Cypress full stack valident la présentation de démonstration et
-un vrai parcours Angular vers Spring Boot et H2.
+Les neuf scénarios Cypress mockés valident les principaux parcours UI avec API
+simulée, notamment les invitations, les dettes, les fermetures et les
+traitements automatiques. Les deux scénarios Cypress full stack valident la
+présentation de démonstration et un vrai parcours Angular vers Spring Boot et
+H2.
 
 ## 7. Points métier à insister pendant l'oral
 

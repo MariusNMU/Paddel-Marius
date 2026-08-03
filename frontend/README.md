@@ -54,7 +54,8 @@ npm.cmd run cypress:run:fullstack
 - Le build vérifie la compilation de production.
 - Les tests unitaires couvrent composants, façades, clients API, guards et
   interceptor.
-- Cypress mocké teste l'interface avec des réponses API simulées.
+- Les neuf scénarios Cypress mockés testent les principaux parcours de
+  l'interface avec des réponses API simulées.
 - Cypress full stack démarre automatiquement Spring Boot avec H2 et Angular,
   puis vérifie deux scénarios HTTP réels.
 

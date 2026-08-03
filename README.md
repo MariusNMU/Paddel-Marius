@@ -210,6 +210,7 @@ L'espace administrateur permet de :
 - consulter un tableau de bord ;
 - consulter les statistiques ;
 - consulter la liste des membres ;
+- consulter l'état opérationnel des sites, y compris les sites inactifs ;
 - créer une fermeture globale ;
 - créer une fermeture locale ;
 - annuler les matches concernés par une fermeture ;
@@ -219,11 +220,15 @@ L'espace administrateur permet de :
 Les deux traitements administratifs sont accessibles dans Angular uniquement
 à un administrateur `GLOBAL`. Le backend applique également cette autorisation.
 
-Le backend traite aussi automatiquement les échéances toutes les 60 secondes.
-L'endpoint manuel reste disponible comme commande de secours et pour la
-démonstration. La planification peut être configurée avec
-`PADEL_ECHEANCES_PLANIFICATION_ACTIVE`, `PADEL_ECHEANCES_DELAI_INITIAL_MS` et
-`PADEL_ECHEANCES_INTERVALLE_MS`.
+Le backend exécute automatiquement les deux traitements. La veille J-1 est
+lancée après 30 secondes, puis toutes les heures. Les échéances sont traitées
+après 60 secondes, puis toutes les 60 secondes. Les endpoints manuels restent
+disponibles comme commandes de secours et pour la démonstration.
+
+La veille se configure avec `PADEL_VEILLE_PLANIFICATION_ACTIVE`,
+`PADEL_VEILLE_DELAI_INITIAL_MS` et `PADEL_VEILLE_INTERVALLE_MS`. Les échéances
+se configurent avec `PADEL_ECHEANCES_PLANIFICATION_ACTIVE`,
+`PADEL_ECHEANCES_DELAI_INITIAL_MS` et `PADEL_ECHEANCES_INTERVALLE_MS`.
 
 ---
 
@@ -237,6 +242,10 @@ démonstration. La planification peut être configurée avec
 - Les heures de début et de fin de réservation peuvent être différentes selon le site.
 - Un membre `SITE` ne peut pas être inscrit sur un site inactif.
 - Les disponibilités d'un site inactif ne peuvent pas être consultées.
+- Les matches publics d'un site ou d'un terrain inactif ne sont ni proposés
+  ni accessibles à la participation.
+- L'état opérationnel administrateur permet néanmoins de consulter les sites
+  inactifs afin d'expliquer leur indisponibilité.
 - Une fermeture peut être globale ou locale.
 - Une fermeture globale concerne tous les sites.
 - Une fermeture locale concerne un seul site.
@@ -251,13 +260,16 @@ démonstration. La planification peut être configurée avec
 - Un match contient au maximum 4 joueurs.
 - Une participation standard coûte 15 euros.
 - Une inscription à un match public est confirmée après paiement.
+- Une participation existante se paie par l'unique endpoint
+  `POST /api/participations/{participationId}/paiements`, avec le montant
+  standard de 15 euros dans le DTO de requête.
 
 ### 6.3. Matches privés
 
 - Un match privé est organisé par un membre.
 - L'organisateur invite les autres joueurs.
 - Si une participation privée n'est pas payée à temps, la place peut être libérée.
-- Un match privé incomplet peut devenir public à J-1.
+- Un match privé incomplet devient public lors du traitement automatique J-1.
 - Une pénalité peut être appliquée à l'organisateur selon les règles métier.
 
 ### 6.4. Matches publics
@@ -272,6 +284,8 @@ démonstration. La planification peut être configurée avec
 
 - Une dette ouverte bloque l'organisation d'un nouveau match.
 - Une dette peut être réglée par paiement.
+- Les dettes ouvertes affichées dans les statistiques appartiennent à la
+  période sélectionnée selon la date de début de leur match.
 - Une pénalité active bloque l'organisation d'un nouveau match.
 - Une pénalité simple dure 7 jours.
 
@@ -384,12 +398,15 @@ GET /api/disponibilites?siteId=1001&date=<date-demo>
 POST /api/matches
 GET /api/matches/publics?siteId=1001&date=<date-demo>
 POST /api/matches/{matchId}/participants/public/payer
+POST /api/participations/{participationId}/paiements
 GET /api/membres/{matricule}/solde
 GET /api/membres/{matricule}/reservations
 GET /api/membres/{matricule}/dettes/ouvertes
 GET /api/membres/{matricule}/paiements
 POST /api/dettes/{detteId}/paiements
 POST /api/admin/fermetures
+GET /api/admin/sites
+GET /api/admin/etat-operationnel?date=<date>&siteId=<site-id>
 GET /api/admin/statistiques?dateDebut=<date-debut>&dateFin=<date-fin>
 GET /api/admin/membres
 POST /api/admin/matches/traitement-veille?date=<date-traitement>
@@ -462,8 +479,8 @@ Dans un deuxième terminal :
 
 ```powershell
 cd frontend
-npm install
-npm start
+npm.cmd ci
+npm.cmd start
 ```
 
 Frontend disponible sur :
@@ -633,6 +650,11 @@ intégration backend avec MockMvc + H2
 
 Les tests de concurrence qui nécessitent le comportement réel de PostgreSQL
 sont exécutés séparément avec Testcontainers.
+
+Ils vérifient notamment le double paiement, le paiement face à une fermeture,
+le paiement face au refus d'une invitation, le paiement face au traitement de
+veille, le recalcul concurrent des dettes et l'idempotence du traitement
+d'échéance.
 
 Docker Desktop doit être démarré, puis :
 
@@ -858,8 +880,8 @@ démonstration.
 
 ```powershell
 cd frontend
-npm install
-npm start
+npm.cmd ci
+npm.cmd start
 ```
 
 ### Build frontend

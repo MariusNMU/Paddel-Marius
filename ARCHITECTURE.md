@@ -79,6 +79,7 @@ backend/src/main/java/com/padelMarius/backend/
   entity/
   exception/
   repository/
+  scheduler/
   security/
   service/
 ```
@@ -132,6 +133,8 @@ Responsabilités :
 - appliquer les règles métier ;
 - orchestrer plusieurs repositories ;
 - gérer les transactions quand nécessaire ;
+- sérialiser les transitions concurrentes sensibles avec des verrous
+  pessimistes acquis par les repositories ;
 - calculer les disponibilités ;
 - créer les matches ;
 - gérer les paiements ;
@@ -148,9 +151,28 @@ ParticipationService
 PaiementService
 DetteService
 TraitementVeilleService
+TraitementEcheanceService
+EtatOperationnelAdminService
 StatistiquesAdminService
 AdminAuthorizationService
 ```
+
+---
+
+#### Scheduler
+
+Emplacement :
+
+```txt
+backend/src/main/java/com/padelMarius/backend/scheduler
+```
+
+`TraitementVeilleScheduler` exécute automatiquement les règles J-1 : libération
+des participations non payées et passage public des matches privés incomplets.
+`TraitementEcheanceScheduler` démarre et termine automatiquement les matches,
+puis déclenche les dettes et pénalités prévues. Les deux schedulers appellent
+la couche service ; les endpoints administrateur utilisent les mêmes services
+pour un déclenchement manuel.
 
 ---
 
@@ -169,6 +191,10 @@ Responsabilités :
 - fournir les requêtes nécessaires aux services.
 
 Les repositories ne contiennent pas de logique métier.
+
+Les méthodes `findByIdForUpdate` et `findByMatchIdForUpdate` portent les verrous
+JPA nécessaires pour empêcher qu'un paiement confirmé soit ensuite réécrit
+comme participation libérée par un refus ou par le traitement de veille.
 
 Exemples :
 
@@ -361,6 +387,7 @@ inscription-joueur
 disponibilites
 creer-match
 matches-publics
+invitations-recues
 mes-reservations
 mes-dettes
 mon-solde
@@ -369,6 +396,7 @@ admin-login
 admin-dashboard
 admin-statistiques
 admin-membres
+admin-etat-operationnel
 admin-traitement-veille
 admin-traitement-echeance
 admin-fermetures
@@ -392,6 +420,8 @@ Responsabilités :
 - les façades orchestrent les appels API, les chargements, les erreurs et les
   succès ;
 - `AuthContextService` conserve et synchronise la session ;
+- `InvitationNotificationService` synchronise le nombre d'invitations à
+  traiter et actualise immédiatement le badge après paiement ou refus ;
 - les composants restent limités à la présentation et aux événements
   utilisateur.
 
@@ -402,6 +432,8 @@ AuthApiService
 DisponibiliteApiService
 MatchApiService
 MatchPublicApiService
+PaiementApiService
+InvitationApiService
 ReservationApiService
 DetteApiService
 ```
@@ -417,6 +449,7 @@ DisponibilitesFacadeService
 MesReservationsFacadeService
 MesDettesFacadeService
 AdminDashboardFacadeService
+AdminEtatOperationnelFacadeService
 ```
 
 ---
@@ -519,12 +552,15 @@ GET /api/disponibilites?siteId=1001&date=<date-demo>
 POST /api/matches
 GET /api/matches/publics?siteId=1001&date=<date-demo>
 POST /api/matches/{matchId}/participants/public/payer
+POST /api/participations/{participationId}/paiements
 GET /api/membres/{matricule}/solde
 GET /api/membres/{matricule}/reservations
 GET /api/membres/{matricule}/paiements
 GET /api/membres/{matricule}/dettes/ouvertes
 POST /api/dettes/{detteId}/paiements
 POST /api/admin/fermetures
+GET /api/admin/sites
+GET /api/admin/etat-operationnel?date=<date>&siteId=<site-id>
 GET /api/admin/statistiques?dateDebut=<date-debut>&dateFin=<date-fin>
 GET /api/admin/membres
 POST /api/admin/matches/traitement-veille?date=<date-traitement>
@@ -547,6 +583,16 @@ Pour un match privé, l'organisateur utilise l'invitation privée :
 POST /api/matches/{matchId}/invitations/privees
 ```
 
+Le joueur invité confirme et paie sa participation existante par l'unique
+endpoint de paiement :
+
+```http
+POST /api/participations/{participationId}/paiements
+```
+
+Le DTO contient le montant standard de 15 euros. L'ancien endpoint suffixé
+`/standard` n'est plus exposé.
+
 Pour un match public, le joueur utilise l'opération atomique :
 
 ```http
@@ -557,12 +603,22 @@ Cette opération crée la participation et effectue le paiement dans la même tr
 
 La génération d'une dette n'est pas exposée librement aux joueurs. Elle est déclenchée par le backend lors des traitements métier.
 
-Le cycle `A_VENIR` vers `DEMARRE`, puis `DEMARRE` vers `TERMINE`, est mis à
-jour par `TraitementEcheanceScheduler`. La tâche appelle la couche service à
-intervalle configurable. L'endpoint administrateur reste disponible pour un
-déclenchement manuel. Les opérations de participation et de paiement vérifient
-également l'heure réelle du match : la planification ne remplace donc pas les
-contrôles métier directs.
+Le traitement J-1 est exécuté par `TraitementVeilleScheduler`. Le cycle
+`A_VENIR` vers `DEMARRE`, puis `DEMARRE` vers `TERMINE`, est mis à jour par
+`TraitementEcheanceScheduler`. Les deux tâches appellent leur couche service à
+intervalle configurable. Les endpoints administrateur restent disponibles
+pour un déclenchement manuel. Les opérations de participation et de paiement
+vérifient également l'heure réelle du match : la planification ne remplace donc
+pas les contrôles métier directs.
+
+Les services refusent également la consultation ou la participation à un match
+public lorsque son site ou son terrain est inactif. L'écran d'état opérationnel
+utilise en revanche `GET /api/admin/sites` afin qu'un administrateur global
+puisse diagnostiquer les sites actifs comme inactifs.
+
+Dans les statistiques, les matches, les paiements et les dettes ouvertes sont
+alignés sur la même période. Pour une dette, la période est déterminée par la
+date de début du match auquel elle est rattachée.
 
 ### 5.2. Contrat d'erreur API
 
@@ -855,6 +911,18 @@ paiement participation organisateur
 consultation réservations
 ```
 
+Les scénarios qui dépendent du verrouillage réel de PostgreSQL sont isolés dans
+le profil `postgresql-integration` : double paiement, paiement face à une
+fermeture, paiement face au refus d'une invitation, paiement face à la veille,
+recalcul des dettes et traitements d'échéance concurrents.
+
+```powershell
+cd backend
+docker info
+.\mvnw.cmd -Ppostgresql-integration clean verify
+cd ..
+```
+
 ### 10.2. Tests frontend
 
 Tests unitaires Angular :
@@ -922,6 +990,7 @@ Elle exécute automatiquement :
 
 ```txt
 backend tests
+backend PostgreSQL integration tests
 frontend build
 frontend tests
 ```

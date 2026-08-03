@@ -340,12 +340,6 @@ class PaiementServiceTest {
 
     @Test
     void shouldAddOpenDebtsToParticipationPayment() {
-        // Objectif du test :
-        // - membre avec une dette ouverte de 30 euros
-        // - participation a payer de 15 euros
-        // - paiement attendu : 45 euros debites au total
-        // - montantDettesReglees = 30 euros
-        // - montantTotalDebite = 45 euros
         Site site = creerSite(1L);
         Terrain terrain = creerTerrain(10L, site);
         PadelMatch match = creerMatch(100L, terrain);

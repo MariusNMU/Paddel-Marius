@@ -215,7 +215,7 @@ Ce choix reste simple pour l’examen :
 - un match dure 1h30 ;
 - un match coûte `60.00` ;
 - un match ne peut pas être créé dans le passé ou à l’heure courante ;
-- un match privé peut devenir public à J-1 si incomplet ;
+- un match privé incomplet devient public lors du traitement automatique J-1 ;
 - un match annulé par fermeture n’est plus jouable ;
 - un match possède au maximum 4 participants actifs ;
 - un match doit avoir exactement un organisateur.
@@ -488,8 +488,8 @@ Le modèle permet de représenter :
 - l’historique des transactions ;
 - l’administration multisite ;
 - les statistiques admin ;
-- le traitement de veille ;
-- le traitement d’échéance.
+- le traitement de veille automatique avec déclenchement manuel ;
+- le traitement d’échéance automatique avec déclenchement manuel.
 
 ---
 

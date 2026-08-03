@@ -18,6 +18,8 @@ blocage d'une nouvelle réservation si une pénalité est active
 annulation de matches par fermeture
 remboursement sur le solde crédit
 statistiques administrateur
+état opérationnel des sites et terrains, y compris les sites inactifs
+traitements J-1 et d'échéance automatiques
 séparation frontend / backend / base de données
 tests automatisés
 GitHub Actions
@@ -390,6 +392,12 @@ participation confirmée après paiement
 
 Dans un match public, le principe est premier payé, premier servi. Le joueur doit rejoindre lui-même le match public. L'organisateur ne réserve pas une place à sa place.
 
+Le paiement d'une participation existante utilise un seul contrat HTTP :
+`POST /api/participations/{participationId}/paiements`, avec un montant de
+15 euros. Pour un parcours privé, l'invitation peut être envoyée avec la touche
+Entrée ; après paiement ou refus, le point rouge de notification disparaît
+immédiatement.
+
 ### Étape 8 — Montrer le blocage par dette
 
 Se connecter avec :
@@ -475,11 +483,17 @@ dashboard administrateur
 rôle GLOBAL
 accès aux statistiques
 accès à la liste des membres
+accès à l'état des matches et des terrains
 accès aux fermetures
 accès aux traitements
 ```
 
 Il existe deux types d'administrateurs : GLOBAL et SITE. Un administrateur GLOBAL peut voir tous les sites. Un administrateur SITE est limité à son propre site.
+
+Ouvrir ensuite l'état opérationnel, sélectionner un site inactif et montrer que
+son état reste consultable par l'administrateur global. Les joueurs ne peuvent
+cependant ni consulter les disponibilités, ni voir ou rejoindre un match public
+d'un site ou d'un terrain inactif.
 
 ### Étape 12 — Statistiques administrateur
 
@@ -507,7 +521,10 @@ taux de remplissage
 participations actives
 ```
 
-Les statistiques sont calculées côté backend à partir des matches, des participations, des paiements et des dettes. Les matches annulés et les paiements annulés ne doivent pas fausser le chiffre d'affaires.
+Les statistiques sont calculées côté backend à partir des matches, des
+participations, des paiements et des dettes. Les matches annulés et les
+paiements annulés ne doivent pas fausser le chiffre d'affaires. Les dettes
+ouvertes sont limitées à la période sélectionnée selon la date du match.
 
 ### Étape 13 — Fermeture administrateur
 
@@ -547,7 +564,10 @@ participations libérées
 matches passés publics
 ```
 
-Le traitement de veille applique les règles avant les matches, notamment le passage public d'un match privé incomplet et la libération des participations non payées.
+Le traitement de veille applique les règles avant les matches, notamment le
+passage public d'un match privé incomplet et la libération des participations
+non payées. Le backend l'exécute automatiquement ; l'écran permet de relancer
+manuellement le même service pendant la démonstration.
 
 Ouvrir ensuite :
 
@@ -694,6 +714,7 @@ un match coûte 60 euros
 une participation standard coûte 15 euros
 le paiement confirme la participation
 le solde crédit est débité côté backend
+un seul endpoint paie une participation existante
 ```
 
 ### Dette

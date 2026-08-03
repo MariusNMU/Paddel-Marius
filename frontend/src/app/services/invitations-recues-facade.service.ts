@@ -174,7 +174,7 @@ export class InvitationsRecuesFacadeService {
       .set(invitation.participationId);
 
     this.paiementApiService
-      .payerParticipationStandard(
+      .payerParticipation(
         invitation.participationId
       )
       .pipe(

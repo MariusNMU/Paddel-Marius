@@ -1,59 +1,61 @@
-# Frontend
+# Frontend Angular — Padel Marius
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.10.
+Ce dossier contient l'interface Angular du projet. Le frontend ne contient ni
+SQL ni accès direct à la base de données : il communique uniquement avec l'API
+REST Spring Boot par des URLs relatives `/api/**`.
 
-## Development server
+## Architecture
 
-To start a local development server, run:
-
-```bash
-ng serve
+```txt
+src/app/pages/        composants et écrans standalone
+src/app/services/     clients HTTP, façades et états partagés
+src/app/models/       contrats TypeScript des DTO
+src/app/guards/       protection des routes joueur et administrateur
+src/app/interceptors/ ajout du JWT aux appels protégés
+src/app/shared/       utilitaires de présentation et d'erreur
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+Les composants gèrent la présentation. Les façades orchestrent les parcours
+avec des signaux Angular. Les clients API centralisent les appels HTTP.
 
-## Code scaffolding
+## Prérequis et installation
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+Depuis la racine du projet :
 
-```bash
-ng generate component component-name
+```powershell
+cd frontend
+npm.cmd ci
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Le projet utilise Node.js, npm 11.6.0, Angular 21, Angular Material et Vitest.
 
-```bash
-ng generate --help
+## Démarrage
+
+Le backend doit être accessible sur `http://localhost:8080`.
+
+```powershell
+npm.cmd start
 ```
 
-## Building
+Ouvrir `http://localhost:4200`. Le fichier `proxy.conf.json` redirige les appels
+`/api/**` vers le backend.
 
-To build the project run:
+## Validation
 
-```bash
-ng build
+```powershell
+npm.cmd run build
+npm.cmd run test -- --watch=false
+npm.cmd run cypress:run
+npm.cmd run cypress:run:fullstack
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+- Le build vérifie la compilation de production.
+- Les tests unitaires couvrent composants, façades, clients API, guards et
+  interceptor.
+- Cypress mocké teste l'interface avec des réponses API simulées.
+- Cypress full stack démarre automatiquement Spring Boot avec H2 et Angular,
+  puis vérifie un parcours HTTP réel.
 
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Pour le fonctionnement complet, les règles métier, la sécurité et la
+démonstration, consulter `README.md`, `ARCHITECTURE.md`, `EXPLOITATION.md` et
+`DEMO.md` à la racine du dépôt.

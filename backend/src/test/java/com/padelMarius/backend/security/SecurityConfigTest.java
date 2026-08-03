@@ -102,8 +102,14 @@ class SecurityConfigTest {
             throws Exception {
         String playerToken = authenticatePlayerAndReadToken();
 
-        mockMvc.perform(post("/api/participations/999999/paiements/standard")
-                        .header(AUTHORIZATION, bearer(playerToken)))
+        mockMvc.perform(post("/api/participations/999999/paiements")
+                        .header(AUTHORIZATION, bearer(playerToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "montant": 15.00
+                                }
+                                """))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("RESSOURCE_INTROUVABLE"));
     }
@@ -113,8 +119,14 @@ class SecurityConfigTest {
             throws Exception {
         String playerToken = authenticatePlayerAndReadToken();
 
-        mockMvc.perform(post("/api/participations/3202/paiements/standard")
-                        .header(AUTHORIZATION, bearer(playerToken)))
+        mockMvc.perform(post("/api/participations/3202/paiements")
+                        .header(AUTHORIZATION, bearer(playerToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "montant": 15.00
+                                }
+                                """))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("ACCES_REFUSE"));
     }

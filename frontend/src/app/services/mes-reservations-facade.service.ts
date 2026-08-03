@@ -184,7 +184,7 @@ export class MesReservationsFacadeService {
       .set(reservation.participationId);
 
     this.paiementApiService
-      .payerParticipationStandard(
+      .payerParticipation(
         reservation.participationId
       )
       .pipe(

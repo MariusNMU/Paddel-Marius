@@ -49,6 +49,9 @@ public class ParticipationService {
 
         verifierMatchAVenir(match);
         verifierMatchPrive(match);
+        reglesReservationMembreService.verifierTerrainEtSiteActifs(
+                match.getTerrain()
+        );
 
         String matricule = normaliserMatricule(request.matriculeJoueur());
         Membre membre = recupererMembre(matricule);

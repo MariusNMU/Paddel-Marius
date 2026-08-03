@@ -127,6 +127,76 @@ class ParticipationServiceTest {
     }
 
     @Test
+    void ajouterParticipantPrive_shouldRejectInactiveSite() {
+        Site site = creerSite(1L);
+        site.setActif(false);
+        Terrain terrain = creerTerrain(10L, site);
+        PadelMatch match = creerMatch(
+                100L,
+                terrain,
+                VisibiliteMatch.PRIVE,
+                ModeCreation.PRIVE
+        );
+
+        when(padelMatchRepository.findByIdForUpdate(100L))
+                .thenReturn(Optional.of(match));
+        doThrow(new ConfigurationMetierException(
+                "Le site du terrain demandé est inactif."
+        )).when(reglesReservationMembreService)
+                .verifierTerrainEtSiteActifs(terrain);
+
+        ConfigurationMetierException exception = assertThrows(
+                ConfigurationMetierException.class,
+                () -> participationService.ajouterParticipantPrive(
+                        100L,
+                        new AjouterParticipantPriveRequest("G0002")
+                )
+        );
+
+        assertEquals(
+                "Le site du terrain demandé est inactif.",
+                exception.getMessage()
+        );
+        verify(membreRepository, never()).findByMatriculeForUpdate(any());
+        verify(participationRepository, never()).save(any());
+    }
+
+    @Test
+    void ajouterParticipantPrive_shouldRejectInactiveTerrain() {
+        Site site = creerSite(1L);
+        Terrain terrain = creerTerrain(10L, site);
+        terrain.setActif(false);
+        PadelMatch match = creerMatch(
+                100L,
+                terrain,
+                VisibiliteMatch.PRIVE,
+                ModeCreation.PRIVE
+        );
+
+        when(padelMatchRepository.findByIdForUpdate(100L))
+                .thenReturn(Optional.of(match));
+        doThrow(new ConfigurationMetierException(
+                "Le terrain demandé est inactif."
+        )).when(reglesReservationMembreService)
+                .verifierTerrainEtSiteActifs(terrain);
+
+        ConfigurationMetierException exception = assertThrows(
+                ConfigurationMetierException.class,
+                () -> participationService.ajouterParticipantPrive(
+                        100L,
+                        new AjouterParticipantPriveRequest("G0002")
+                )
+        );
+
+        assertEquals(
+                "Le terrain demandé est inactif.",
+                exception.getMessage()
+        );
+        verify(membreRepository, never()).findByMatriculeForUpdate(any());
+        verify(participationRepository, never()).save(any());
+    }
+
+    @Test
     void inscrireParticipantPublic_shouldCreateParticipation_whenRequestIsValid() {
         Site site = creerSite(1L);
         Terrain terrain = creerTerrain(10L, site);

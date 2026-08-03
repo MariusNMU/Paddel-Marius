@@ -103,3 +103,47 @@ jobs:
 
       - name: Run frontend tests
         run: npm run test -- --watch=false
+
+  frontend-cypress:
+    name: Cypress mocked and full-stack
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      - name: Make Maven wrapper executable
+        run: chmod +x ../backend/mvnw
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Use project npm version
+        run: |
+          npm install -g npm@11.6.0
+          npm --version
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Run mocked Cypress scenarios
+        run: npm run cypress:run
+
+      - name: Run full-stack Cypress scenarios
+        run: npm run cypress:run:fullstack

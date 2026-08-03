@@ -112,7 +112,7 @@ class StatistiquesRepositoryTest {
     }
 
     @Test
-    void detteRepository_shouldFindOpenDebts() {
+    void detteRepository_shouldFindOpenDebtsForMatchPeriod() {
         Site site = creerSite("NAM");
         Terrain terrain = creerTerrain(site, "T1");
 
@@ -126,6 +126,11 @@ class StatistiquesRepositoryTest {
         PadelMatch matchAvecDetteReglee = creerMatch(
                 terrain,
                 LocalDateTime.of(2026, 5, 21, 9, 0)
+        );
+
+        PadelMatch matchHorsPeriode = creerMatch(
+                terrain,
+                LocalDateTime.of(2026, 6, 1, 0, 0)
         );
 
         Dette detteOuverte = detteRepository.save(Dette.builder()
@@ -147,7 +152,21 @@ class StatistiquesRepositoryTest {
                 .statutDette(StatutDette.REGLEE)
                 .build());
 
-        List<Dette> dettesOuvertes = detteRepository.findByStatutDette(StatutDette.OUVERTE);
+        Dette detteOuverteHorsPeriode = detteRepository.save(Dette.builder()
+                .match(matchHorsPeriode)
+                .membreResponsable(responsable)
+                .montantInitial(new BigDecimal("45.00"))
+                .montantRestant(new BigDecimal("45.00"))
+                .dateCreation(LocalDateTime.of(2026, 5, 12, 12, 0))
+                .statutDette(StatutDette.OUVERTE)
+                .build());
+
+        List<Dette> dettesOuvertes = detteRepository
+                .findByStatutDetteAndMatch_DateHeureDebutGreaterThanEqualAndMatch_DateHeureDebutBefore(
+                        StatutDette.OUVERTE,
+                        LocalDateTime.of(2026, 5, 1, 0, 0),
+                        LocalDateTime.of(2026, 6, 1, 0, 0)
+                );
 
         assertThat(dettesOuvertes)
                 .extracting(Dette::getId)
@@ -155,7 +174,10 @@ class StatistiquesRepositoryTest {
 
         assertThat(dettesOuvertes)
                 .extracting(Dette::getId)
-                .doesNotContain(detteReglee.getId());
+                .doesNotContain(
+                        detteReglee.getId(),
+                        detteOuverteHorsPeriode.getId()
+                );
     }
 
     private Site creerSite(String code) {

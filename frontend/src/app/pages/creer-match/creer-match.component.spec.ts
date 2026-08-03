@@ -56,6 +56,22 @@ describe('CreerMatchComponent', () => {
     soldeInitialJoueur: 100
   };
 
+  const matchPrive: MatchResponse = {
+    matchId: 100,
+    terrainId: 20,
+    numeroTerrain: 'T2',
+    siteId: 2,
+    nomSite: 'Site Beta',
+    dateHeureDebut: '2026-06-20T09:00:00',
+    dateHeureFin: '2026-06-20T10:30:00',
+    modeCreation: 'PRIVE',
+    visibiliteCourante: 'PRIVE',
+    etatCycle: 'A_VENIR',
+    prixTotal: 60,
+    matriculeOrganisateur: 'TEST001',
+    participationOrganisateurId: 10
+  };
+
   beforeEach(async () => {
     facade = {
       initialiser: vi.fn(),
@@ -186,4 +202,40 @@ describe('CreerMatchComponent', () => {
 
     expect(facade.inviterJoueur).toHaveBeenCalled();
   });
+
+  it(
+    'doit soumettre l invitation avec la touche Entrée',
+    () => {
+      facade.matchCree.set(matchPrive);
+      fixture.detectChanges();
+
+      const formulaire:
+        HTMLFormElement | null =
+        fixture.nativeElement.querySelector(
+          'form.form-invitation'
+        );
+
+      const bouton:
+        HTMLButtonElement | null =
+        formulaire?.querySelector(
+          'button[type="submit"]'
+        ) ?? null;
+
+      expect(formulaire).not.toBeNull();
+      expect(bouton).not.toBeNull();
+
+      formulaire?.dispatchEvent(
+        new Event(
+          'submit',
+          {
+            bubbles: true,
+            cancelable: true
+          }
+        )
+      );
+
+      expect(facade.inviterJoueur)
+        .toHaveBeenCalledTimes(1);
+    }
+  );
 });

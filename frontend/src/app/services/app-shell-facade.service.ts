@@ -1,7 +1,6 @@
 import {
   effect,
-  Injectable,
-  signal
+  Injectable
 } from '@angular/core';
 import { Router } from '@angular/router';
 import {
@@ -15,12 +14,10 @@ import {
 import { AuthJoueurResponse } from '../models/auth.model';
 import { AuthContextService } from './auth-context.service';
 import { InvitationApiService } from './invitation-api.service';
+import { InvitationNotificationService } from './invitation-notification.service';
 
 @Injectable()
 export class AppShellFacadeService {
-  private readonly nombreInvitationsRecuesSignal =
-    signal(0);
-
   private readonly changementJoueur$ =
     new Subject<void>();
 
@@ -30,14 +27,13 @@ export class AppShellFacadeService {
     AuthJoueurResponse | null | undefined =
     undefined;
 
-  readonly nombreInvitationsRecues =
-    this.nombreInvitationsRecuesSignal.asReadonly();
-
   constructor(
     private readonly authContextService:
     AuthContextService,
     private readonly invitationApiService:
     InvitationApiService,
+    private readonly invitationNotificationService:
+    InvitationNotificationService,
     private readonly router:
     Router
   ) {
@@ -87,9 +83,15 @@ export class AppShellFacadeService {
       ?.roleAdministrateur === 'GLOBAL';
   }
 
+  nombreInvitationsRecues(): number {
+    return this.invitationNotificationService
+      .nombreInvitationsRecues();
+  }
+
   deconnecterJoueur(): void {
     this.changementJoueur$.next();
-    this.nombreInvitationsRecuesSignal.set(0);
+    this.invitationNotificationService
+      .reinitialiser();
 
     this.authContextService
       .deconnecterJoueur();
@@ -108,7 +110,8 @@ export class AppShellFacadeService {
     joueur: AuthJoueurResponse | null
   ): void {
     this.changementJoueur$.next();
-    this.nombreInvitationsRecuesSignal.set(0);
+    this.invitationNotificationService
+      .reinitialiser();
 
     if (joueur) {
       this.chargerNombreInvitations(
@@ -125,12 +128,14 @@ export class AppShellFacadeService {
       .pipe(
         timeout(10000),
         tap(nombreInvitations => {
-          this.nombreInvitationsRecuesSignal
-            .set(nombreInvitations);
+          this.invitationNotificationService
+            .definirNombreInvitationsRecues(
+              nombreInvitations
+            );
         }),
         catchError(() => {
-          this.nombreInvitationsRecuesSignal
-            .set(0);
+          this.invitationNotificationService
+            .reinitialiser();
 
           return EMPTY;
         }),

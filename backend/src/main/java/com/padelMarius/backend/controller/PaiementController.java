@@ -23,20 +23,6 @@ public class PaiementController {
 
     private final PaiementService paiementService;
 
-    @PostMapping("/api/participations/{participationId}/paiements/standard")
-    @PreAuthorize("@joueurAuthorizationService.peutAccederParticipation(authentication, #participationId)")
-    public ResponseEntity<PaiementResponse> payerParticipationStandard(
-            @PathVariable
-            Long participationId
-    ) {
-        PaiementResponse response =
-                paiementService.payerParticipationStandard(participationId);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
-    }
-
     @PostMapping("/api/participations/{participationId}/paiements")
     @PreAuthorize("@joueurAuthorizationService.peutAccederParticipation(authentication, #participationId)")
     public ResponseEntity<PaiementResponse> payerParticipation(

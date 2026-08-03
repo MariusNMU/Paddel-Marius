@@ -41,7 +41,7 @@ describe(
     };
 
     let paiementApiService: {
-      payerParticipationStandard:
+      payerParticipation:
         ReturnType<typeof vi.fn>;
     };
 
@@ -147,7 +147,7 @@ describe(
       };
 
       paiementApiService = {
-        payerParticipationStandard:
+        payerParticipation:
           vi.fn(() => of(paiement))
       };
 
@@ -326,7 +326,7 @@ describe(
 
         expect(
           paiementApiService
-            .payerParticipationStandard
+            .payerParticipation
         ).toHaveBeenCalledWith(3101);
 
         expect(service.dernierPaiement())
@@ -353,7 +353,7 @@ describe(
       'doit exposer une erreur de paiement',
       () => {
         paiementApiService
-          .payerParticipationStandard
+          .payerParticipation
           .mockReturnValue(
             throwError(
               () =>
@@ -399,7 +399,7 @@ describe(
       'doit terminer le paiement après expiration du délai',
       () => {
         paiementApiService
-          .payerParticipationStandard
+          .payerParticipation
           .mockReturnValue(NEVER);
 
         service.initialiser();
@@ -444,7 +444,7 @@ describe(
 
         expect(
           paiementApiService
-            .payerParticipationStandard
+            .payerParticipation
         ).not.toHaveBeenCalled();
       }
     );
@@ -552,7 +552,7 @@ describe(
           new Subject<PaiementResponse>();
 
         paiementApiService
-          .payerParticipationStandard
+          .payerParticipation
           .mockReturnValue(
             ancienPaiement$
           );
@@ -586,7 +586,7 @@ describe(
           new Subject<PaiementResponse>();
 
         paiementApiService
-          .payerParticipationStandard
+          .payerParticipation
           .mockReturnValue(
             paiementEnCours$
           );
@@ -603,7 +603,7 @@ describe(
 
         expect(
           paiementApiService
-            .payerParticipationStandard
+            .payerParticipation
         ).toHaveBeenCalledTimes(1);
 
         expect(

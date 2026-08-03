@@ -17,20 +17,14 @@ export class PaiementApiService {
   constructor(private readonly http: HttpClient) {
   }
 
-  payerParticipation(
-    participationId: number,
-    request: PayerParticipationRequest
-  ): Observable<PaiementResponse> {
+  payerParticipation(participationId: number): Observable<PaiementResponse> {
+    const request: PayerParticipationRequest = {
+      montant: 15
+    };
+
     return this.http.post<PaiementResponse>(
       `${this.apiUrl}/api/participations/${participationId}/paiements`,
       request
-    );
-  }
-
-  payerParticipationStandard(participationId: number): Observable<PaiementResponse> {
-    return this.http.post<PaiementResponse>(
-      `${this.apiUrl}/api/participations/${participationId}/paiements/standard`,
-      {}
     );
   }
 

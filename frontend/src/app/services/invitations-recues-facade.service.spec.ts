@@ -16,6 +16,7 @@ import { InvitationPriveeResponse } from '../models/invitation.model';
 import { PaiementResponse } from '../models/paiement.model';
 import { AuthContextService } from './auth-context.service';
 import { InvitationApiService } from './invitation-api.service';
+import { InvitationNotificationService } from './invitation-notification.service';
 import { InvitationsRecuesFacadeService } from './invitations-recues-facade.service';
 import { PaiementApiService } from './paiement-api.service';
 
@@ -42,6 +43,11 @@ describe(
 
     let paiementApiService: {
       payerParticipationStandard:
+        ReturnType<typeof vi.fn>;
+    };
+
+    let invitationNotificationService: {
+      signalerInvitationTraitee:
         ReturnType<typeof vi.fn>;
     };
 
@@ -153,6 +159,11 @@ describe(
           vi.fn(() => of(paiement))
       };
 
+      invitationNotificationService = {
+        signalerInvitationTraitee:
+          vi.fn()
+      };
+
       TestBed.configureTestingModule({
         providers: [
           InvitationsRecuesFacadeService,
@@ -173,6 +184,12 @@ describe(
             PaiementApiService,
             useValue:
             paiementApiService
+          },
+          {
+            provide:
+            InvitationNotificationService,
+            useValue:
+            invitationNotificationService
           }
         ]
       });
@@ -357,6 +374,11 @@ describe(
         ).toHaveBeenCalledTimes(2);
 
         expect(
+          invitationNotificationService
+            .signalerInvitationTraitee
+        ).toHaveBeenCalledTimes(1);
+
+        expect(
           service
             .actionEnCoursParticipationId()
         ).toBeNull();
@@ -389,6 +411,11 @@ describe(
 
         expect(service.messageSucces())
           .toBe('');
+
+        expect(
+          invitationNotificationService
+            .signalerInvitationTraitee
+        ).not.toHaveBeenCalled();
 
         expect(
           service
@@ -465,6 +492,11 @@ describe(
           .toBe('Invitation déclinée.');
 
         expect(
+          invitationNotificationService
+            .signalerInvitationTraitee
+        ).toHaveBeenCalledTimes(1);
+
+        expect(
           invitationApiService
             .listerInvitationsRecues
         ).toHaveBeenCalledTimes(2);
@@ -502,6 +534,11 @@ describe(
 
         expect(service.messageSucces())
           .toBe('');
+
+        expect(
+          invitationNotificationService
+            .signalerInvitationTraitee
+        ).not.toHaveBeenCalled();
 
         expect(
           service

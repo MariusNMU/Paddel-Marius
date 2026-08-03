@@ -245,31 +245,35 @@ import { enumLabel } from '../../shared/enum-label.util';
           joueurs. Ajoute les matricules un par un.
         </p>
 
-        <mat-form-field appearance="outline">
-          <mat-label>Matricule du joueur à inviter</mat-label>
-
-          <input
-            matInput
-            id="matriculeInvite"
-            name="matriculeInvite"
-            type="text"
-            [ngModel]="facade.matriculeInvite()"
-            (ngModelChange)="facade.modifierMatriculeInvite($event)"
-          />
-        </mat-form-field>
-
-        <button
-          mat-stroked-button
-          class="action-principale"
-          type="button"
-          (click)="inviterJoueur()"
-          [disabled]="
-            facade.chargementCreation()
-            || facade.chargementInvitation()
-          "
+        <form
+          class="form-invitation"
+          (ngSubmit)="inviterJoueur()"
         >
-          Inviter
-        </button>
+          <mat-form-field appearance="outline">
+            <mat-label>Matricule du joueur à inviter</mat-label>
+
+            <input
+              matInput
+              id="matriculeInvite"
+              name="matriculeInvite"
+              type="text"
+              [ngModel]="facade.matriculeInvite()"
+              (ngModelChange)="facade.modifierMatriculeInvite($event)"
+            />
+          </mat-form-field>
+
+          <button
+            mat-stroked-button
+            class="action-principale"
+            type="submit"
+            [disabled]="
+              facade.chargementCreation()
+              || facade.chargementInvitation()
+            "
+          >
+            Inviter
+          </button>
+        </form>
 
         <p *ngIf="facade.messageInvitation()">
           {{ facade.messageInvitation() }}

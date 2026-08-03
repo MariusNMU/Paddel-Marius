@@ -74,7 +74,11 @@ public class StatistiquesAdminService {
                 .toList();
 
         List<Dette> dettesOuvertes = detteRepository
-                .findByStatutDette(StatutDette.OUVERTE)
+                .findByStatutDetteAndMatch_DateHeureDebutGreaterThanEqualAndMatch_DateHeureDebutBefore(
+                        StatutDette.OUVERTE,
+                        debutInclus,
+                        finExclusive
+                )
                 .stream()
                 .filter(dette -> detteConcerneSite(dette, siteId))
                 .toList();

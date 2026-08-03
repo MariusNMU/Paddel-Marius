@@ -29,12 +29,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -44,6 +45,9 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class InvitationPriveeServiceTest {
+
+    private static final LocalDateTime MAINTENANT_FIXE =
+            LocalDateTime.of(2026, 5, 19, 8, 0);
 
     @Mock
     private PadelMatchRepository padelMatchRepository;
@@ -61,11 +65,19 @@ class InvitationPriveeServiceTest {
 
     @BeforeEach
     void setUp() {
+        Clock clockFixe = Clock.fixed(
+                MAINTENANT_FIXE
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant(),
+                ZoneId.systemDefault()
+        );
+
         invitationPriveeService = new InvitationPriveeService(
                 padelMatchRepository,
                 membreRepository,
                 participationRepository,
-                participationService
+                participationService,
+                clockFixe
         );
     }
 
@@ -197,7 +209,8 @@ class InvitationPriveeServiceTest {
                 StatutParticipation.EN_ATTENTE_PAIEMENT
         );
 
-        when(participationRepository.findById(301L)).thenReturn(Optional.of(participationInvite));
+        when(participationRepository.findByIdForUpdate(301L))
+                .thenReturn(Optional.of(participationInvite));
         when(participationRepository.save(participationInvite)).thenReturn(participationInvite);
         when(participationRepository.findByMatchId(100L))
                 .thenReturn(List.of(donnees.participationOrganisateur(), participationInvite));
@@ -210,8 +223,9 @@ class InvitationPriveeServiceTest {
         assertEquals(301L, response.participationId());
         assertEquals(StatutParticipation.LIBEREE, response.statutParticipation());
         assertEquals(StatutParticipation.LIBEREE, participationInvite.getStatutParticipation());
-        assertNotNull(participationInvite.getDateLiberation());
+        assertEquals(MAINTENANT_FIXE, participationInvite.getDateLiberation());
 
+        verify(participationRepository).findByIdForUpdate(301L);
         verify(participationRepository).save(participationInvite);
     }
 
@@ -227,7 +241,8 @@ class InvitationPriveeServiceTest {
                 StatutParticipation.EN_ATTENTE_PAIEMENT
         );
 
-        when(participationRepository.findById(301L)).thenReturn(Optional.of(participationInvite));
+        when(participationRepository.findByIdForUpdate(301L))
+                .thenReturn(Optional.of(participationInvite));
 
         ConfigurationMetierException exception = assertThrows(
                 ConfigurationMetierException.class,

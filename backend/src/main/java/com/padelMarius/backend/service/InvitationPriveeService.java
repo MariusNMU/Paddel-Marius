@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,6 +27,7 @@ public class InvitationPriveeService {
     private final MembreRepository membreRepository;
     private final ParticipationRepository participationRepository;
     private final ParticipationService participationService;
+    private final Clock clock;
 
     @Transactional
     public InvitationPriveeResponse inviterJoueur(Long matchId, InviterJoueurPriveRequest request) {
@@ -71,7 +73,7 @@ public class InvitationPriveeService {
 
     @Transactional
     public InvitationPriveeResponse declinerInvitation(Long participationId, DeclinerInvitationRequest request) {
-        Participation participation = participationRepository.findById(participationId)
+        Participation participation = participationRepository.findByIdForUpdate(participationId)
                 .orElseThrow(() -> new RessourceIntrouvableException(
                         "Participation introuvable avec l'id " + participationId
                 ));
@@ -97,7 +99,7 @@ public class InvitationPriveeService {
         }
 
         participation.setStatutParticipation(StatutParticipation.LIBEREE);
-        participation.setDateLiberation(LocalDateTime.now());
+        participation.setDateLiberation(LocalDateTime.now(clock));
 
         Participation sauvegardee = participationRepository.save(participation);
 

@@ -2,6 +2,8 @@ package com.padelMarius.backend.integration;
 
 import com.padelMarius.backend.dto.dette.PayerDetteRequest;
 import com.padelMarius.backend.dto.fermeture.CreerFermetureRequest;
+import com.padelMarius.backend.dto.invitation.DeclinerInvitationRequest;
+import com.padelMarius.backend.dto.traitement.TraitementVeilleResponse;
 import com.padelMarius.backend.entity.CategorieMembre;
 import com.padelMarius.backend.entity.Dette;
 import com.padelMarius.backend.entity.EtatCycleMatch;
@@ -30,8 +32,10 @@ import com.padelMarius.backend.repository.SiteRepository;
 import com.padelMarius.backend.repository.TerrainRepository;
 import com.padelMarius.backend.service.DetteService;
 import com.padelMarius.backend.service.AdminFermetureService;
+import com.padelMarius.backend.service.InvitationPriveeService;
 import com.padelMarius.backend.service.PaiementService;
 import com.padelMarius.backend.service.TraitementEcheanceService;
+import com.padelMarius.backend.service.TraitementVeilleService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +52,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -137,6 +142,9 @@ class ConcurrencePostgreSqlITest {
     private PaiementService paiementService;
 
     @Autowired
+    private InvitationPriveeService invitationPriveeService;
+
+    @Autowired
     private AdminFermetureService adminFermetureService;
 
     @Autowired
@@ -144,6 +152,9 @@ class ConcurrencePostgreSqlITest {
 
     @Autowired
     private TraitementEcheanceService traitementEcheanceService;
+
+    @Autowired
+    private TraitementVeilleService traitementVeilleService;
 
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -348,6 +359,166 @@ class ConcurrencePostgreSqlITest {
                                 MONTANT_PARTICIPATION_STANDARD
                         )
                 );
+    }
+
+    @Test
+    void paiement_confirme_ne_doit_pas_etre_ecrase_par_un_refus_concurrent()
+            throws Exception {
+        Terrain terrain = creerTerrain();
+        Membre joueur = creerMembre(SOLDE_INITIAL_JOUEUR);
+
+        PadelMatch match = creerMatch(
+                terrain,
+                maintenant().plusDays(1),
+                EtatCycleMatch.A_VENIR
+        );
+        match.setModeCreation(ModeCreation.PRIVE);
+        match.setVisibiliteCourante(VisibiliteMatch.PRIVE);
+        padelMatchRepository.saveAndFlush(match);
+
+        Participation participation = creerParticipation(
+                match,
+                joueur,
+                RoleParticipation.JOUEUR,
+                StatutParticipation.EN_ATTENTE_PAIEMENT
+        );
+        participation.setModeEntree(ModeEntreeParticipation.INVITATION_PRIVEE);
+        participationRepository.saveAndFlush(participation);
+
+        TransactionTemplate transactionTemplate =
+                new TransactionTemplate(transactionManager);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch paiementEffectue = new CountDownLatch(1);
+        CountDownLatch autoriserCommitPaiement = new CountDownLatch(1);
+        CountDownLatch refusDemarre = new CountDownLatch(1);
+
+        try {
+            Future<?> paiement = executor.submit(() ->
+                    transactionTemplate.executeWithoutResult(status -> {
+                        paiementService.payerParticipationStandard(
+                                participation.getId()
+                        );
+                        paiementEffectue.countDown();
+                        attendre(autoriserCommitPaiement);
+                    })
+            );
+
+            assertThat(paiementEffectue.await(5, TimeUnit.SECONDS)).isTrue();
+
+            Future<?> refus = executor.submit(() -> {
+                refusDemarre.countDown();
+                return invitationPriveeService.declinerInvitation(
+                        participation.getId(),
+                        new DeclinerInvitationRequest(joueur.getMatricule())
+                );
+            });
+
+            assertThat(refusDemarre.await(5, TimeUnit.SECONDS)).isTrue();
+
+            assertThatThrownBy(() -> refus.get(750, TimeUnit.MILLISECONDS))
+                    .isInstanceOf(TimeoutException.class);
+
+            autoriserCommitPaiement.countDown();
+            paiement.get(5, TimeUnit.SECONDS);
+
+            assertThatThrownBy(() -> refus.get(5, TimeUnit.SECONDS))
+                    .hasCauseInstanceOf(ConfigurationMetierException.class);
+        } finally {
+            autoriserCommitPaiement.countDown();
+            executor.shutdownNow();
+        }
+
+        Participation participationRechargee = participationRepository
+                .findById(participation.getId())
+                .orElseThrow();
+
+        assertThat(participationRechargee.getStatutParticipation())
+                .isEqualTo(StatutParticipation.CONFIRMEE);
+        assertThat(participationRechargee.getDateLiberation()).isNull();
+        assertThat(paiementRepository.findByParticipationId(participation.getId()))
+                .isPresent();
+
+        Membre joueurRecharge = membreRepository.findById(joueur.getId())
+                .orElseThrow();
+        assertThat(joueurRecharge.getSoldeCredit())
+                .isEqualByComparingTo(
+                        SOLDE_INITIAL_JOUEUR.subtract(
+                                MONTANT_PARTICIPATION_STANDARD
+                        )
+                );
+    }
+
+    @Test
+    void paiement_confirme_ne_doit_pas_etre_libere_par_la_veille_concurrente()
+            throws Exception {
+        Terrain terrain = creerTerrain();
+        Membre joueur = creerMembre(SOLDE_INITIAL_JOUEUR);
+
+        PadelMatch match = creerMatch(
+                terrain,
+                maintenant().plusDays(1),
+                EtatCycleMatch.A_VENIR
+        );
+
+        Participation participation = creerParticipation(
+                match,
+                joueur,
+                RoleParticipation.JOUEUR,
+                StatutParticipation.EN_ATTENTE_PAIEMENT
+        );
+
+        TransactionTemplate transactionTemplate =
+                new TransactionTemplate(transactionManager);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        CountDownLatch paiementEffectue = new CountDownLatch(1);
+        CountDownLatch autoriserCommitPaiement = new CountDownLatch(1);
+        CountDownLatch veilleDemarree = new CountDownLatch(1);
+
+        try {
+            Future<?> paiement = executor.submit(() ->
+                    transactionTemplate.executeWithoutResult(status -> {
+                        paiementService.payerParticipationStandard(
+                                participation.getId()
+                        );
+                        paiementEffectue.countDown();
+                        attendre(autoriserCommitPaiement);
+                    })
+            );
+
+            assertThat(paiementEffectue.await(5, TimeUnit.SECONDS)).isTrue();
+
+            Future<TraitementVeilleResponse> veille = executor.submit(() -> {
+                veilleDemarree.countDown();
+                return traitementVeilleService.traiterVeille(
+                        LocalDate.now(clock)
+                );
+            });
+
+            assertThat(veilleDemarree.await(5, TimeUnit.SECONDS)).isTrue();
+
+            assertThatThrownBy(() -> veille.get(750, TimeUnit.MILLISECONDS))
+                    .isInstanceOf(TimeoutException.class);
+
+            autoriserCommitPaiement.countDown();
+            paiement.get(5, TimeUnit.SECONDS);
+
+            TraitementVeilleResponse resultatVeille =
+                    veille.get(5, TimeUnit.SECONDS);
+            assertThat(resultatVeille.participationsLiberees()).isZero();
+        } finally {
+            autoriserCommitPaiement.countDown();
+            executor.shutdownNow();
+        }
+
+        Participation participationRechargee = participationRepository
+                .findById(participation.getId())
+                .orElseThrow();
+
+        assertThat(participationRechargee.getStatutParticipation())
+                .isEqualTo(StatutParticipation.CONFIRMEE);
+        assertThat(participationRechargee.getDateLiberation()).isNull();
+        assertThat(paiementRepository.findByParticipationId(participation.getId()))
+                .isPresent();
     }
 
     @Test

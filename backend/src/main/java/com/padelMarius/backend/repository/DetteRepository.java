@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -66,4 +67,10 @@ public interface DetteRepository extends JpaRepository<Dette, Long> {
     );
 
     List<Dette> findByStatutDette(StatutDette statutDette);
+
+    List<Dette> findByStatutDetteAndMatch_DateHeureDebutGreaterThanEqualAndMatch_DateHeureDebutBefore(
+            StatutDette statutDette,
+            LocalDateTime debutInclus,
+            LocalDateTime finExclusive
+    );
 }

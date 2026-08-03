@@ -190,7 +190,12 @@ class StatistiquesAdminServiceTest {
                 StatutPaiement.PAYE
         )).thenReturn(List.of(paiementParticipation, paiementDette));
 
-        when(detteRepository.findByStatutDette(StatutDette.OUVERTE))
+        when(detteRepository
+                .findByStatutDetteAndMatch_DateHeureDebutGreaterThanEqualAndMatch_DateHeureDebutBefore(
+                        StatutDette.OUVERTE,
+                        LocalDateTime.of(2026, 5, 1, 0, 0),
+                        LocalDateTime.of(2026, 6, 1, 0, 0)
+                ))
                 .thenReturn(List.of(detteOuverte));
 
         when(participationRepository.findByMatchId(100L))
@@ -316,7 +321,12 @@ class StatistiquesAdminServiceTest {
                 StatutPaiement.PAYE
         )).thenReturn(List.of(paiementBruxelles, paiementNamur));
 
-        when(detteRepository.findByStatutDette(StatutDette.OUVERTE))
+        when(detteRepository
+                .findByStatutDetteAndMatch_DateHeureDebutGreaterThanEqualAndMatch_DateHeureDebutBefore(
+                        StatutDette.OUVERTE,
+                        LocalDateTime.of(2026, 5, 1, 0, 0),
+                        LocalDateTime.of(2026, 6, 1, 0, 0)
+                ))
                 .thenReturn(List.of(detteBruxelles, detteNamur));
 
         when(participationRepository.findByMatchId(100L))
@@ -423,7 +433,12 @@ class StatistiquesAdminServiceTest {
                 StatutPaiement.PAYE
         )).thenReturn(List.of(paiementActif, paiementAnnuleEncorePaye));
 
-        when(detteRepository.findByStatutDette(StatutDette.OUVERTE))
+        when(detteRepository
+                .findByStatutDetteAndMatch_DateHeureDebutGreaterThanEqualAndMatch_DateHeureDebutBefore(
+                        StatutDette.OUVERTE,
+                        LocalDateTime.of(2026, 5, 1, 0, 0),
+                        LocalDateTime.of(2026, 6, 1, 0, 0)
+                ))
                 .thenReturn(List.of());
 
         when(participationRepository.findByMatchId(100L))

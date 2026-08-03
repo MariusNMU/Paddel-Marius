@@ -24,6 +24,17 @@ public interface ParticipationRepository extends JpaRepository<Participation, Lo
             @Param("participationId") Long participationId
     );
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select participation
+            from Participation participation
+            where participation.match.id = :matchId
+            order by participation.id
+            """)
+    List<Participation> findByMatchIdForUpdate(
+            @Param("matchId") Long matchId
+    );
+
     List<Participation> findByMatchId(Long matchId);
 
     List<Participation> findByMembreId(Long membreId);

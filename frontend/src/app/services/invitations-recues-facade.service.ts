@@ -17,6 +17,7 @@ import { InvitationPriveeResponse } from '../models/invitation.model';
 import { extraireMessageErreur } from '../shared/api-error.util';
 import { AuthContextService } from './auth-context.service';
 import { InvitationApiService } from './invitation-api.service';
+import { InvitationNotificationService } from './invitation-notification.service';
 import { PaiementApiService } from './paiement-api.service';
 
 @Injectable()
@@ -76,6 +77,8 @@ export class InvitationsRecuesFacadeService {
     InvitationApiService,
     private readonly paiementApiService:
     PaiementApiService,
+    private readonly invitationNotificationService:
+    InvitationNotificationService,
     private readonly authContextService:
     AuthContextService
   ) {
@@ -177,6 +180,9 @@ export class InvitationsRecuesFacadeService {
       .pipe(
         timeout(10000),
         tap(() => {
+          this.invitationNotificationService
+            .signalerInvitationTraitee();
+
           this.messageSuccesSignal.set(
             'Invitation confirmée et participation payée.'
           );
@@ -228,6 +234,9 @@ export class InvitationsRecuesFacadeService {
       .pipe(
         timeout(10000),
         tap(() => {
+          this.invitationNotificationService
+            .signalerInvitationTraitee();
+
           this.messageSuccesSignal.set(
             'Invitation déclinée.'
           );

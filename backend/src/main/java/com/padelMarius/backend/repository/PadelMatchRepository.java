@@ -16,6 +16,11 @@ import java.util.Optional;
 
 public interface PadelMatchRepository extends JpaRepository<PadelMatch, Long> {
 
+    List<PadelMatch> findByDateHeureDebutGreaterThanEqualAndDateHeureDebutBefore(
+            LocalDateTime debut,
+            LocalDateTime fin
+    );
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             select padelMatch
@@ -36,9 +41,17 @@ public interface PadelMatchRepository extends JpaRepository<PadelMatch, Long> {
             LocalDateTime fin
     );
 
-    List<PadelMatch> findByDateHeureDebutGreaterThanEqualAndDateHeureDebutBefore(
-            LocalDateTime debut,
-            LocalDateTime fin
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            select padelMatch
+            from PadelMatch padelMatch
+            where padelMatch.dateHeureDebut >= :debut
+              and padelMatch.dateHeureDebut < :fin
+            order by padelMatch.id
+            """)
+    List<PadelMatch> findPourVeilleForUpdate(
+            @Param("debut") LocalDateTime debut,
+            @Param("fin") LocalDateTime fin
     );
 
     List<PadelMatch> findByTerrainInAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBeforeOrderByDateHeureDebutAsc(

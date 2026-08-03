@@ -40,7 +40,7 @@ public class TraitementVeilleService {
         LocalDateTime finJourExclue = dateMatchTraitee.plusDays(1).atStartOfDay();
 
         List<PadelMatch> matches = padelMatchRepository
-                .findByDateHeureDebutGreaterThanEqualAndDateHeureDebutBefore(
+                .findPourVeilleForUpdate(
                         debutJour,
                         finJourExclue
                 );

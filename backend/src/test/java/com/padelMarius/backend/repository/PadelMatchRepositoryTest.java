@@ -30,7 +30,7 @@ class PadelMatchRepositoryTest {
     private PadelMatchRepository padelMatchRepository;
 
     @Test
-    void shouldFindMatchesInDateRangeForPreMatchProcessing() {
+    void findPourVeilleForUpdate_shouldFindMatchesInDateRange() {
         Site site = creerSite("RNG");
         Terrain terrain = creerTerrain(site, "T1");
 
@@ -58,7 +58,7 @@ class PadelMatchRepositoryTest {
         LocalDateTime finPeriodeExclusive = LocalDateTime.of(2026, 5, 21, 0, 0);
 
         List<PadelMatch> matchesTrouves =
-                padelMatchRepository.findByDateHeureDebutGreaterThanEqualAndDateHeureDebutBefore(
+                padelMatchRepository.findPourVeilleForUpdate(
                         debutPeriode,
                         finPeriodeExclusive
                 );

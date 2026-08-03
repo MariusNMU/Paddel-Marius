@@ -245,7 +245,7 @@ class TraitementVeilleServiceTest {
     }
 
     private void stubRechercheMatchesDuLendemain(PadelMatch... matches) {
-        when(padelMatchRepository.findByDateHeureDebutGreaterThanEqualAndDateHeureDebutBefore(
+        when(padelMatchRepository.findPourVeilleForUpdate(
                 LocalDateTime.of(2026, 5, 20, 0, 0),
                 LocalDateTime.of(2026, 5, 21, 0, 0)
         )).thenReturn(List.of(matches));

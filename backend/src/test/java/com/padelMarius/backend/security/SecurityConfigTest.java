@@ -46,6 +46,24 @@ class SecurityConfigTest {
     }
 
     @Test
+    void shouldRejectWrongPasswordThroughAuthenticationManager()
+            throws Exception {
+        mockMvc.perform(post("/api/auth/joueur")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "matricule": "G1001",
+                                  "motDePasse": "mauvais"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code")
+                        .value("AUTHENTIFICATION_INVALIDE"))
+                .andExpect(jsonPath("$.message")
+                        .value("Identifiant ou mot de passe invalide."));
+    }
+
+    @Test
     void shouldPermitDemoPresentationWithoutToken() throws Exception {
         mockMvc.perform(get("/api/demo/presentation"))
                 .andExpect(status().isOk());

@@ -9,15 +9,17 @@ import com.padelMarius.backend.entity.Membre;
 import com.padelMarius.backend.entity.Site;
 import com.padelMarius.backend.exception.AuthentificationException;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
-import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.repository.AdministrateurRepository;
 import com.padelMarius.backend.repository.MembreRepository;
+import com.padelMarius.backend.security.IdentiteAuthentification;
+import com.padelMarius.backend.security.JwtService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import com.padelMarius.backend.security.JwtService;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +30,7 @@ public class AuthService {
 
     private final MembreRepository membreRepository;
     private final AdministrateurRepository administrateurRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
     @Transactional(readOnly = true)
@@ -45,21 +47,16 @@ public class AuthService {
 
         String matricule = request.matricule().trim();
 
+        authentifier(
+                IdentiteAuthentification.joueur(matricule),
+                request.motDePasse()
+        );
+
         Membre membre = membreRepository.findByMatricule(matricule)
+                .filter(Membre::isActif)
                 .orElseThrow(() -> new AuthentificationException(
                         MESSAGE_IDENTIFIANTS_INVALIDES
                 ));
-
-        if (!membre.isActif()
-                || !StringUtils.hasText(membre.getMotDePasseHash())
-                || !passwordEncoder.matches(
-                        request.motDePasse(),
-                        membre.getMotDePasseHash()
-                )) {
-            throw new AuthentificationException(
-                    MESSAGE_IDENTIFIANTS_INVALIDES
-            );
-        }
 
         return convertirJoueur(membre);
     }
@@ -78,26 +75,37 @@ public class AuthService {
 
         String login = request.login().trim();
 
+        authentifier(
+                IdentiteAuthentification.admin(login),
+                request.motDePasse()
+        );
+
         Administrateur administrateur =
                 administrateurRepository.findByEmailOuLogin(login)
+                        .filter(Administrateur::isActif)
                         .orElseThrow(() -> new AuthentificationException(
                                 MESSAGE_IDENTIFIANTS_INVALIDES
                         ));
 
-        if (!administrateur.isActif()
-                || !StringUtils.hasText(
-                        administrateur.getMotDePasseHash()
-                )
-                || !passwordEncoder.matches(
-                        request.motDePasse(),
-                        administrateur.getMotDePasseHash()
-                )) {
+        return convertirAdmin(administrateur);
+    }
+
+    private void authentifier(
+            String identite,
+            String motDePasse
+    ) {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            identite,
+                            motDePasse
+                    )
+            );
+        } catch (AuthenticationException exception) {
             throw new AuthentificationException(
                     MESSAGE_IDENTIFIANTS_INVALIDES
             );
         }
-
-        return convertirAdmin(administrateur);
     }
 
     private AuthJoueurResponse convertirJoueur(Membre membre) {

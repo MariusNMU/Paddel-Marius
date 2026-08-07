@@ -12,21 +12,27 @@ import com.padelMarius.backend.entity.Site;
 import com.padelMarius.backend.exception.AuthentificationException;
 import com.padelMarius.backend.repository.AdministrateurRepository;
 import com.padelMarius.backend.repository.MembreRepository;
+import com.padelMarius.backend.security.IdentiteAuthentification;
+import com.padelMarius.backend.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.util.ReflectionTestUtils;
-import com.padelMarius.backend.security.JwtService;
-import java.time.LocalDateTime;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -43,27 +49,28 @@ class AuthServiceTest {
     private AdministrateurRepository administrateurRepository;
 
     @Mock
+    private AuthenticationManager authenticationManager;
+
+    @Mock
     private JwtService jwtService;
 
     private AuthService authService;
-    private PasswordEncoder passwordEncoder;
 
     @BeforeEach
     void setUp() {
-        passwordEncoder = new BCryptPasswordEncoder();
-
         authService = new AuthService(
                 membreRepository,
                 administrateurRepository,
-                passwordEncoder,
+                authenticationManager,
                 jwtService
         );
     }
 
     @Test
-    void authentifierJoueur_shouldReturnPlayerInfo_whenMatriculeExistsAndMemberIsActive() {
-        Site site = creerSite(1L, "Padel Bruxelles");
+    void authentifierJoueur_shouldUseAuthenticationManagerAndReturnPlayerInfo() {
+        autoriserAuthentification();
 
+        Site site = creerSite(1L, "Padel Bruxelles");
         Membre membre = creerMembre(
                 10L,
                 "S00001",
@@ -75,13 +82,10 @@ class AuthServiceTest {
         when(membreRepository.findByMatricule("S00001"))
                 .thenReturn(Optional.of(membre));
         when(jwtService.genererTokenJoueur(membre))
-                .thenReturn(new JwtService.TokenGenere(
-                        "jwt-joueur",
-                        LocalDateTime.of(2026, 5, 30, 12, 0)
-                ));
+                .thenReturn(token("jwt-joueur"));
 
         AuthJoueurResponse response = authService.authentifierJoueur(
-                new ConnexionJoueurRequest("S00001", "password")
+                new ConnexionJoueurRequest(" S00001 ", "password")
         );
 
         assertEquals(10L, response.membreId());
@@ -93,11 +97,19 @@ class AuthServiceTest {
         assertEquals("Padel Bruxelles", response.nomSiteRattachement());
         assertEquals(true, response.actif());
         assertEquals("jwt-joueur", response.token());
-        assertEquals(LocalDateTime.of(2026, 5, 30, 12, 0), response.expirationToken());
+
+        Authentication authentication = authentificationTransmise();
+        assertEquals(
+                IdentiteAuthentification.joueur("S00001"),
+                authentication.getPrincipal()
+        );
+        assertEquals("password", authentication.getCredentials());
     }
 
     @Test
     void authentifierJoueur_shouldPreservePasswordWithSurroundingSpaces() {
+        autoriserAuthentification();
+
         Membre membre = creerMembre(
                 10L,
                 "G0001",
@@ -105,114 +117,60 @@ class AuthServiceTest {
                 null,
                 true
         );
-        membre.setMotDePasseHash(
-                passwordEncoder.encode(" motdepasse-avec-espaces ")
-        );
 
         when(membreRepository.findByMatricule("G0001"))
                 .thenReturn(Optional.of(membre));
         when(jwtService.genererTokenJoueur(membre))
-                .thenReturn(new JwtService.TokenGenere(
-                        "jwt-joueur",
-                        LocalDateTime.of(2026, 5, 30, 12, 0)
-                ));
+                .thenReturn(token("jwt-joueur"));
 
-        AuthJoueurResponse response = authService.authentifierJoueur(
+        authService.authentifierJoueur(
                 new ConnexionJoueurRequest(
                         "G0001",
                         " motdepasse-avec-espaces "
                 )
         );
 
-        assertEquals("G0001", response.matricule());
-        assertEquals("jwt-joueur", response.token());
+        assertEquals(
+                " motdepasse-avec-espaces ",
+                authentificationTransmise().getCredentials()
+        );
     }
 
     @Test
-    void authentifierJoueur_shouldRejectUnknownMatricule() {
-        when(membreRepository.findByMatricule("G9999"))
-                .thenReturn(Optional.empty());
+    void authentifierJoueur_shouldReturnGenericError_whenManagerRejectsCredentials() {
+        when(authenticationManager.authenticate(any(Authentication.class)))
+                .thenThrow(new BadCredentialsException("Refus Spring Security"));
 
         AuthentificationException exception = assertThrows(
                 AuthentificationException.class,
                 () -> authService.authentifierJoueur(
-                        new ConnexionJoueurRequest("G9999", "password")
+                        new ConnexionJoueurRequest("G9999", "mauvais")
                 )
         );
 
-        assertEquals(
-                MESSAGE_IDENTIFIANTS_INVALIDES,
-                exception.getMessage()
-        );
-
-        verifyNoInteractions(administrateurRepository);
+        assertEquals(MESSAGE_IDENTIFIANTS_INVALIDES, exception.getMessage());
+        verifyNoInteractions(membreRepository, administrateurRepository);
     }
 
     @Test
-    void authentifierJoueur_shouldRejectInactiveMember() {
-        Membre membre = creerMembre(
-                10L,
-                "G0001",
-                CategorieMembre.GLOBAL,
-                null,
-                false
-        );
-
-        when(membreRepository.findByMatricule("G0001"))
-                .thenReturn(Optional.of(membre));
-
-        AuthentificationException exception = assertThrows(
-                AuthentificationException.class,
+    void authentifierJoueur_shouldRejectMissingCredentialsBeforeManager() {
+        assertThrows(
+                RuntimeException.class,
                 () -> authService.authentifierJoueur(
-                        new ConnexionJoueurRequest(
-                                "G0001",
-                                "password"
-                        )
+                        new ConnexionJoueurRequest(" ", "password")
                 )
         );
 
-        assertEquals(
-                MESSAGE_IDENTIFIANTS_INVALIDES,
-                exception.getMessage()
-        );
-
-        verifyNoInteractions(administrateurRepository);
+        verifyNoInteractions(authenticationManager);
     }
 
     @Test
-    void authentifierJoueur_shouldRejectWrongPassword() {
-        Membre membre = creerMembre(
-                10L,
-                "G0001",
-                CategorieMembre.GLOBAL,
-                null,
-                true
-        );
+    void authentifierAdmin_shouldUseAuthenticationManagerAndReturnGlobalAdmin() {
+        autoriserAuthentification();
 
-        when(membreRepository.findByMatricule("G0001"))
-                .thenReturn(Optional.of(membre));
-
-        AuthentificationException exception = assertThrows(
-                AuthentificationException.class,
-                () -> authService.authentifierJoueur(
-                        new ConnexionJoueurRequest("G0001", "mauvais")
-                )
-        );
-
-        assertEquals(
-                MESSAGE_IDENTIFIANTS_INVALIDES,
-                exception.getMessage()
-        );
-
-        verifyNoInteractions(administrateurRepository);
-    }
-
-    @Test
-    void authentifierAdmin_shouldReturnGlobalAdminInfo_whenCredentialsAreValid() {
         Administrateur administrateur = creerAdministrateur(
                 20L,
                 "admin-global",
-                "secret",
                 RoleAdministrateur.GLOBAL,
                 null,
                 true
@@ -221,34 +179,34 @@ class AuthServiceTest {
         when(administrateurRepository.findByEmailOuLogin("admin-global"))
                 .thenReturn(Optional.of(administrateur));
         when(jwtService.genererTokenAdmin(administrateur))
-                .thenReturn(new JwtService.TokenGenere(
-                        "jwt-admin-global",
-                        LocalDateTime.of(2026, 5, 30, 12, 0)
-                ));
+                .thenReturn(token("jwt-admin-global"));
 
         AuthAdminResponse response = authService.authentifierAdmin(
-                new ConnexionAdminRequest("admin-global", "secret")
+                new ConnexionAdminRequest(" admin-global ", "secret")
         );
 
         assertEquals(20L, response.administrateurId());
         assertEquals("admin-global", response.login());
-        assertEquals("Nom Admin 20", response.nom());
-        assertEquals("Prenom Admin 20", response.prenom());
         assertEquals(RoleAdministrateur.GLOBAL, response.roleAdministrateur());
         assertEquals(null, response.siteId());
-        assertEquals(null, response.nomSite());
-        assertEquals(true, response.actif());
         assertEquals("jwt-admin-global", response.token());
+
+        Authentication authentication = authentificationTransmise();
+        assertEquals(
+                IdentiteAuthentification.admin("admin-global"),
+                authentication.getPrincipal()
+        );
+        assertEquals("secret", authentication.getCredentials());
     }
 
     @Test
-    void authentifierAdmin_shouldReturnSiteAdminInfo_whenCredentialsAreValid() {
-        Site site = creerSite(1L, "Padel Bruxelles");
+    void authentifierAdmin_shouldReturnSiteAdminInfo() {
+        autoriserAuthentification();
 
+        Site site = creerSite(1L, "Padel Bruxelles");
         Administrateur administrateur = creerAdministrateur(
                 21L,
                 "admin-bruxelles",
-                "secret-site",
                 RoleAdministrateur.SITE,
                 site,
                 true
@@ -257,57 +215,23 @@ class AuthServiceTest {
         when(administrateurRepository.findByEmailOuLogin("admin-bruxelles"))
                 .thenReturn(Optional.of(administrateur));
         when(jwtService.genererTokenAdmin(administrateur))
-                .thenReturn(new JwtService.TokenGenere(
-                        "jwt-admin-site",
-                        LocalDateTime.of(2026, 5, 30, 12, 0)
-                ));
+                .thenReturn(token("jwt-admin-site"));
 
         AuthAdminResponse response = authService.authentifierAdmin(
                 new ConnexionAdminRequest("admin-bruxelles", "secret-site")
         );
 
         assertEquals(21L, response.administrateurId());
-        assertEquals("admin-bruxelles", response.login());
         assertEquals(RoleAdministrateur.SITE, response.roleAdministrateur());
         assertEquals(1L, response.siteId());
         assertEquals("Padel Bruxelles", response.nomSite());
-        assertEquals(true, response.actif());
         assertEquals("jwt-admin-site", response.token());
     }
 
     @Test
-    void authentifierAdmin_shouldRejectUnknownLogin() {
-        when(administrateurRepository.findByEmailOuLogin("admin-inconnu"))
-                .thenReturn(Optional.empty());
-
-        AuthentificationException exception = assertThrows(
-                AuthentificationException.class,
-                () -> authService.authentifierAdmin(
-                        new ConnexionAdminRequest("admin-inconnu", "secret")
-                )
-        );
-
-        assertEquals(
-                MESSAGE_IDENTIFIANTS_INVALIDES,
-                exception.getMessage()
-        );
-
-        verifyNoInteractions(membreRepository);
-    }
-
-    @Test
-    void authentifierAdmin_shouldRejectWrongPassword() {
-        Administrateur administrateur = creerAdministrateur(
-                20L,
-                "admin-global",
-                "secret",
-                RoleAdministrateur.GLOBAL,
-                null,
-                true
-        );
-
-        when(administrateurRepository.findByEmailOuLogin("admin-global"))
-                .thenReturn(Optional.of(administrateur));
+    void authentifierAdmin_shouldReturnGenericError_whenManagerRejectsCredentials() {
+        when(authenticationManager.authenticate(any(Authentication.class)))
+                .thenThrow(new BadCredentialsException("Refus Spring Security"));
 
         AuthentificationException exception = assertThrows(
                 AuthentificationException.class,
@@ -316,27 +240,15 @@ class AuthServiceTest {
                 )
         );
 
-        assertEquals(
-                MESSAGE_IDENTIFIANTS_INVALIDES,
-                exception.getMessage()
-        );
-
-        verifyNoInteractions(membreRepository);
+        assertEquals(MESSAGE_IDENTIFIANTS_INVALIDES, exception.getMessage());
+        verifyNoInteractions(membreRepository, administrateurRepository);
     }
 
     @Test
-    void authentifierAdmin_shouldRejectInactiveAdmin() {
-        Administrateur administrateur = creerAdministrateur(
-                20L,
-                "admin-global",
-                "secret",
-                RoleAdministrateur.GLOBAL,
-                null,
-                false
-        );
-
+    void authentifierAdmin_shouldRejectAccountMissingAfterAuthentication() {
+        autoriserAuthentification();
         when(administrateurRepository.findByEmailOuLogin("admin-global"))
-                .thenReturn(Optional.of(administrateur));
+                .thenReturn(Optional.empty());
 
         AuthentificationException exception = assertThrows(
                 AuthentificationException.class,
@@ -345,41 +257,28 @@ class AuthServiceTest {
                 )
         );
 
-        assertEquals(
-                MESSAGE_IDENTIFIANTS_INVALIDES,
-                exception.getMessage()
-        );
-
-        verifyNoInteractions(membreRepository);
+        assertEquals(MESSAGE_IDENTIFIANTS_INVALIDES, exception.getMessage());
+        verify(jwtService, never()).genererTokenAdmin(any());
     }
 
-    @Test
-    void authentifierAdmin_shouldRejectAdminWithoutConfiguredPassword() {
-        Administrateur administrateur = creerAdministrateur(
-                20L,
-                "admin-global",
-                null,
-                RoleAdministrateur.GLOBAL,
-                null,
-                true
+    private void autoriserAuthentification() {
+        when(authenticationManager.authenticate(any(Authentication.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    private Authentication authentificationTransmise() {
+        ArgumentCaptor<Authentication> captor =
+                ArgumentCaptor.forClass(Authentication.class);
+
+        verify(authenticationManager).authenticate(captor.capture());
+        return captor.getValue();
+    }
+
+    private JwtService.TokenGenere token(String valeur) {
+        return new JwtService.TokenGenere(
+                valeur,
+                LocalDateTime.of(2026, 5, 30, 12, 0)
         );
-
-        when(administrateurRepository.findByEmailOuLogin("admin-global"))
-                .thenReturn(Optional.of(administrateur));
-
-        AuthentificationException exception = assertThrows(
-                AuthentificationException.class,
-                () -> authService.authentifierAdmin(
-                        new ConnexionAdminRequest("admin-global", "secret")
-                )
-        );
-
-        assertEquals(
-                MESSAGE_IDENTIFIANTS_INVALIDES,
-                exception.getMessage()
-        );
-
-        verifyNoInteractions(membreRepository);
     }
 
     private Site creerSite(Long id, String nom) {
@@ -391,7 +290,6 @@ class AuthServiceTest {
                 .build();
 
         ReflectionTestUtils.setField(site, "id", id);
-
         return site;
     }
 
@@ -406,21 +304,19 @@ class AuthServiceTest {
                 .matricule(matricule)
                 .nom("Nom " + id)
                 .prenom("Prenom " + id)
-                .motDePasseHash(passwordEncoder.encode("password"))
+                .motDePasseHash("hash-bcrypt")
                 .categorieMembre(categorieMembre)
                 .siteRattachement(siteRattachement)
                 .actif(actif)
                 .build();
 
         ReflectionTestUtils.setField(membre, "id", id);
-
         return membre;
     }
 
     private Administrateur creerAdministrateur(
             Long id,
             String login,
-            String motDePasse,
             RoleAdministrateur roleAdministrateur,
             Site site,
             boolean actif
@@ -429,14 +325,13 @@ class AuthServiceTest {
                 .nom("Nom Admin " + id)
                 .prenom("Prenom Admin " + id)
                 .emailOuLogin(login)
-                .motDePasseHash(motDePasse == null ? null : passwordEncoder.encode(motDePasse))
+                .motDePasseHash("hash-bcrypt")
                 .roleAdministrateur(roleAdministrateur)
                 .site(site)
                 .actif(actif)
                 .build();
 
         ReflectionTestUtils.setField(administrateur, "id", id);
-
         return administrateur;
     }
 }

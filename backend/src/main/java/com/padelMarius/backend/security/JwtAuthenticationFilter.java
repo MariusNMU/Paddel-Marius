@@ -8,23 +8,21 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final String PREFIXE_ROLE = "ROLE_";
-
     private final JwtService jwtService;
+    private final UserDetailsService userDetailsService;
     private final SecurityErrorWriter securityErrorWriter;
 
     @Override
@@ -44,11 +42,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             JwtUtilisateur utilisateur = jwtService
                     .extraireUtilisateurDepuisAuthorization(authorization);
 
+            UserDetails userDetails = userDetailsService.loadUserByUsername(
+                    IdentiteAuthentification.depuis(utilisateur)
+            );
+
+            verifierCompteUtilisable(userDetails);
+
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
                             utilisateur,
                             null,
-                            authorities(utilisateur)
+                            userDetails.getAuthorities()
                     );
 
             authentication.setDetails(
@@ -61,32 +65,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             filterChain.doFilter(request, response);
         } catch (AuthentificationException exception) {
-            SecurityContextHolder.clearContext();
-            securityErrorWriter.write(
-                    response,
-                    HttpStatus.UNAUTHORIZED,
-                    "AUTHENTIFICATION_INVALIDE",
-                    exception.getMessage()
-            );
+            ecrireErreur(response, exception.getMessage());
+        } catch (AuthenticationException exception) {
+            ecrireErreur(response, "Token JWT invalide.");
         }
     }
 
-    private List<SimpleGrantedAuthority> authorities(JwtUtilisateur utilisateur) {
-        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-
-        authorities.add(new SimpleGrantedAuthority(
-                PREFIXE_ROLE + utilisateur.typeUtilisateur()
-        ));
-
-        if (StringUtils.hasText(utilisateur.role())) {
-            authorities.add(new SimpleGrantedAuthority(
-                    PREFIXE_ROLE
-                            + utilisateur.typeUtilisateur()
-                            + "_"
-                            + utilisateur.role()
-            ));
+    private void verifierCompteUtilisable(UserDetails userDetails) {
+        if (!userDetails.isEnabled()
+                || !userDetails.isAccountNonExpired()
+                || !userDetails.isAccountNonLocked()
+                || !userDetails.isCredentialsNonExpired()) {
+            throw new AuthentificationException("Token JWT invalide.");
         }
+    }
 
-        return authorities;
+    private void ecrireErreur(
+            HttpServletResponse response,
+            String message
+    ) throws IOException {
+        SecurityContextHolder.clearContext();
+        securityErrorWriter.write(
+                response,
+                HttpStatus.UNAUTHORIZED,
+                "AUTHENTIFICATION_INVALIDE",
+                message
+        );
     }
 }

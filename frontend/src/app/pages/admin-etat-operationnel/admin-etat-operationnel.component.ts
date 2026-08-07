@@ -187,8 +187,8 @@ import { enumLabel } from '../../shared/enum-label.util';
 
           @if (!occupation.siteActif) {
             <p class="alerte-inactive">
-              Ce site est actuellement inactif. Les données restent visibles
-              pour le suivi administratif.
+              Le planning hebdomadaire n’est pas disponible pour un site
+              inactif.
             </p>
           }
 
@@ -228,14 +228,17 @@ import { enumLabel } from '../../shared/enum-label.util';
             </span>
           </div>
 
-          @if (nombreTerrains(occupation) === 0) {
+          @if (
+            occupation.siteActif
+            && nombreTerrains(occupation) === 0
+            ) {
             <mat-card
               appearance="outlined"
               class="bloc-info"
             >
               Aucun terrain n’est configuré pour ce site.
             </mat-card>
-          } @else {
+          } @else if (occupation.siteActif) {
             <div class="planning-scroll">
               <table class="occupation-table">
                 <caption>

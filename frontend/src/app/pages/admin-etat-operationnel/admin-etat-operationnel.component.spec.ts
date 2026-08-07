@@ -336,6 +336,38 @@ describe(
     );
 
     it(
+      'ne doit pas afficher le planning pour un site inactif',
+      () => {
+        facade.occupationHebdomadaire.set({
+          ...occupationHebdomadaire,
+          siteActif: false,
+          nomSite: 'Padel Liège'
+        });
+
+        fixture.detectChanges();
+
+        const contenu =
+          fixture.nativeElement
+            .textContent as string;
+
+        const tableau =
+          fixture.nativeElement
+            .querySelector(
+              '.occupation-table'
+            );
+
+        expect(contenu)
+          .toContain(
+            'Le planning hebdomadaire n’est pas disponible pour un site inactif.'
+          );
+
+        expect(tableau).toBeNull();
+        expect(contenu)
+          .not.toContain('Terrain T1');
+      }
+    );
+
+    it(
       'doit déléguer la navigation entre les semaines',
       () => {
         facade.occupationHebdomadaire.set(

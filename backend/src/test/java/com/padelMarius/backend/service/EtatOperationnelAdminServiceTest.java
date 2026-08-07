@@ -12,6 +12,7 @@ import com.padelMarius.backend.entity.Site;
 import com.padelMarius.backend.entity.StatutParticipation;
 import com.padelMarius.backend.entity.Terrain;
 import com.padelMarius.backend.entity.VisibiliteMatch;
+import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.repository.FermetureRepository;
 import com.padelMarius.backend.repository.PadelMatchRepository;
@@ -295,6 +296,34 @@ class EtatOperationnelAdminServiceTest {
                         lundi,
                         dimanche
                 );
+    }
+
+    @Test
+    void consulterOccupationHebdomadaire_shouldRejectInactiveSite() {
+        LocalDate date = LocalDate.of(2026, 7, 22);
+        Site siteInactif = creerSite(1003L, false);
+
+        when(siteRepository.findById(1003L))
+                .thenReturn(Optional.of(siteInactif));
+
+        ConfigurationMetierException exception = assertThrows(
+                ConfigurationMetierException.class,
+                () -> etatOperationnelAdminService
+                        .consulterOccupationHebdomadaire(
+                                date,
+                                1003L
+                        )
+        );
+
+        assertThat(exception.getMessage()).isEqualTo(
+                "Le planning hebdomadaire n'est pas disponible pour un site inactif."
+        );
+
+        verify(siteRepository).findById(1003L);
+        verifyNoInteractions(terrainRepository);
+        verifyNoInteractions(padelMatchRepository);
+        verifyNoInteractions(fermetureRepository);
+        verifyNoInteractions(participationRepository);
     }
 
     @Test

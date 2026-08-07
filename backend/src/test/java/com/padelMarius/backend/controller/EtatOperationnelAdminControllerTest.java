@@ -7,6 +7,7 @@ import com.padelMarius.backend.dto.etatoperationnel.OccupationHebdomadaireAdminR
 import com.padelMarius.backend.dto.etatoperationnel.TerrainEtatAdminResponse;
 import com.padelMarius.backend.entity.EtatCycleMatch;
 import com.padelMarius.backend.entity.VisibiliteMatch;
+import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.service.EtatOperationnelAdminService;
 import org.junit.jupiter.api.Test;
@@ -156,6 +157,28 @@ class EtatOperationnelAdminControllerTest {
                 .andExpect(jsonPath("$.siteId").value(1001))
                 .andExpect(jsonPath("$.nomSite").value("Padel Bruxelles"))
                 .andExpect(jsonPath("$.jours[0].date").value("2026-07-20"));
+    }
+
+    @Test
+    void shouldReturn409ForWeeklyOccupationOfInactiveSite() throws Exception {
+        when(etatOperationnelAdminService
+                .consulterOccupationHebdomadaire(
+                        LocalDate.of(2026, 7, 22),
+                        1003L
+                )).thenThrow(new ConfigurationMetierException(
+                "Le planning hebdomadaire n'est pas disponible pour un site inactif."
+        ));
+
+        mockMvc.perform(get("/api/admin/etat-operationnel/semaine")
+                        .param("date", "2026-07-22")
+                        .param("siteId", "1003"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value(
+                        "CONFIGURATION_METIER_INVALIDE"
+                ))
+                .andExpect(jsonPath("$.message").value(
+                        "Le planning hebdomadaire n'est pas disponible pour un site inactif."
+                ));
     }
 
     @Test

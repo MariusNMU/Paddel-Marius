@@ -85,6 +85,7 @@ public class EtatOperationnelAdminService {
         LocalDate dateFin = dateDebut.plusDays(6);
 
         Site site = chargerSite(siteId);
+        verifierSiteActifPourPlanning(site);
         List<Terrain> terrains = chargerTerrains(siteId);
         List<PadelMatch> matches = chargerMatches(
                 dateDebut.atStartOfDay(),
@@ -135,6 +136,14 @@ public class EtatOperationnelAdminService {
                 .orElseThrow(() -> new RessourceIntrouvableException(
                         "Site introuvable avec l'id " + siteId
                 ));
+    }
+
+    private void verifierSiteActifPourPlanning(Site site) {
+        if (!site.isActif()) {
+            throw new ConfigurationMetierException(
+                    "Le planning hebdomadaire n'est pas disponible pour un site inactif."
+            );
+        }
     }
 
     private List<Terrain> chargerTerrains(Long siteId) {

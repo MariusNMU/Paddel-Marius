@@ -4,20 +4,23 @@ import com.padelMarius.backend.dto.auth.AuthAdminResponse;
 import com.padelMarius.backend.dto.auth.AuthJoueurResponse;
 import com.padelMarius.backend.dto.auth.ConnexionAdminRequest;
 import com.padelMarius.backend.dto.auth.ConnexionJoueurRequest;
+import com.padelMarius.backend.dto.auth.RafraichissementTokenResponse;
 import com.padelMarius.backend.entity.Administrateur;
 import com.padelMarius.backend.entity.Membre;
 import com.padelMarius.backend.entity.Site;
 import com.padelMarius.backend.exception.AuthentificationException;
 import com.padelMarius.backend.exception.ConfigurationMetierException;
-import com.padelMarius.backend.exception.RessourceIntrouvableException;
 import com.padelMarius.backend.repository.AdministrateurRepository;
 import com.padelMarius.backend.repository.MembreRepository;
+import com.padelMarius.backend.security.IdentiteAuthentification;
+import com.padelMarius.backend.security.JwtService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import com.padelMarius.backend.security.JwtService;
 
 @Service
 @RequiredArgsConstructor
@@ -28,11 +31,11 @@ public class AuthService {
 
     private final MembreRepository membreRepository;
     private final AdministrateurRepository administrateurRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
     @Transactional(readOnly = true)
-    public AuthJoueurResponse authentifierJoueur(
+    public ResultatAuthentification<AuthJoueurResponse> authentifierJoueur(
             ConnexionJoueurRequest request
     ) {
         if (request == null
@@ -45,27 +48,25 @@ public class AuthService {
 
         String matricule = request.matricule().trim();
 
+        authentifier(
+                IdentiteAuthentification.joueur(matricule),
+                request.motDePasse()
+        );
+
         Membre membre = membreRepository.findByMatricule(matricule)
+                .filter(Membre::isActif)
                 .orElseThrow(() -> new AuthentificationException(
                         MESSAGE_IDENTIFIANTS_INVALIDES
                 ));
 
-        if (!membre.isActif()
-                || !StringUtils.hasText(membre.getMotDePasseHash())
-                || !passwordEncoder.matches(
-                        request.motDePasse(),
-                        membre.getMotDePasseHash()
-                )) {
-            throw new AuthentificationException(
-                    MESSAGE_IDENTIFIANTS_INVALIDES
-            );
-        }
-
-        return convertirJoueur(membre);
+        return new ResultatAuthentification<>(
+                convertirJoueur(membre),
+                jwtService.genererRefreshTokenJoueur(membre).valeur()
+        );
     }
 
     @Transactional(readOnly = true)
-    public AuthAdminResponse authentifierAdmin(
+    public ResultatAuthentification<AuthAdminResponse> authentifierAdmin(
             ConnexionAdminRequest request
     ) {
         if (request == null
@@ -78,26 +79,77 @@ public class AuthService {
 
         String login = request.login().trim();
 
+        authentifier(
+                IdentiteAuthentification.admin(login),
+                request.motDePasse()
+        );
+
         Administrateur administrateur =
                 administrateurRepository.findByEmailOuLogin(login)
+                        .filter(Administrateur::isActif)
                         .orElseThrow(() -> new AuthentificationException(
                                 MESSAGE_IDENTIFIANTS_INVALIDES
                         ));
 
-        if (!administrateur.isActif()
-                || !StringUtils.hasText(
-                        administrateur.getMotDePasseHash()
-                )
-                || !passwordEncoder.matches(
-                        request.motDePasse(),
-                        administrateur.getMotDePasseHash()
-                )) {
+        return new ResultatAuthentification<>(
+                convertirAdmin(administrateur),
+                jwtService.genererRefreshTokenAdmin(administrateur).valeur()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public ResultatAuthentification<RafraichissementTokenResponse> rafraichir(
+            String refreshToken
+    ) {
+        if (!StringUtils.hasText(refreshToken)) {
+            throw new AuthentificationException(
+                    "Refresh token obligatoire."
+            );
+        }
+
+        var utilisateur = jwtService.validerRefreshToken(refreshToken);
+
+        if (JwtService.TYPE_UTILISATEUR_JOUEUR.equals(
+                utilisateur.typeUtilisateur()
+        )) {
+            Membre membre = membreRepository
+                    .findByMatricule(utilisateur.sujet())
+                    .filter(Membre::isActif)
+                    .orElseThrow(this::refreshTokenInvalide);
+
+            return renouvelerJoueur(membre);
+        }
+
+        if (JwtService.TYPE_UTILISATEUR_ADMIN.equals(
+                utilisateur.typeUtilisateur()
+        )) {
+            Administrateur administrateur = administrateurRepository
+                    .findByEmailOuLogin(utilisateur.sujet())
+                    .filter(Administrateur::isActif)
+                    .orElseThrow(this::refreshTokenInvalide);
+
+            return renouvelerAdmin(administrateur);
+        }
+
+        throw refreshTokenInvalide();
+    }
+
+    private void authentifier(
+            String identite,
+            String motDePasse
+    ) {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            identite,
+                            motDePasse
+                    )
+            );
+        } catch (AuthenticationException exception) {
             throw new AuthentificationException(
                     MESSAGE_IDENTIFIANTS_INVALIDES
             );
         }
-
-        return convertirAdmin(administrateur);
     }
 
     private AuthJoueurResponse convertirJoueur(Membre membre) {
@@ -135,5 +187,51 @@ public class AuthService {
                 token.valeur(),
                 token.expiration()
         );
+    }
+
+    private ResultatAuthentification<RafraichissementTokenResponse>
+    renouvelerJoueur(Membre membre) {
+        JwtService.TokenGenere accessToken =
+                jwtService.genererTokenJoueur(membre);
+        JwtService.TokenGenere refreshToken =
+                jwtService.genererRefreshTokenJoueur(membre);
+
+        return resultatRafraichissement(accessToken, refreshToken);
+    }
+
+    private ResultatAuthentification<RafraichissementTokenResponse>
+    renouvelerAdmin(Administrateur administrateur) {
+        JwtService.TokenGenere accessToken =
+                jwtService.genererTokenAdmin(administrateur);
+        JwtService.TokenGenere refreshToken =
+                jwtService.genererRefreshTokenAdmin(administrateur);
+
+        return resultatRafraichissement(accessToken, refreshToken);
+    }
+
+    private ResultatAuthentification<RafraichissementTokenResponse>
+    resultatRafraichissement(
+            JwtService.TokenGenere accessToken,
+            JwtService.TokenGenere refreshToken
+    ) {
+        return new ResultatAuthentification<>(
+                new RafraichissementTokenResponse(
+                        accessToken.valeur(),
+                        accessToken.expiration()
+                ),
+                refreshToken.valeur()
+        );
+    }
+
+    private AuthentificationException refreshTokenInvalide() {
+        return new AuthentificationException(
+                "Refresh token invalide."
+        );
+    }
+
+    public record ResultatAuthentification<T>(
+            T reponse,
+            String refreshToken
+    ) {
     }
 }

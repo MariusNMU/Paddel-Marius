@@ -11,6 +11,7 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.WeakKeyException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -29,23 +30,42 @@ public class JwtService {
     public static final String TYPE_UTILISATEUR_JOUEUR = "JOUEUR";
     public static final String TYPE_UTILISATEUR_ADMIN = "ADMIN";
 
+    public static final String TYPE_TOKEN_ACCES = "ACCES";
+    public static final String TYPE_TOKEN_RAFRAICHISSEMENT =
+            "RAFRAICHISSEMENT";
+
     private static final String PREFIXE_BEARER = "Bearer ";
+    private static final String CLAIM_TYPE_UTILISATEUR = "typeUtilisateur";
+    private static final String CLAIM_TYPE_TOKEN = "typeToken";
 
     private final SecretKey cleSignature;
-    private final Duration dureeValidite;
+    private final Duration dureeValiditeAcces;
+    private final Duration dureeValiditeRafraichissement;
     private final Clock clock;
 
+    @Autowired
     public JwtService(
             @Value("${padel.jwt.secret:padel-marius-dev-secret-change-me-2026}") String secret,
             @Value("${padel.jwt.expiration-minutes:60}") long expirationMinutes,
+            @Value("${padel.jwt.refresh-expiration-days:7}") long refreshExpirationDays,
             Clock clock
     ) {
         if (!StringUtils.hasText(secret)) {
-            throw new IllegalArgumentException("Le secret JWT doit être configuré.");
+            throw new IllegalArgumentException(
+                    "Le secret JWT doit être configuré."
+            );
         }
 
         if (expirationMinutes <= 0) {
-            throw new IllegalArgumentException("La durée de validité JWT doit être positive.");
+            throw new IllegalArgumentException(
+                    "La durée de validité JWT doit être positive."
+            );
+        }
+
+        if (refreshExpirationDays <= 0) {
+            throw new IllegalArgumentException(
+                    "La durée du refresh token doit être positive."
+            );
         }
 
         try {
@@ -59,41 +79,85 @@ public class JwtService {
             );
         }
 
-        this.dureeValidite = Duration.ofMinutes(expirationMinutes);
+        this.dureeValiditeAcces = Duration.ofMinutes(expirationMinutes);
+        this.dureeValiditeRafraichissement =
+                Duration.ofDays(refreshExpirationDays);
         this.clock = clock;
     }
 
+    public JwtService(
+            String secret,
+            long expirationMinutes,
+            Clock clock
+    ) {
+        this(secret, expirationMinutes, 7, clock);
+    }
+
     public TokenGenere genererTokenJoueur(Membre membre) {
-        if (membre == null || !StringUtils.hasText(membre.getMatricule())) {
-            throw new AuthentificationException("Impossible de générer un token joueur sans matricule.");
-        }
+        verifierJoueur(membre);
 
         Site site = membre.getSiteRattachement();
 
         return genererToken(
                 membre.getMatricule(),
                 TYPE_UTILISATEUR_JOUEUR,
-                membre.getCategorieMembre() == null ? null : membre.getCategorieMembre().name(),
-                site == null ? null : site.getId()
+                membre.getCategorieMembre() == null
+                        ? null
+                        : membre.getCategorieMembre().name(),
+                site == null ? null : site.getId(),
+                TYPE_TOKEN_ACCES,
+                dureeValiditeAcces
         );
     }
 
     public TokenGenere genererTokenAdmin(Administrateur administrateur) {
-        if (administrateur == null || !StringUtils.hasText(administrateur.getEmailOuLogin())) {
-            throw new AuthentificationException("Impossible de générer un token administrateur sans login.");
-        }
+        verifierAdmin(administrateur);
 
         Site site = administrateur.getSite();
 
         return genererToken(
                 administrateur.getEmailOuLogin(),
                 TYPE_UTILISATEUR_ADMIN,
-                administrateur.getRoleAdministrateur() == null ? null : administrateur.getRoleAdministrateur().name(),
-                site == null ? null : site.getId()
+                administrateur.getRoleAdministrateur() == null
+                        ? null
+                        : administrateur.getRoleAdministrateur().name(),
+                site == null ? null : site.getId(),
+                TYPE_TOKEN_ACCES,
+                dureeValiditeAcces
         );
     }
 
-    public JwtUtilisateur extraireUtilisateurDepuisAuthorization(String authorizationHeader) {
+    public TokenGenere genererRefreshTokenJoueur(Membre membre) {
+        verifierJoueur(membre);
+
+        return genererToken(
+                membre.getMatricule(),
+                TYPE_UTILISATEUR_JOUEUR,
+                null,
+                null,
+                TYPE_TOKEN_RAFRAICHISSEMENT,
+                dureeValiditeRafraichissement
+        );
+    }
+
+    public TokenGenere genererRefreshTokenAdmin(
+            Administrateur administrateur
+    ) {
+        verifierAdmin(administrateur);
+
+        return genererToken(
+                administrateur.getEmailOuLogin(),
+                TYPE_UTILISATEUR_ADMIN,
+                null,
+                null,
+                TYPE_TOKEN_RAFRAICHISSEMENT,
+                dureeValiditeRafraichissement
+        );
+    }
+
+    public JwtUtilisateur extraireUtilisateurDepuisAuthorization(
+            String authorizationHeader
+    ) {
         if (!StringUtils.hasText(authorizationHeader)) {
             throw new AuthentificationException("Token JWT obligatoire.");
         }
@@ -114,6 +178,17 @@ public class JwtService {
     }
 
     public JwtUtilisateur validerToken(String token) {
+        return validerToken(token, TYPE_TOKEN_ACCES);
+    }
+
+    public JwtUtilisateur validerRefreshToken(String token) {
+        return validerToken(token, TYPE_TOKEN_RAFRAICHISSEMENT);
+    }
+
+    private JwtUtilisateur validerToken(
+            String token,
+            String typeTokenAttendu
+    ) {
         if (!StringUtils.hasText(token)) {
             throw new AuthentificationException("Token JWT obligatoire.");
         }
@@ -134,11 +209,16 @@ public class JwtService {
         }
 
         String sujet = claims.getSubject();
-        String typeUtilisateur = lireString(claims.get("typeUtilisateur"));
+        String typeUtilisateur = lireString(
+                claims.get(CLAIM_TYPE_UTILISATEUR)
+        );
+        String typeToken = lireString(claims.get(CLAIM_TYPE_TOKEN));
         String role = lireString(claims.get("role"));
         Long siteId = lireLong(claims.get("siteId"));
 
-        if (!StringUtils.hasText(sujet) || !StringUtils.hasText(typeUtilisateur)) {
+        if (!StringUtils.hasText(sujet)
+                || !StringUtils.hasText(typeUtilisateur)
+                || !typeTokenAttendu.equals(typeToken)) {
             throw tokenInvalide();
         }
 
@@ -154,14 +234,17 @@ public class JwtService {
             String sujet,
             String typeUtilisateur,
             String role,
-            Long siteId
+            Long siteId,
+            String typeToken,
+            Duration dureeValidite
     ) {
         Instant maintenant = Instant.now(clock);
         Instant expiration = maintenant.plus(dureeValidite);
 
         JwtBuilder builder = Jwts.builder()
                 .subject(sujet)
-                .claim("typeUtilisateur", typeUtilisateur)
+                .claim(CLAIM_TYPE_UTILISATEUR, typeUtilisateur)
+                .claim(CLAIM_TYPE_TOKEN, typeToken)
                 .issuedAt(Date.from(maintenant))
                 .expiration(Date.from(expiration));
 
@@ -183,12 +266,28 @@ public class JwtService {
         );
     }
 
-    private String lireString(Object valeur) {
-        if (valeur == null) {
-            return null;
+    private void verifierJoueur(Membre membre) {
+        if (membre == null
+                || !StringUtils.hasText(membre.getMatricule())) {
+            throw new AuthentificationException(
+                    "Impossible de générer un token joueur sans matricule."
+            );
         }
+    }
 
-        return String.valueOf(valeur);
+    private void verifierAdmin(Administrateur administrateur) {
+        if (administrateur == null
+                || !StringUtils.hasText(
+                        administrateur.getEmailOuLogin()
+                )) {
+            throw new AuthentificationException(
+                    "Impossible de générer un token administrateur sans login."
+            );
+        }
+    }
+
+    private String lireString(Object valeur) {
+        return valeur == null ? null : String.valueOf(valeur);
     }
 
     private Long lireLong(Object valeur) {

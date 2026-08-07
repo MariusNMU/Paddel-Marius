@@ -10,6 +10,9 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Clock;
@@ -39,6 +42,7 @@ class JwtAuthenticationFilterTest {
         JwtService jwtService = new JwtService(SECRET, 120, clock);
         JwtAuthenticationFilter filter = new JwtAuthenticationFilter(
                 jwtService,
+                utilisateurJoueurActif(),
                 new SecurityErrorWriter(new ObjectMapper())
         );
 
@@ -82,6 +86,7 @@ class JwtAuthenticationFilterTest {
             throws Exception {
         JwtAuthenticationFilter filter = new JwtAuthenticationFilter(
                 new JwtService(SECRET, 120, clock),
+                utilisateurJoueurActif(),
                 new SecurityErrorWriter(new ObjectMapper())
         );
 
@@ -112,6 +117,7 @@ class JwtAuthenticationFilterTest {
             throws Exception {
         JwtAuthenticationFilter filter = new JwtAuthenticationFilter(
                 new JwtService(SECRET, 120, clock),
+                utilisateurJoueurActif(),
                 new SecurityErrorWriter(new ObjectMapper())
         );
 
@@ -135,5 +141,54 @@ class JwtAuthenticationFilterTest {
                 .contains("Token JWT invalide.");
         assertThat(SecurityContextHolder.getContext().getAuthentication())
                 .isNull();
+    }
+
+    @Test
+    void shouldReturnUnauthorized_whenJwtUserNoLongerExists()
+            throws Exception {
+        JwtService jwtService = new JwtService(SECRET, 120, clock);
+        UserDetailsService utilisateurInconnu = username -> {
+            throw new UsernameNotFoundException("Utilisateur inconnu.");
+        };
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(
+                jwtService,
+                utilisateurInconnu,
+                new SecurityErrorWriter(new ObjectMapper())
+        );
+
+        Membre membre = Membre.builder()
+                .matricule("G1001")
+                .categorieMembre(CategorieMembre.GLOBAL)
+                .actif(true)
+                .build();
+        JwtService.TokenGenere token = jwtService.genererTokenJoueur(membre);
+
+        MockHttpServletRequest request = new MockHttpServletRequest(
+                "GET",
+                "/api/disponibilites"
+        );
+        request.addHeader(
+                HttpHeaders.AUTHORIZATION,
+                "Bearer " + token.valeur()
+        );
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, new MockFilterChain());
+
+        assertThat(response.getStatus()).isEqualTo(401);
+        assertThat(response.getContentAsString())
+                .contains("AUTHENTIFICATION_INVALIDE")
+                .contains("Token JWT invalide.");
+    }
+
+    private UserDetailsService utilisateurJoueurActif() {
+        return username -> User.withUsername(username)
+                .password("hash-bcrypt")
+                .authorities(
+                        "ROLE_JOUEUR",
+                        "ROLE_JOUEUR_GLOBAL"
+                )
+                .build();
     }
 }

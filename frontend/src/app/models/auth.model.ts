@@ -37,3 +37,8 @@ export interface AuthAdminResponse {
   token?: string;
   expirationToken?: string;
 }
+
+export interface RafraichissementTokenResponse {
+  token: string;
+  expirationToken: string;
+}

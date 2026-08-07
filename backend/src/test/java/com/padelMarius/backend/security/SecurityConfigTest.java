@@ -1,5 +1,6 @@
 package com.padelMarius.backend.security;
 
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -14,6 +15,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
+import static org.springframework.http.HttpHeaders.SET_COOKIE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -43,6 +45,55 @@ class SecurityConfigTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
+    void shouldRejectWrongPasswordThroughAuthenticationManager()
+            throws Exception {
+        mockMvc.perform(post("/api/auth/joueur")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "matricule": "G1001",
+                                  "motDePasse": "mauvais"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code")
+                        .value("AUTHENTIFICATION_INVALIDE"))
+                .andExpect(jsonPath("$.message")
+                        .value("Identifiant ou mot de passe invalide."));
+    }
+
+    @Test
+    void shouldRefreshAccessTokenFromHttpOnlyCookie() throws Exception {
+        MvcResult connexion = mockMvc.perform(post("/api/auth/joueur")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "matricule": "G1001",
+                                  "motDePasse": "password"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String setCookie = connexion.getResponse().getHeader(SET_COOKIE);
+        assertThat(setCookie).isNotBlank();
+
+        String refreshToken = lireValeurCookie(setCookie);
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .cookie(new Cookie(
+                                RefreshTokenCookieService.NOM_COOKIE,
+                                refreshToken
+                        )))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.expirationToken").isNotEmpty())
+                .andExpect(result -> assertThat(
+                        result.getResponse().getHeader(SET_COOKIE)
+                ).contains("HttpOnly", "SameSite=Strict"));
     }
 
     @Test
@@ -286,5 +337,19 @@ class SecurityConfigTest {
 
     private String bearer(String token) {
         return "Bearer " + token;
+    }
+
+    private String lireValeurCookie(String setCookie) {
+        String prefixe = RefreshTokenCookieService.NOM_COOKIE + "=";
+        int debut = setCookie.indexOf(prefixe);
+        int fin = setCookie.indexOf(';', debut);
+
+        assertThat(debut).isGreaterThanOrEqualTo(0);
+
+        if (fin < 0) {
+            fin = setCookie.length();
+        }
+
+        return setCookie.substring(debut + prefixe.length(), fin);
     }
 }

@@ -1,5 +1,9 @@
 import { computed, Injectable, OnDestroy, signal } from '@angular/core';
-import { AuthAdminResponse, AuthJoueurResponse } from '../models/auth.model';
+import {
+  AuthAdminResponse,
+  AuthJoueurResponse,
+  RafraichissementTokenResponse
+} from '../models/auth.model';
 
 function lireStockage<T>(cle: string): T | null {
   const valeur = localStorage.getItem(cle);
@@ -16,14 +20,16 @@ function lireStockage<T>(cle: string): T | null {
   }
 }
 
-function sessionStockeeValide(session: { expirationToken?: string }): boolean {
-  if (!session.expirationToken) {
+function sessionStockeeExploitable(
+  session: { token?: string; expirationToken?: string }
+): boolean {
+  if (!session.token || !session.expirationToken) {
     return false;
   }
 
   const expiration = Date.parse(session.expirationToken);
 
-  return Number.isFinite(expiration) && expiration > Date.now();
+  return Number.isFinite(expiration);
 }
 
 @Injectable({
@@ -93,14 +99,46 @@ export class AuthContextService implements OnDestroy {
     localStorage.removeItem(this.adminKey);
   }
 
+  mettreAJourToken(
+    rafraichissement: RafraichissementTokenResponse
+  ): void {
+    const joueur = this.joueurSignal();
+
+    if (joueur) {
+      this.definirJoueur({
+        ...joueur,
+        token: rafraichissement.token,
+        expirationToken: rafraichissement.expirationToken
+      });
+      return;
+    }
+
+    const admin = this.adminSignal();
+
+    if (admin) {
+      this.definirAdmin({
+        ...admin,
+        token: rafraichissement.token,
+        expirationToken: rafraichissement.expirationToken
+      });
+    }
+  }
+
+  deconnecterTout(): void {
+    this.joueurSignal.set(null);
+    this.adminSignal.set(null);
+    localStorage.removeItem(this.joueurKey);
+    localStorage.removeItem(this.adminKey);
+  }
+
   private initialiserDepuisStockage(): void {
     const joueurStocke = lireStockage<AuthJoueurResponse>(this.joueurKey);
     const adminStocke = lireStockage<AuthAdminResponse>(this.adminKey);
 
-    const joueur = joueurStocke && sessionStockeeValide(joueurStocke)
+    const joueur = joueurStocke && sessionStockeeExploitable(joueurStocke)
       ? joueurStocke
       : null;
-    const admin = adminStocke && sessionStockeeValide(adminStocke)
+    const admin = adminStocke && sessionStockeeExploitable(adminStocke)
       ? adminStocke
       : null;
 

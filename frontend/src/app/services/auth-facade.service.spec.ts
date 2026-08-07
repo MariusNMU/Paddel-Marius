@@ -16,6 +16,7 @@ describe('AuthFacadeService', () => {
   let authApiService: {
     connecterJoueur: ReturnType<typeof vi.fn>;
     connecterAdmin: ReturnType<typeof vi.fn>;
+    deconnecter: ReturnType<typeof vi.fn>;
   };
 
   let authContextService: {
@@ -56,7 +57,8 @@ describe('AuthFacadeService', () => {
   beforeEach(() => {
     authApiService = {
       connecterJoueur: vi.fn(),
-      connecterAdmin: vi.fn()
+      connecterAdmin: vi.fn(),
+      deconnecter: vi.fn(() => of(void 0))
     };
 
     authContextService = {
@@ -191,6 +193,7 @@ describe('AuthFacadeService', () => {
     service.deconnecterJoueur();
 
     expect(authContextService.deconnecterJoueur).toHaveBeenCalled();
+    expect(authApiService.deconnecter).toHaveBeenCalled();
     expect(service.messageSuccesJoueur()).toContain('Joueur déconnecté');
     expect(router.navigate).toHaveBeenCalledWith(['/accueil']);
   });
@@ -201,6 +204,7 @@ describe('AuthFacadeService', () => {
     service.deconnecterAdmin();
 
     expect(authContextService.deconnecterAdmin).toHaveBeenCalled();
+    expect(authApiService.deconnecter).toHaveBeenCalled();
     expect(service.messageSuccesAdmin()).toContain('Admin déconnecté');
     expect(router.navigate).toHaveBeenCalledWith(['/accueil']);
   });

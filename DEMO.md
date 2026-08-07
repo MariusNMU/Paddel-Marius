@@ -812,7 +812,9 @@ mots de passe hachés avec BCrypt
 politique de mot de passe pour les nouvelles inscriptions
 connexion joueur par matricule et mot de passe
 connexion administrateur par login et mot de passe
-JWT signé et limité dans le temps
+authentification déléguée à AuthenticationManager et UserDetailsService
+access token JWT signé et limité à 60 minutes
+refresh token de 7 jours dans un cookie HttpOnly
 génération et validation JWT déléguées à io.jsonwebtoken (JJWT)
 SecurityFilterChain stateless
 filtre JWT OncePerRequestFilter
@@ -820,15 +822,16 @@ SecurityContext Spring
 contrôles par rôles et @PreAuthorize
 guards Angular pour la navigation
 session unique synchronisée entre les onglets
+renouvellement automatique après un 401, puis une seule nouvelle tentative
 backend responsable de l'autorisation définitive
 ```
 
 Limites assumées pour le MVP :
 
 ```text
-pas de refresh token
-pas de révocation serveur d'un JWT déjà émis
-secret local de démonstration à remplacer dans un déploiement réel
+pas de liste de révocation serveur des JWT déjà émis
+pas de persistance serveur des refresh tokens
+secret local de démonstration et cookie non-Secure à remplacer dans un déploiement HTTPS
 ```
 
 ## 11. Contrat d'erreur API

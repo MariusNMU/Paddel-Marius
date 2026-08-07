@@ -109,7 +109,7 @@ jobs:
 
           for attempt in {1..60}; do
             if curl --fail --silent --show-error \
-              http://localhost:8080/api/health; then
+              http://localhost:8080/actuator/health; then
               exit 0
             fi
 

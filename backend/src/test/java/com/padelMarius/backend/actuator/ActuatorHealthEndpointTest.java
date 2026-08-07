@@ -1,27 +1,27 @@
-package com.padelMarius.backend.controller;
+package com.padelMarius.backend.actuator;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(HealthController.class)
-@AutoConfigureMockMvc(addFilters = false)
-class HealthControllerTest {
+@SpringBootTest
+@AutoConfigureMockMvc
+class ActuatorHealthEndpointTest {
 
     @Autowired
     private MockMvc mockMvc;
 
     @Test
-    void shouldReturnHealthStatus() throws Exception {
-        mockMvc.perform(get("/api/health"))
+    void shouldExposeStandardHealthEndpointWithoutAuthentication()
+            throws Exception {
+        mockMvc.perform(get("/actuator/health"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("OK"))
-                .andExpect(jsonPath("$.application").value("padel-backend"));
+                .andExpect(jsonPath("$.status").value("UP"));
     }
 }

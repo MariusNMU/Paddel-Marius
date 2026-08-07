@@ -48,7 +48,7 @@ URLs utiles :
 ```txt
 Frontend : http://localhost:4200
 Backend  : http://localhost:8080
-Health   : http://localhost:8080/api/health
+Health   : http://localhost:8080/actuator/health
 Swagger  : http://localhost:8080/swagger-ui.html
 OpenAPI  : http://localhost:8080/v3/api-docs
 ```
@@ -74,15 +74,14 @@ Started BackendApplication
 Vérification rapide :
 
 ```txt
-http://localhost:8080/api/health
+http://localhost:8080/actuator/health
 ```
 
 Résultat attendu :
 
 ```json
 {
-  "application": "padel-backend",
-  "status": "OK"
+  "status": "UP"
 }
 ```
 
@@ -198,7 +197,7 @@ pénalité active démo          : aujourd'hui - 6 jours à aujourd'hui + 1 jour
 Ouvrir :
 
 ```txt
-http://localhost:8080/api/health
+http://localhost:8080/actuator/health
 ```
 
 À dire :

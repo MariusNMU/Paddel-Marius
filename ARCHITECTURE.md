@@ -545,7 +545,7 @@ http://localhost:8080
 Exemples d'endpoints :
 
 ```http
-GET /api/health
+GET /actuator/health
 POST /api/auth/joueur
 POST /api/auth/admin
 GET /api/disponibilites?siteId=1001&date=<date-demo>
@@ -566,6 +566,10 @@ GET /api/admin/membres
 POST /api/admin/matches/traitement-veille?date=<date-traitement>
 POST /api/admin/matches/traitement-echeance
 ```
+
+Le point de contrôle `/actuator/health` est fourni par Spring Boot Actuator.
+Seul l'endpoint `health` est exposé et les détails internes ne sont pas
+retournés publiquement.
 
 Les endpoints protégés utilisent :
 

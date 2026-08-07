@@ -391,7 +391,7 @@ Le backend expose une API REST.
 Exemples d'endpoints principaux :
 
 ```http
-GET /api/health
+GET /actuator/health
 POST /api/auth/joueur
 POST /api/auth/admin
 GET /api/disponibilites?siteId=1001&date=<date-demo>
@@ -464,8 +464,11 @@ http://localhost:8080
 Health check :
 
 ```txt
-http://localhost:8080/api/health
+http://localhost:8080/actuator/health
 ```
+
+Ce point de contrôle est fourni par Spring Boot Actuator. Seul l'endpoint
+`health` est exposé sur HTTP et ses détails internes restent masqués.
 
 Swagger :
 
@@ -731,7 +734,7 @@ cd ..
 Cette commande :
 
 - démarre automatiquement le backend Spring Boot avec H2 ;
-- attend le health check http://localhost:8080/api/health ;
+- attend le health check http://localhost:8080/actuator/health ;
 - démarre Angular ;
 - attend http://localhost:4200 ;
 - exécute le parcours Cypress full stack ;

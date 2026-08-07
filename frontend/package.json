@@ -10,7 +10,7 @@
     "test": "ng test",
     "cypress:open": "start-server-and-test start http-get://localhost:4200 \"cypress open\"",
     "cypress:run": "start-server-and-test start http-get://localhost:4200 \"cypress run\"",
-    "cypress:run:fullstack": "start-server-and-test start:backend:e2e http-get://localhost:8080/api/health start http-get://localhost:4200 \"cypress run --config-file cypress.fullstack.config.ts\""
+    "cypress:run:fullstack": "start-server-and-test start:backend:e2e http-get://localhost:8080/actuator/health start http-get://localhost:4200 \"cypress run --config-file cypress.fullstack.config.ts\""
   },
   "private": true,
   "packageManager": "npm@11.6.0",

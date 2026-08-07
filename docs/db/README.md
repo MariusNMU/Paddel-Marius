@@ -386,7 +386,7 @@ http://localhost:8080
 Health check :
 
 ```txt
-http://localhost:8080/api/health
+http://localhost:8080/actuator/health
 ```
 
 Swagger :
@@ -619,7 +619,7 @@ Le backend expose une API REST.
 Exemples d'endpoints :
 
 ```http
-GET /api/health
+GET /actuator/health
 POST /api/auth/joueur
 POST /api/auth/admin
 GET /api/disponibilites?siteId=1001&date=<date-demo>

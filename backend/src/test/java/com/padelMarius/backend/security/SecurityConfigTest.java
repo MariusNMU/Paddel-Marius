@@ -52,7 +52,7 @@ class SecurityConfigTest {
     }
 
     @Test
-    void shouldPermitAuthenticationEndpointWhenInvalidBearerTokenIsPresent()
+    void shouldRejectInvalidBearerTokenBeforePublicEndpointAuthorization()
             throws Exception {
         mockMvc.perform(post("/api/auth/joueur")
                         .header(AUTHORIZATION, "Bearer token-invalide")
@@ -63,8 +63,9 @@ class SecurityConfigTest {
                                   "motDePasse": "password"
                                 }
                                 """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token").isNotEmpty());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code")
+                        .value("AUTHENTIFICATION_INVALIDE"));
     }
 
     @Test

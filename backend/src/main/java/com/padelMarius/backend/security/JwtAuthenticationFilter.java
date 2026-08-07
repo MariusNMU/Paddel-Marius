@@ -12,7 +12,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.util.AntPathMatcher;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -25,34 +24,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String PREFIXE_ROLE = "ROLE_";
 
-    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
-
-    private static final List<RoutePublique> ROUTES_PUBLIQUES = List.of(
-            new RoutePublique(null, "/api/auth/**"),
-            new RoutePublique("POST", "/api/membres/inscription"),
-            new RoutePublique(null, "/api/health/**"),
-            new RoutePublique("GET", "/api/sites"),
-            new RoutePublique("GET", "/api/terrains"),
-            new RoutePublique("GET", "/api/parametres-metier"),
-            new RoutePublique(null, "/v3/api-docs/**"),
-            new RoutePublique(null, "/swagger-ui.html"),
-            new RoutePublique(null, "/swagger-ui/**"),
-            new RoutePublique(null, "/h2-console/**")
-    );
-
     private final JwtService jwtService;
     private final SecurityErrorWriter securityErrorWriter;
-
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        String chemin = extraireCheminSansContexte(request);
-
-        return ROUTES_PUBLIQUES.stream()
-                .anyMatch(route -> route.correspond(
-                        request.getMethod(),
-                        chemin
-                ));
-    }
 
     @Override
     protected void doFilterInternal(
@@ -115,34 +88,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         return authorities;
-    }
-
-    private String extraireCheminSansContexte(HttpServletRequest request) {
-        String requestUri = request.getRequestURI();
-        String contextPath = request.getContextPath();
-
-        if (StringUtils.hasText(contextPath)
-                && requestUri.startsWith(contextPath)) {
-            return requestUri.substring(contextPath.length());
-        }
-
-        return requestUri;
-    }
-
-    private record RoutePublique(
-            String methode,
-            String chemin
-    ) {
-
-        private boolean correspond(
-                String methodeRequete,
-                String cheminRequete
-        ) {
-            boolean methodeCorrespond = methode == null
-                    || methode.equalsIgnoreCase(methodeRequete);
-
-            return methodeCorrespond
-                    && PATH_MATCHER.match(chemin, cheminRequete);
-        }
     }
 }

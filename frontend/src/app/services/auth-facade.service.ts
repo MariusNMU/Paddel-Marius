@@ -128,6 +128,7 @@ export class AuthFacadeService {
     const joueur = this.authContextService.joueur();
 
     this.authContextService.deconnecterJoueur();
+    this.supprimerCookieRefresh();
     this.messageErreurJoueurSignal.set(null);
     this.messageSuccesJoueurSignal.set(
       joueur
@@ -142,6 +143,7 @@ export class AuthFacadeService {
     const admin = this.authContextService.admin();
 
     this.authContextService.deconnecterAdmin();
+    this.supprimerCookieRefresh();
     this.messageErreurAdminSignal.set(null);
     this.messageSuccesAdminSignal.set(
       admin
@@ -150,5 +152,11 @@ export class AuthFacadeService {
     );
 
     void this.router.navigate(['/accueil']);
+  }
+
+  private supprimerCookieRefresh(): void {
+    this.authApiService.deconnecter().pipe(
+      catchError(() => EMPTY)
+    ).subscribe();
   }
 }

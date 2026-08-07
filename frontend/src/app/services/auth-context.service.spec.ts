@@ -208,7 +208,7 @@ describe('AuthContextService', () => {
     expect(service.token()).toBe('jwt-joueur');
   });
 
-  it('doit supprimer une session joueur expirée au démarrage', () => {
+  it('doit conserver une session joueur expirée pour permettre le refresh', () => {
     localStorage.setItem('padel-joueur', JSON.stringify({
       ...joueur,
       expirationToken: '2020-01-01T00:00:00'
@@ -216,12 +216,12 @@ describe('AuthContextService', () => {
 
     const service = creerService();
 
-    expect(service.joueur()).toBeNull();
-    expect(service.joueurConnecte()).toBe(false);
-    expect(localStorage.getItem('padel-joueur')).toBeNull();
+    expect(service.joueur()).not.toBeNull();
+    expect(service.joueurConnecte()).toBe(true);
+    expect(service.token()).toBe('jwt-joueur');
   });
 
-  it('doit supprimer une session admin expirée au démarrage', () => {
+  it('doit conserver une session admin expirée pour permettre le refresh', () => {
     localStorage.setItem('padel-admin', JSON.stringify({
       ...admin,
       expirationToken: '2020-01-01T00:00:00'
@@ -229,8 +229,54 @@ describe('AuthContextService', () => {
 
     const service = creerService();
 
+    expect(service.admin()).not.toBeNull();
+    expect(service.adminConnecte()).toBe(true);
+    expect(service.token()).toBe('jwt-admin');
+  });
+
+  it('doit remplacer le token du joueur après refresh', () => {
+    const service = creerService();
+    service.definirJoueur(joueur);
+
+    service.mettreAJourToken({
+      token: 'jwt-joueur-renouvele',
+      expirationToken: '2100-01-01T00:59:59'
+    });
+
+    expect(service.token()).toBe('jwt-joueur-renouvele');
+    expect(service.joueur()?.expirationToken).toBe(
+      '2100-01-01T00:59:59'
+    );
+    expect(
+      JSON.parse(localStorage.getItem('padel-joueur') ?? '{}').token
+    ).toBe('jwt-joueur-renouvele');
+  });
+
+  it('doit remplacer le token de l admin après refresh', () => {
+    const service = creerService();
+    service.definirAdmin(admin);
+
+    service.mettreAJourToken({
+      token: 'jwt-admin-renouvele',
+      expirationToken: '2100-01-01T00:59:59'
+    });
+
+    expect(service.token()).toBe('jwt-admin-renouvele');
+    expect(service.admin()?.expirationToken).toBe(
+      '2100-01-01T00:59:59'
+    );
+  });
+
+  it('doit effacer toutes les sessions si le refresh échoue', () => {
+    const service = creerService();
+    service.definirJoueur(joueur);
+
+    service.deconnecterTout();
+
+    expect(service.joueur()).toBeNull();
     expect(service.admin()).toBeNull();
-    expect(service.adminConnecte()).toBe(false);
+    expect(service.token()).toBeNull();
+    expect(localStorage.getItem('padel-joueur')).toBeNull();
     expect(localStorage.getItem('padel-admin')).toBeNull();
   });
 

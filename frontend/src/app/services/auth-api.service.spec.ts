@@ -47,6 +47,7 @@ describe('AuthApiService', () => {
     const request = httpMock.expectOne('/api/auth/joueur');
 
     expect(request.request.method).toBe('POST');
+    expect(request.request.withCredentials).toBe(true);
     expect(request.request.body).toEqual({
       matricule: 'G1001',
       motDePasse: 'password'
@@ -77,11 +78,42 @@ describe('AuthApiService', () => {
     const request = httpMock.expectOne('/api/auth/admin');
 
     expect(request.request.method).toBe('POST');
+    expect(request.request.withCredentials).toBe(true);
     expect(request.request.body).toEqual({
       login: 'admin-global',
       motDePasse: 'secret'
     });
 
     request.flush(response);
+  });
+
+  it('doit demander un nouveau token avec le cookie HttpOnly', () => {
+    const response = {
+      token: 'nouvel-access',
+      expirationToken: '2099-12-31T23:59:59'
+    };
+
+    service.rafraichir().subscribe(resultat => {
+      expect(resultat).toEqual(response);
+    });
+
+    const request = httpMock.expectOne('/api/auth/refresh');
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toBeNull();
+    expect(request.request.withCredentials).toBe(true);
+
+    request.flush(response);
+  });
+
+  it('doit demander la suppression du cookie au logout', () => {
+    service.deconnecter().subscribe();
+
+    const request = httpMock.expectOne('/api/auth/logout');
+
+    expect(request.request.method).toBe('POST');
+    expect(request.request.withCredentials).toBe(true);
+
+    request.flush(null);
   });
 });

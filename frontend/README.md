@@ -11,12 +11,18 @@ src/app/pages/        composants et écrans standalone
 src/app/services/     clients HTTP, façades et états partagés
 src/app/models/       contrats TypeScript des DTO
 src/app/guards/       protection des routes joueur et administrateur
-src/app/interceptors/ ajout du token actif aux appels API
+src/app/interceptors/ ajout et renouvellement du token actif pour l'API interne
 src/app/shared/       utilitaires de présentation et d'erreur
 ```
 
 Les composants gèrent la présentation. Les façades orchestrent les parcours
 avec des signaux Angular. Les clients API centralisent les appels HTTP.
+
+L'interceptor limite le header Bearer aux URLs relatives `/api/**`. Après un
+`401`, il partage un seul appel de refresh entre les requêtes simultanées,
+remplace l'access token puis rejoue une fois la requête initiale. Le refresh
+token reste dans un cookie `HttpOnly` et n'est jamais accessible au code
+Angular.
 
 ## Prérequis et installation
 

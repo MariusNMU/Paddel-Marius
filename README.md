@@ -39,6 +39,7 @@ Spring Boot
 Spring Web MVC
 Spring Data JPA
 Spring Security
+AuthenticationManager et UserDetailsService
 SecurityFilterChain stateless
 Filtre JWT OncePerRequestFilter
 Sécurité par rôles et @PreAuthorize
@@ -49,6 +50,7 @@ PostgreSQL Docker optionnel
 OpenAPI / Swagger
 BCrypt
 JWT
+Refresh token en cookie HttpOnly
 ```
 
 ### Frontend
@@ -341,8 +343,14 @@ Un administrateur `SITE` est limité à son site de rattachement.
 
 ### 7.3. JWT et Spring Security
 
-Après une connexion réussie, le backend génère un JWT signé et limité dans
-le temps.
+Après une connexion réussie, `AuthenticationManager` délègue la vérification
+du mot de passe BCrypt à `DaoAuthenticationProvider`, qui charge le compte via
+le `PadelUserDetailsService` et les repositories JPA.
+
+Le backend génère ensuite un access token JWT signé, valable 60 minutes, et un
+refresh token valable 7 jours. Le refresh token est stocké uniquement dans un
+cookie `HttpOnly`, `SameSite=Strict` et limité au chemin `/api/auth` ; il
+n'apparaît jamais dans le corps JSON.
 
 Le frontend conserve ce token dans son contexte d'authentification.
 `AuthContextService` expose l'unique token de la session active et
@@ -353,11 +361,15 @@ partir de l'URL :
 Authorization: Bearer <token>
 ```
 
+Après un `401`, l'interceptor appelle `/api/auth/refresh`, remplace l'access
+token puis rejoue une seule fois la requête initiale. Plusieurs erreurs `401`
+simultanées partagent le même appel de refresh.
+
 Le backend utilise une SecurityFilterChain stateless. La librairie JJWT
 (`io.jsonwebtoken`) génère les tokens, applique la signature HS256 et vérifie
 leur signature ainsi que leur expiration. Le JwtAuthenticationFilter, basé
-sur OncePerRequestFilter, place ensuite l'utilisateur authentifié dans le
-SecurityContext Spring.
+sur OncePerRequestFilter, recharge l'utilisateur via `UserDetailsService`,
+utilise ses autorités actuelles puis le place dans le SecurityContext Spring.
 
 Les routes publiques sont définies une seule fois dans SecurityConfig. Le
 filtre JWT ne décide pas quelles URL sont publiques. Toutes les autres routes
@@ -399,6 +411,8 @@ Exemples d'endpoints principaux :
 GET /actuator/health
 POST /api/auth/joueur
 POST /api/auth/admin
+POST /api/auth/refresh
+POST /api/auth/logout
 GET /api/disponibilites?siteId=1001&date=<date-demo>
 POST /api/matches
 GET /api/matches/publics?siteId=1001&date=<date-demo>

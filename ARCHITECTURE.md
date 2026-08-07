@@ -521,6 +521,9 @@ auth.interceptor.ts
 Rôle :
 
 - ajouter le header `Authorization: Bearer <token>` aux requêtes API quand un joueur ou un administrateur est connecté ;
+- limiter strictement cet ajout aux URLs relatives internes qui commencent par `/api/` ;
+- ne pas ajouter l'ancien JWT aux endpoints `/api/auth/**` ;
+- après un `401`, déclencher un refresh partagé et rejouer une seule fois la requête initiale ;
 - ne transmettre aucun login administrateur en dehors du JWT ;
 - permettre au backend de vérifier l'identité et le rôle admin.
 
@@ -548,6 +551,8 @@ Exemples d'endpoints :
 GET /actuator/health
 POST /api/auth/joueur
 POST /api/auth/admin
+POST /api/auth/refresh
+POST /api/auth/logout
 GET /api/disponibilites?siteId=1001&date=<date-demo>
 POST /api/matches
 GET /api/matches/publics?siteId=1001&date=<date-demo>
@@ -707,6 +712,11 @@ Deux portées administratives existent : `GLOBAL` et `SITE`.
 Les mots de passe sont hachés avec BCrypt. Les nouvelles inscriptions
 appliquent une longueur comprise entre 12 et 72 caractères.
 
+`AuthService` transmet les identifiants à l'`AuthenticationManager` de Spring
+Security. Son `DaoAuthenticationProvider` utilise le `PadelUserDetailsService`
+pour charger le joueur ou l'administrateur depuis les repositories, puis le
+`PasswordEncoder` BCrypt pour vérifier le mot de passe.
+
 ### 8.2. SecurityFilterChain
 
 Le backend utilise une `SecurityFilterChain` stateless :
@@ -723,14 +733,27 @@ avant `UsernamePasswordAuthenticationFilter`.
 
 `JwtService` délègue à JJWT (`io.jsonwebtoken` 0.13.0) la création, la
 signature HS256, le parsing et la validation de l'expiration des tokens. Le
-filtre construit les autorités Spring et place l'utilisateur dans le
-`SecurityContext`.
+filtre recharge le compte via `UserDetailsService`, récupère les autorités
+actuelles en base et place l'utilisateur dans le `SecurityContext`.
 
 Les URL publiques sont déclarées uniquement dans `SecurityConfig`. Le filtre
 traite le header `Authorization` lorsqu'il est présent, sans dupliquer les
 règles d'accès de la `SecurityFilterChain`.
 
-### 8.3. Autorisation métier
+### 8.3. Access token et refresh token
+
+- access token : JWT de 60 minutes conservé avec la session Angular ;
+- refresh token : JWT de 7 jours dans un cookie `HttpOnly`,
+  `SameSite=Strict`, chemin `/api/auth` ;
+- le refresh token contient uniquement le sujet, le type d'utilisateur et les
+  claims temporels ;
+- les deux types de tokens portent un claim distinct et ne sont pas
+  interchangeables ;
+- `POST /api/auth/refresh` recharge le compte actif en base, émet un nouvel
+  access token et remplace le cookie ;
+- `POST /api/auth/logout` expire le cookie.
+
+### 8.4. Autorisation métier
 
 `@EnableMethodSecurity` active les contrôles `@PreAuthorize`.
 
@@ -745,7 +768,7 @@ Les controllers et services vérifient notamment :
 Le backend reste l'autorité définitive. Les guards et les masquages Angular
 ne remplacent pas ces contrôles.
 
-### 8.4. Session Angular
+### 8.5. Session Angular
 
 `AuthFacadeService` orchestre les connexions et les déconnexions.
 
@@ -756,21 +779,27 @@ ne remplacent pas ces contrôles.
 - supprime l'autre type de session lors d'une connexion ;
 - écoute l'événement `storage` ;
 - synchronise immédiatement les différents onglets ;
-- nettoie les deux sessions si un état incohérent est détecté.
+- nettoie les deux sessions si un état incohérent est détecté ;
+- remplace l'access token après un refresh réussi ;
+- conserve temporairement une session dont l'access token est expiré afin que
+  l'interceptor puisse la renouveler avec le cookie HttpOnly.
 
-`auth.interceptor.ts` ajoute ce token aux appels `/api/**`. Il ne choisit
-plus un token admin ou joueur à partir de l'URL demandée.
+`auth.interceptor.ts` ajoute ce token uniquement aux appels internes
+`/api/**`. Après une réponse `401`, il appelle `AuthRefreshService`, puis rejoue
+une seule fois la requête avec le nouveau token. Un seul refresh est envoyé si
+plusieurs requêtes échouent simultanément.
 
-### 8.5. Limites connues
+### 8.6. Limites connues
 
 La sécurité est complète pour le périmètre du MVP, mais elle ne fournit pas :
 
-- de refresh token ;
-- de révocation serveur des JWT déjà émis ;
+- de liste de révocation serveur des JWT déjà émis ;
+- de persistance serveur des refresh tokens ;
 - de rotation automatique du secret JWT.
 
 La valeur JWT locale par défaut est réservée à la démonstration. Un
-déploiement réel doit fournir `PADEL_JWT_SECRET` depuis l'environnement.
+déploiement réel doit fournir `PADEL_JWT_SECRET` depuis l'environnement et
+activer `PADEL_REFRESH_COOKIE_SECURE=true` sous HTTPS.
 
 ## 9. Base de données
 

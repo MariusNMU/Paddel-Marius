@@ -177,4 +177,151 @@ describe('authInterceptor', () => {
       request.flush({});
     }
   );
+
+  it(
+    'ne doit pas envoyer l ancien JWT aux endpoints auth',
+    () => {
+      authContextService.definirJoueur({
+        membreId: 2001,
+        matricule: 'G1001',
+        nom: 'Dupont',
+        prenom: 'Marie',
+        categorieMembre: 'GLOBAL',
+        siteRattachementId: null,
+        nomSiteRattachement: null,
+        actif: true,
+        token: 'jwt-expire'
+      });
+
+      httpClient.post('/api/auth/joueur', {}).subscribe();
+
+      const request = httpTestingController.expectOne(
+        '/api/auth/joueur'
+      );
+
+      expect(
+        request.request.headers.has('Authorization')
+      ).toBe(false);
+      expect(request.request.withCredentials).toBe(true);
+
+      request.flush({});
+    }
+  );
+
+  it(
+    'doit rafraîchir le JWT après 401 puis rejouer la requête',
+    () => {
+      authContextService.definirJoueur({
+        membreId: 2001,
+        matricule: 'G1001',
+        nom: 'Dupont',
+        prenom: 'Marie',
+        categorieMembre: 'GLOBAL',
+        siteRattachementId: null,
+        nomSiteRattachement: null,
+        actif: true,
+        token: 'jwt-expire',
+        expirationToken: '2020-01-01T00:00:00'
+      });
+
+      let resultat: unknown;
+
+      httpClient
+        .get('/api/membres/G1001/solde')
+        .subscribe(response => {
+          resultat = response;
+        });
+
+      const premiereRequete = httpTestingController.expectOne(
+        '/api/membres/G1001/solde'
+      );
+
+      expect(
+        premiereRequete.request.headers.get('Authorization')
+      ).toBe('Bearer jwt-expire');
+
+      premiereRequete.flush(
+        {
+          code: 'AUTHENTIFICATION_INVALIDE'
+        },
+        {
+          status: 401,
+          statusText: 'Unauthorized'
+        }
+      );
+
+      const refresh = httpTestingController.expectOne(
+        '/api/auth/refresh'
+      );
+
+      expect(refresh.request.method).toBe('POST');
+      expect(refresh.request.withCredentials).toBe(true);
+      expect(
+        refresh.request.headers.has('Authorization')
+      ).toBe(false);
+
+      refresh.flush({
+        token: 'jwt-renouvele',
+        expirationToken: '2099-12-31T23:59:59'
+      });
+
+      const nouvelleTentative = httpTestingController.expectOne(
+        '/api/membres/G1001/solde'
+      );
+
+      expect(
+        nouvelleTentative.request.headers.get('Authorization')
+      ).toBe('Bearer jwt-renouvele');
+
+      nouvelleTentative.flush({
+        matricule: 'G1001',
+        soldeCredit: 100
+      });
+
+      expect(resultat).toEqual({
+        matricule: 'G1001',
+        soldeCredit: 100
+      });
+      expect(authContextService.token()).toBe('jwt-renouvele');
+    }
+  );
+
+  it(
+    'ne doit pas rafraîchir après une erreur autre que 401',
+    () => {
+      authContextService.definirJoueur({
+        membreId: 2001,
+        matricule: 'G1001',
+        nom: 'Dupont',
+        prenom: 'Marie',
+        categorieMembre: 'GLOBAL',
+        siteRattachementId: null,
+        nomSiteRattachement: null,
+        actif: true,
+        token: 'jwt-joueur'
+      });
+
+      httpClient
+        .get('/api/membres/G1001/solde')
+        .subscribe({
+          error: () => undefined
+        });
+
+      const request = httpTestingController.expectOne(
+        '/api/membres/G1001/solde'
+      );
+
+      request.flush(
+        {
+          code: 'ACCES_REFUSE'
+        },
+        {
+          status: 403,
+          statusText: 'Forbidden'
+        }
+      );
+
+      httpTestingController.expectNone('/api/auth/refresh');
+    }
+  );
 });

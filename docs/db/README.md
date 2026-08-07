@@ -283,12 +283,13 @@ Header utilisé :
 Authorization: Bearer <token>
 ```
 
-Le backend utilise une SecurityFilterChain stateless. Le
-JwtAuthenticationFilter, basé sur OncePerRequestFilter, valide le JWT et
-place l'utilisateur authentifié dans le SecurityContext.
+Le backend utilise une SecurityFilterChain stateless. La librairie JJWT
+(`io.jsonwebtoken`) génère et valide les tokens signés en HS256. Le
+JwtAuthenticationFilter, basé sur OncePerRequestFilter, place l'utilisateur
+authentifié dans le SecurityContext.
 
-Les routes publiques sont explicitement autorisées. Les autres routes sont
-protégées par défaut.
+Les routes publiques sont définies uniquement dans SecurityConfig. Les autres
+routes sont protégées par défaut.
 
 ### Autorisations et session Angular
 

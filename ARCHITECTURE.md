@@ -721,8 +721,14 @@ Le backend utilise une `SecurityFilterChain` stateless :
 Le `JwtAuthenticationFilter`, basé sur `OncePerRequestFilter`, est placé
 avant `UsernamePasswordAuthenticationFilter`.
 
-Il valide le JWT, construit les autorités Spring et place l'utilisateur dans
-le `SecurityContext`.
+`JwtService` délègue à JJWT (`io.jsonwebtoken` 0.13.0) la création, la
+signature HS256, le parsing et la validation de l'expiration des tokens. Le
+filtre construit les autorités Spring et place l'utilisateur dans le
+`SecurityContext`.
+
+Les URL publiques sont déclarées uniquement dans `SecurityConfig`. Le filtre
+traite le header `Authorization` lorsqu'il est présent, sans dupliquer les
+règles d'accès de la `SecurityFilterChain`.
 
 ### 8.3. Autorisation métier
 

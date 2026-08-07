@@ -813,6 +813,7 @@ politique de mot de passe pour les nouvelles inscriptions
 connexion joueur par matricule et mot de passe
 connexion administrateur par login et mot de passe
 JWT signé et limité dans le temps
+génération et validation JWT déléguées à io.jsonwebtoken (JJWT)
 SecurityFilterChain stateless
 filtre JWT OncePerRequestFilter
 SecurityContext Spring

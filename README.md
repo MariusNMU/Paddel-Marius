@@ -351,12 +351,15 @@ interceptor Angular l'ajoute aux requêtes protégées :
 Authorization: Bearer <token>
 ```
 
-Le backend utilise une SecurityFilterChain stateless. Le
-JwtAuthenticationFilter, basé sur OncePerRequestFilter, valide le JWT et
-place l'utilisateur authentifié dans le SecurityContext Spring.
+Le backend utilise une SecurityFilterChain stateless. La librairie JJWT
+(`io.jsonwebtoken`) génère les tokens, applique la signature HS256 et vérifie
+leur signature ainsi que leur expiration. Le JwtAuthenticationFilter, basé
+sur OncePerRequestFilter, place ensuite l'utilisateur authentifié dans le
+SecurityContext Spring.
 
-Les routes publiques sont explicitement autorisées. Les autres routes sont
-protégées par défaut.
+Les routes publiques sont définies une seule fois dans SecurityConfig. Le
+filtre JWT ne décide pas quelles URL sont publiques. Toutes les autres routes
+sont protégées par défaut.
 
 ### 7.4. Autorisations frontend et backend
 

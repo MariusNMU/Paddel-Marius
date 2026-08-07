@@ -8,7 +8,7 @@ export const authInterceptor: HttpInterceptorFn = (
 ) => {
   const authContextService = inject(AuthContextService);
 
-  if (!request.url.includes('/api/')) {
+  if (!request.url.startsWith('/api/')) {
     return next(request);
   }
 

@@ -146,4 +146,35 @@ describe('authInterceptor', () => {
       request.flush({});
     }
   );
+
+  it(
+    'ne doit pas transmettre le JWT à une URL externe contenant api',
+    () => {
+      authContextService.definirJoueur({
+        membreId: 2001,
+        matricule: 'G1001',
+        nom: 'Dupont',
+        prenom: 'Marie',
+        categorieMembre: 'GLOBAL',
+        siteRattachementId: null,
+        nomSiteRattachement: null,
+        actif: true,
+        token: 'jwt-joueur'
+      });
+
+      httpClient
+        .post('https://example.org/api/collect', {})
+        .subscribe();
+
+      const request = httpTestingController.expectOne(
+        'https://example.org/api/collect'
+      );
+
+      expect(
+        request.request.headers.has('Authorization')
+      ).toBe(false);
+
+      request.flush({});
+    }
+  );
 });

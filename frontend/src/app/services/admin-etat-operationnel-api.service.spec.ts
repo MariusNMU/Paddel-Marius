@@ -5,7 +5,8 @@ import {
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import {
-  EtatOperationnelAdminResponse
+  EtatOperationnelAdminResponse,
+  OccupationHebdomadaireAdminResponse
 } from '../models/etat-operationnel.model';
 import { SiteResponse } from '../models/site.model';
 import {
@@ -98,6 +99,43 @@ describe(
             === '/api/admin/etat-operationnel'
             && requete.params.get('date')
             === '2026-07-20'
+            && requete.params.get('siteId')
+            === '1001'
+        );
+
+        expect(request.request.method)
+          .toBe('GET');
+
+        request.flush(response);
+      }
+    );
+
+    it(
+      'doit appeler l API d occupation hebdomadaire',
+      () => {
+        const response:
+          OccupationHebdomadaireAdminResponse = {
+          dateDebut: '2026-07-20',
+          dateFin: '2026-07-26',
+          siteId: 1001,
+          nomSite: 'Padel Bruxelles',
+          siteActif: true,
+          jours: []
+        };
+
+        service.consulterOccupationHebdomadaire(
+          '2026-07-22',
+          1001
+        ).subscribe(resultat => {
+          expect(resultat).toEqual(response);
+        });
+
+        const request = httpMock.expectOne(
+          requete =>
+            requete.url
+            === '/api/admin/etat-operationnel/semaine'
+            && requete.params.get('date')
+            === '2026-07-22'
             && requete.params.get('siteId')
             === '1001'
         );

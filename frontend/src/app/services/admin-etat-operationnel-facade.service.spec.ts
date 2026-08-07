@@ -19,7 +19,8 @@ import {
 } from 'rxjs';
 import { AuthAdminResponse } from '../models/auth.model';
 import {
-  EtatOperationnelAdminResponse
+  EtatOperationnelAdminResponse,
+  OccupationHebdomadaireAdminResponse
 } from '../models/etat-operationnel.model';
 import { SiteResponse } from '../models/site.model';
 import {
@@ -40,6 +41,8 @@ describe(
 
     let etatOperationnelApiService: {
       consulterEtatOperationnel:
+        ReturnType<typeof vi.fn>;
+      consulterOccupationHebdomadaire:
         ReturnType<typeof vi.fn>;
       listerTousSites:
         ReturnType<typeof vi.fn>;
@@ -103,6 +106,16 @@ describe(
       terrains: []
     };
 
+    const occupationHebdomadaire:
+      OccupationHebdomadaireAdminResponse = {
+      dateDebut: '2026-07-20',
+      dateFin: '2026-07-26',
+      siteId: 1001,
+      nomSite: 'Padel Bruxelles',
+      siteActif: true,
+      jours: [etatOperationnel]
+    };
+
     beforeEach(() => {
       vi.useFakeTimers();
 
@@ -121,6 +134,10 @@ describe(
         consulterEtatOperationnel:
           vi.fn(
             () => of(etatOperationnel)
+          ),
+        consulterOccupationHebdomadaire:
+          vi.fn(
+            () => of(occupationHebdomadaire)
           ),
         listerTousSites:
           vi.fn(() => of(sites))
@@ -261,6 +278,66 @@ describe(
     );
 
     it(
+      'doit charger l occupation hebdomadaire du site sélectionné',
+      () => {
+        service.initialiser();
+        service.modifierDate('2026-07-22');
+        service.modifierSiteId(1002);
+
+        service.chargerOccupationHebdomadaire();
+
+        expect(
+          etatOperationnelApiService
+            .consulterOccupationHebdomadaire
+        ).toHaveBeenCalledWith(
+          '2026-07-22',
+          1002
+        );
+
+        expect(
+          service.occupationHebdomadaire()
+        ).toEqual(occupationHebdomadaire);
+
+        expect(service.chargement())
+          .toBe(false);
+      }
+    );
+
+    it(
+      'doit naviguer vers les semaines précédente et courante',
+      () => {
+        service.initialiser();
+        service.modifierDate('2026-07-22');
+
+        service.decalerSemaine(-1);
+
+        expect(service.date())
+          .toBe('2026-07-15');
+
+        expect(
+          etatOperationnelApiService
+            .consulterOccupationHebdomadaire
+        ).toHaveBeenLastCalledWith(
+          '2026-07-15',
+          1001
+        );
+
+        service.selectionnerSemaineCourante();
+
+        expect(service.date())
+          .toBe('2026-07-20');
+
+        expect(
+          etatOperationnelApiService
+            .consulterOccupationHebdomadaire
+        ).toHaveBeenLastCalledWith(
+          '2026-07-20',
+          1001
+        );
+      }
+    );
+
+    it(
       'doit demander un site à l admin GLOBAL',
       () => {
         etatOperationnelApiService
@@ -306,6 +383,39 @@ describe(
 
         expect(
           service.etatOperationnel()
+        ).toBeNull();
+
+        expect(service.chargement())
+          .toBe(false);
+      }
+    );
+
+    it(
+      'doit exposer une erreur de chargement hebdomadaire',
+      () => {
+        etatOperationnelApiService
+          .consulterOccupationHebdomadaire
+          .mockReturnValue(
+            throwError(
+              () =>
+                new HttpErrorResponse({
+                  status: 500,
+                  error: {
+                    message:
+                      'Planning indisponible.'
+                  }
+                })
+            )
+          );
+
+        service.initialiser();
+        service.chargerOccupationHebdomadaire();
+
+        expect(service.messageErreur())
+          .toBe('Planning indisponible.');
+
+        expect(
+          service.occupationHebdomadaire()
         ).toBeNull();
 
         expect(service.chargement())

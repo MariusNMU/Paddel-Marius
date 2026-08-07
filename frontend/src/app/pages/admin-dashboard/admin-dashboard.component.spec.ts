@@ -148,7 +148,7 @@ describe(
 
         expect(contenu)
           .toContain(
-            'État des matchs et terrains'
+            'Occupation des terrains'
           );
       }
     );
@@ -186,7 +186,7 @@ describe(
 
         expect(contenu)
           .toContain(
-            'État des matchs et terrains'
+            'Occupation des terrains'
           );
       }
     );

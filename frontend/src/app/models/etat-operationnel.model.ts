@@ -35,3 +35,12 @@ export interface EtatOperationnelAdminResponse {
   motifFermeture: string | null;
   terrains: TerrainEtatAdminResponse[];
 }
+
+export interface OccupationHebdomadaireAdminResponse {
+  dateDebut: string;
+  dateFin: string;
+  siteId: number;
+  nomSite: string;
+  siteActif: boolean;
+  jours: EtatOperationnelAdminResponse[];
+}

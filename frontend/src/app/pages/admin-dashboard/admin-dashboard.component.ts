@@ -85,17 +85,17 @@ import { enumLabel } from '../../shared/enum-label.util';
               appearance="outlined"
               class="admin-action-card"
             >
-              <h4>État des matchs et terrains</h4>
+              <h4>Occupation des terrains</h4>
               <p>
-                Consulter l’occupation, les fermetures et l’état
-                des matchs pour une date et un site.
+                Piloter les terrains, les fermetures et les réservations
+                dans une vue centralisée par semaine.
               </p>
               <a
                 mat-flat-button
                 class="admin-action-button"
                 routerLink="/admin/etat-operationnel"
               >
-                Ouvrir la vue opérationnelle
+                Ouvrir le planning hebdomadaire
               </a>
             </mat-card>
 

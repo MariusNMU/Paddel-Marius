@@ -246,7 +246,7 @@ describe('App', () => {
 
       expect(texte)
         .toContain(
-          'État des terrains'
+          'Planning des terrains'
         );
     }
   );

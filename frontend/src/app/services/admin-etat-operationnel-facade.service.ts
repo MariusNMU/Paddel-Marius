@@ -13,7 +13,8 @@ import {
 } from 'rxjs';
 import { AuthAdminResponse } from '../models/auth.model';
 import {
-  EtatOperationnelAdminResponse
+  EtatOperationnelAdminResponse,
+  OccupationHebdomadaireAdminResponse
 } from '../models/etat-operationnel.model';
 import { SiteResponse } from '../models/site.model';
 import {
@@ -41,6 +42,34 @@ function dateIsoAujourdhui(): string {
   return `${annee}-${mois}-${jour}`;
 }
 
+function decalerDateIso(
+  dateIso: string,
+  nombreJours: number
+): string {
+  const [annee, mois, jour] =
+    dateIso.split('-').map(Number);
+
+  const date = new Date(
+    annee,
+    mois - 1,
+    jour
+  );
+
+  date.setDate(
+    date.getDate() + nombreJours
+  );
+
+  const moisDecale = String(
+    date.getMonth() + 1
+  ).padStart(2, '0');
+
+  const jourDecale = String(
+    date.getDate()
+  ).padStart(2, '0');
+
+  return `${date.getFullYear()}-${moisDecale}-${jourDecale}`;
+}
+
 @Injectable()
 export class AdminEtatOperationnelFacadeService {
   private readonly sitesSignal =
@@ -63,6 +92,11 @@ export class AdminEtatOperationnelFacadeService {
 
   private readonly etatOperationnelSignal =
     signal<EtatOperationnelAdminResponse | null>(
+      null
+    );
+
+  private readonly occupationHebdomadaireSignal =
+    signal<OccupationHebdomadaireAdminResponse | null>(
       null
     );
 
@@ -99,6 +133,9 @@ export class AdminEtatOperationnelFacadeService {
 
   readonly etatOperationnel =
     this.etatOperationnelSignal.asReadonly();
+
+  readonly occupationHebdomadaire =
+    this.occupationHebdomadaireSignal.asReadonly();
 
   constructor(
     private readonly etatOperationnelApiService:
@@ -226,6 +263,63 @@ export class AdminEtatOperationnelFacadeService {
       .subscribe();
   }
 
+  chargerOccupationHebdomadaire(): void {
+    this.reinitialiserResultat();
+
+    const parametres =
+      this.resoudreParametresSelectionnes();
+
+    if (!parametres) {
+      return;
+    }
+
+    this.chargementSignal.set(true);
+
+    this.etatOperationnelApiService
+      .consulterOccupationHebdomadaire(
+        parametres.date,
+        parametres.siteId
+      )
+      .pipe(
+        tap(occupation => {
+          this.occupationHebdomadaireSignal.set(
+            occupation
+          );
+        }),
+        catchError(error => {
+          this.messageErreurSignal.set(
+            extraireMessageErreur(error)
+          );
+
+          return EMPTY;
+        }),
+        finalize(() => {
+          this.chargementSignal.set(false);
+        }),
+        takeUntil(this.changementSession$)
+      )
+      .subscribe();
+  }
+
+  decalerSemaine(nombreSemaines: number): void {
+    this.dateSignal.set(
+      decalerDateIso(
+        this.dateSignal(),
+        nombreSemaines * 7
+      )
+    );
+
+    this.chargerOccupationHebdomadaire();
+  }
+
+  selectionnerSemaineCourante(): void {
+    this.dateSignal.set(
+      dateIsoAujourdhui()
+    );
+
+    this.chargerOccupationHebdomadaire();
+  }
+
   private synchroniserAvecAdmin(
     admin: AuthAdminResponse | null
   ): void {
@@ -300,8 +394,50 @@ export class AdminEtatOperationnelFacadeService {
       .subscribe();
   }
 
+  private resoudreParametresSelectionnes(): {
+    date: string;
+    siteId: number;
+  } | null {
+    const admin = this.admin();
+    const date = this.dateSignal();
+
+    if (!admin) {
+      this.messageErreurSignal.set(
+        'Tu dois te connecter comme admin avant de consulter cet état.'
+      );
+      return null;
+    }
+
+    if (!date) {
+      this.messageErreurSignal.set(
+        'La date est obligatoire.'
+      );
+      return null;
+    }
+
+    const siteId =
+      admin.roleAdministrateur === 'SITE'
+        ? admin.siteId
+        : this.siteIdSignal();
+
+    if (siteId === null) {
+      this.messageErreurSignal.set(
+        admin.roleAdministrateur === 'SITE'
+          ? 'Aucun site n’est associé à cet administrateur.'
+          : 'Sélectionne un site.'
+      );
+      return null;
+    }
+
+    return {
+      date,
+      siteId: Number(siteId)
+    };
+  }
+
   private reinitialiserResultat(): void {
     this.messageErreurSignal.set('');
     this.etatOperationnelSignal.set(null);
+    this.occupationHebdomadaireSignal.set(null);
   }
 }

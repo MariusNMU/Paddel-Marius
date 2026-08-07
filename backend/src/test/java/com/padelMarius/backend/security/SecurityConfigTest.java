@@ -212,6 +212,29 @@ class SecurityConfigTest {
                 .andExpect(jsonPath("$.code").value("ACCES_REFUSE"));
     }
 
+    @Test
+    void shouldAllowSiteAdminAccessToOwnSiteWeeklyOccupation() throws Exception {
+        String adminToken = authenticateAdminAndReadToken("admin-bruxelles");
+
+        mockMvc.perform(get("/api/admin/etat-operationnel/semaine")
+                        .header(AUTHORIZATION, bearer(adminToken))
+                        .param("date", "2026-05-20")
+                        .param("siteId", "1001"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldRejectSiteAdminAccessToAnotherSiteWeeklyOccupation() throws Exception {
+        String adminToken = authenticateAdminAndReadToken("admin-bruxelles");
+
+        mockMvc.perform(get("/api/admin/etat-operationnel/semaine")
+                        .header(AUTHORIZATION, bearer(adminToken))
+                        .param("date", "2026-05-20")
+                        .param("siteId", "1002"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCES_REFUSE"));
+    }
+
     private String authenticatePlayerAndReadToken() throws Exception {
         MvcResult result = mockMvc.perform(post("/api/auth/joueur")
                         .contentType(MediaType.APPLICATION_JSON)

@@ -6,7 +6,8 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 import {
-  EtatOperationnelAdminResponse
+  EtatOperationnelAdminResponse,
+  OccupationHebdomadaireAdminResponse
 } from '../models/etat-operationnel.model';
 import { SiteResponse } from '../models/site.model';
 
@@ -37,6 +38,20 @@ export class AdminEtatOperationnelApiService {
 
     return this.http.get<EtatOperationnelAdminResponse>(
       `${this.apiUrl}/api/admin/etat-operationnel`,
+      { params }
+    );
+  }
+
+  consulterOccupationHebdomadaire(
+    date: string,
+    siteId: number
+  ): Observable<OccupationHebdomadaireAdminResponse> {
+    const params = new HttpParams()
+      .set('date', date)
+      .set('siteId', siteId);
+
+    return this.http.get<OccupationHebdomadaireAdminResponse>(
+      `${this.apiUrl}/api/admin/etat-operationnel/semaine`,
       { params }
     );
   }

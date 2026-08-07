@@ -9,7 +9,7 @@ import {
 import { provideRouter } from '@angular/router';
 import { AuthAdminResponse } from '../../models/auth.model';
 import {
-  EtatOperationnelAdminResponse
+  OccupationHebdomadaireAdminResponse
 } from '../../models/etat-operationnel.model';
 import { SiteResponse } from '../../models/site.model';
 import {
@@ -41,7 +41,13 @@ describe(
       modifierSiteId:
         ReturnType<typeof vi.fn>;
 
-      chargerEtatOperationnel:
+      chargerOccupationHebdomadaire:
+        ReturnType<typeof vi.fn>;
+
+      decalerSemaine:
+        ReturnType<typeof vi.fn>;
+
+      selectionnerSemaineCourante:
         ReturnType<typeof vi.fn>;
 
       admin:
@@ -65,9 +71,9 @@ describe(
       messageErreur:
         WritableSignal<string>;
 
-      etatOperationnel:
+      occupationHebdomadaire:
         WritableSignal<
-          EtatOperationnelAdminResponse | null
+          OccupationHebdomadaireAdminResponse | null
         >;
     };
 
@@ -83,6 +89,18 @@ describe(
       actif: true
     };
 
+    const adminSite:
+      AuthAdminResponse = {
+      administrateurId: 2,
+      login: 'admin-bruxelles',
+      nom: 'Admin',
+      prenom: 'Bruxelles',
+      roleAdministrateur: 'SITE',
+      siteId: 1001,
+      nomSite: 'Padel Bruxelles',
+      actif: true
+    };
+
     const site: SiteResponse = {
       siteId: 1001,
       code: 'BRU',
@@ -90,31 +108,66 @@ describe(
       adresse: 'Rue du Padel 1'
     };
 
-    const etatOperationnel:
-      EtatOperationnelAdminResponse = {
-      date: '2026-07-20',
+    const occupationHebdomadaire:
+      OccupationHebdomadaireAdminResponse = {
+      dateDebut: '2026-07-20',
+      dateFin: '2026-07-26',
       siteId: 1001,
       nomSite: 'Padel Bruxelles',
       siteActif: true,
-      ferme: false,
-      motifFermeture: null,
-      terrains: [
+      jours: [
         {
-          terrainId: 2001,
-          numeroTerrain: 'T1',
-          actif: true,
-          etatTerrain: 'RESERVE',
-          matches: [
+          date: '2026-07-20',
+          siteId: 1001,
+          nomSite: 'Padel Bruxelles',
+          siteActif: true,
+          ferme: false,
+          motifFermeture: null,
+          terrains: [
             {
-              matchId: 3001,
-              dateHeureDebut:
-                '2026-07-20T10:00:00',
-              dateHeureFin:
-                '2026-07-20T11:30:00',
-              visibiliteCourante:
-                'PUBLIC',
-              etatCycle: 'A_VENIR',
-              nombreParticipants: 3
+              terrainId: 2001,
+              numeroTerrain: 'T1',
+              actif: true,
+              etatTerrain: 'RESERVE',
+              matches: [
+                {
+                  matchId: 3001,
+                  dateHeureDebut:
+                    '2026-07-20T10:00:00',
+                  dateHeureFin:
+                    '2026-07-20T11:30:00',
+                  visibiliteCourante: 'PUBLIC',
+                  etatCycle: 'A_VENIR',
+                  nombreParticipants: 3
+                },
+                {
+                  matchId: 3002,
+                  dateHeureDebut:
+                    '2026-07-20T14:00:00',
+                  dateHeureFin:
+                    '2026-07-20T15:30:00',
+                  visibiliteCourante: 'PRIVE',
+                  etatCycle: 'ANNULE',
+                  nombreParticipants: 2
+                }
+              ]
+            }
+          ]
+        },
+        {
+          date: '2026-07-21',
+          siteId: 1001,
+          nomSite: 'Padel Bruxelles',
+          siteActif: true,
+          ferme: true,
+          motifFermeture: 'Entretien annuel',
+          terrains: [
+            {
+              terrainId: 2001,
+              numeroTerrain: 'T1',
+              actif: true,
+              etatTerrain: 'FERME',
+              matches: []
             }
           ]
         }
@@ -134,7 +187,10 @@ describe(
 
         modifierDate: vi.fn(),
         modifierSiteId: vi.fn(),
-        chargerEtatOperationnel:
+        chargerOccupationHebdomadaire:
+          vi.fn(),
+        decalerSemaine: vi.fn(),
+        selectionnerSemaineCourante:
           vi.fn(),
 
         admin: signal(adminGlobal),
@@ -147,7 +203,7 @@ describe(
           signal(false),
         messageErreur:
           signal(''),
-        etatOperationnel:
+        occupationHebdomadaire:
           signal(null)
       };
 
@@ -200,12 +256,12 @@ describe(
     );
 
     it(
-      'doit déléguer le chargement de l état',
+      'doit déléguer le chargement hebdomadaire',
       () => {
-        component.chargerEtatOperationnel();
+        component.chargerOccupationHebdomadaire();
 
         expect(
-          facade.chargerEtatOperationnel
+          facade.chargerOccupationHebdomadaire
         ).toHaveBeenCalledTimes(1);
       }
     );
@@ -232,10 +288,10 @@ describe(
     );
 
     it(
-      'doit afficher les terrains et les matchs reçus',
+      'doit afficher le planning, les réservations et les fermetures',
       () => {
-        facade.etatOperationnel.set(
-          etatOperationnel
+        facade.occupationHebdomadaire.set(
+          occupationHebdomadaire
         );
 
         fixture.detectChanges();
@@ -245,13 +301,10 @@ describe(
             .textContent as string;
 
         expect(contenu)
-          .toContain('Vue affichée');
+          .toContain('Planning central');
 
         expect(contenu)
           .toContain('Terrain T1');
-
-        expect(contenu)
-          .toContain('Réservé');
 
         expect(contenu)
           .toContain('10:00');
@@ -260,19 +313,123 @@ describe(
           .toContain('11:30');
 
         expect(contenu)
-          .toContain('3 / 4');
+          .toContain('3 / 4 joueurs');
+
+        expect(contenu)
+          .toContain('Match annulé');
+
+        expect(contenu)
+          .toContain('Entretien annuel');
+
+        expect(
+          component.nombreReservationsActives(
+            occupationHebdomadaire
+          )
+        ).toBe(1);
+
+        expect(
+          component.nombreJoursFermes(
+            occupationHebdomadaire
+          )
+        ).toBe(1);
       }
     );
 
     it(
-      'doit afficher le motif de fermeture',
+      'ne doit pas afficher le planning pour un site inactif',
       () => {
-        facade.etatOperationnel.set({
-          ...etatOperationnel,
-          ferme: true,
-          motifFermeture:
-            'Entretien annuel'
+        facade.occupationHebdomadaire.set({
+          ...occupationHebdomadaire,
+          siteActif: false,
+          nomSite: 'Padel Liège'
         });
+
+        fixture.detectChanges();
+
+        const contenu =
+          fixture.nativeElement
+            .textContent as string;
+
+        const tableau =
+          fixture.nativeElement
+            .querySelector(
+              '.occupation-table'
+            );
+
+        expect(contenu)
+          .toContain(
+            'Le planning hebdomadaire n’est pas disponible pour un site inactif.'
+          );
+
+        expect(tableau).toBeNull();
+        expect(contenu)
+          .not.toContain('Terrain T1');
+      }
+    );
+
+    it(
+      'doit déléguer la navigation entre les semaines',
+      () => {
+        facade.occupationHebdomadaire.set(
+          occupationHebdomadaire
+        );
+
+        fixture.detectChanges();
+
+        const boutons = Array.from(
+          fixture.nativeElement
+            .querySelectorAll(
+              '.navigation-semaine button'
+            ) as NodeListOf<HTMLButtonElement>
+        );
+
+        boutons[0].click();
+        boutons[1].click();
+        boutons[2].click();
+
+        expect(
+          facade.decalerSemaine
+        ).toHaveBeenNthCalledWith(1, -1);
+
+        expect(
+          facade.selectionnerSemaineCourante
+        ).toHaveBeenCalledTimes(1);
+
+        expect(
+          facade.decalerSemaine
+        ).toHaveBeenNthCalledWith(2, 1);
+      }
+    );
+
+    it(
+      'doit afficher le site imposé à l admin SITE',
+      () => {
+        facade.admin.set(adminSite);
+
+        fixture.detectChanges();
+
+        const selecteurSite =
+          fixture.nativeElement
+            .querySelector(
+              'select#siteId'
+            );
+
+        const contenu =
+          fixture.nativeElement
+            .textContent as string;
+
+        expect(selecteurSite).toBeNull();
+        expect(contenu)
+          .toContain('Site administré');
+        expect(contenu)
+          .toContain('Padel Bruxelles');
+      }
+    );
+
+    it(
+      'doit afficher un message sans administrateur connecté',
+      () => {
+        facade.admin.set(null);
 
         fixture.detectChanges();
 
@@ -282,11 +439,11 @@ describe(
 
         expect(contenu)
           .toContain(
-            'Site fermé pour cette date'
+            'Tu dois te connecter comme admin'
           );
 
         expect(contenu)
-          .toContain('Entretien annuel');
+          .toContain('Connexion admin');
       }
     );
   }

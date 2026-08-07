@@ -74,6 +74,7 @@ import { enumLabel } from '../../shared/enum-label.util';
               </p>
               <a
                 mat-flat-button
+                class="admin-action-button"
                 routerLink="/admin/statistiques"
               >
                 Ouvrir les statistiques
@@ -84,16 +85,17 @@ import { enumLabel } from '../../shared/enum-label.util';
               appearance="outlined"
               class="admin-action-card"
             >
-              <h4>État des matchs et terrains</h4>
+              <h4>Occupation des terrains</h4>
               <p>
-                Consulter l’occupation, les fermetures et l’état
-                des matchs pour une date et un site.
+                Piloter les terrains, les fermetures et les réservations
+                dans une vue centralisée par semaine.
               </p>
               <a
                 mat-flat-button
+                class="admin-action-button"
                 routerLink="/admin/etat-operationnel"
               >
-                Ouvrir la vue opérationnelle
+                Ouvrir le planning hebdomadaire
               </a>
             </mat-card>
 
@@ -114,6 +116,7 @@ import { enumLabel } from '../../shared/enum-label.util';
 
                 <a
                   mat-flat-button
+                  class="admin-action-button"
                   routerLink="/admin/traitement-veille"
                 >
                   Lancer le traitement
@@ -133,6 +136,7 @@ import { enumLabel } from '../../shared/enum-label.util';
 
                 <a
                   mat-flat-button
+                  class="admin-action-button"
                   routerLink="/admin/traitement-echeance"
                 >
                   Lancer le traitement
@@ -225,17 +229,20 @@ import { enumLabel } from '../../shared/enum-label.util';
 
     .admin-actions-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-      margin-top: 14px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 16px;
     }
 
     .admin-action-card {
-      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      min-height: 220px;
+      padding: 20px;
       border: 1px solid #bfdbfe;
       border-radius: 12px;
-      background: #ffffff;
-      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.07);
     }
 
     .admin-action-card h4 {
@@ -244,19 +251,23 @@ import { enumLabel } from '../../shared/enum-label.util';
     }
 
     .admin-action-card p {
-      min-height: 72px;
+      flex: 1;
       margin: 0 0 14px;
       color: #334155;
     }
 
-    .admin-action-card a {
-      display: inline-block;
-      padding: 10px 14px;
+    .admin-action-card .admin-action-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 44px;
+      margin-top: auto;
+      align-self: stretch;
+      justify-self: stretch;
       border-radius: 8px;
-      background: #003b95;
-      color: #ffffff;
-      text-decoration: none;
-      font-weight: 700;
+      line-height: 1.25;
+      text-align: center;
     }
 
     .danger-button {
@@ -267,6 +278,14 @@ import { enumLabel } from '../../shared/enum-label.util';
     @media (max-width: 700px) {
       .dashboard-header {
         grid-template-columns: 1fr;
+      }
+
+      .admin-actions-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .admin-action-card {
+        min-height: 0;
       }
     }
   `]

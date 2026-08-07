@@ -98,6 +98,16 @@ class ComplementaryRepositoryTest {
                 LocalDate.of(2026, 7, 15),
                 PorteeFermeture.LOCALE
         )).isTrue();
+        assertThat(fermetureRepository
+                .findByDateFermetureBetweenOrderByDateFermetureAsc(
+                        LocalDate.of(2026, 7, 1),
+                        LocalDate.of(2026, 12, 31)
+                ))
+                .extracting(Fermeture::getDateFermeture)
+                .containsExactly(
+                        LocalDate.of(2026, 7, 15),
+                        LocalDate.of(2026, 12, 25)
+                );
     }
 
     @Test

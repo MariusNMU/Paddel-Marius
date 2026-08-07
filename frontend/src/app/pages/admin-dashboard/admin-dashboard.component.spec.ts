@@ -148,7 +148,7 @@ describe(
 
         expect(contenu)
           .toContain(
-            'État des matchs et terrains'
+            'Occupation des terrains'
           );
       }
     );
@@ -186,8 +186,36 @@ describe(
 
         expect(contenu)
           .toContain(
-            'État des matchs et terrains'
+            'Occupation des terrains'
           );
+      }
+    );
+
+    it(
+      'doit utiliser des boutons d action homogènes',
+      () => {
+        const cartes =
+          fixture.nativeElement
+            .querySelectorAll(
+              '.admin-action-card'
+            ) as NodeListOf<HTMLElement>;
+
+        const boutons =
+          fixture.nativeElement
+            .querySelectorAll(
+              '.admin-action-button'
+            ) as NodeListOf<HTMLAnchorElement>;
+
+        expect(cartes.length).toBe(4);
+        expect(boutons.length).toBe(4);
+
+        boutons.forEach(bouton => {
+          expect(
+            bouton.classList.contains(
+              'mat-mdc-button-base'
+            )
+          ).toBe(true);
+        });
       }
     );
 

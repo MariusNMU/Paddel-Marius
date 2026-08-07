@@ -116,10 +116,16 @@ button:not(.mat-mdc-button-base):disabled {
  */
 .page button.mat-mdc-button-base,
 .page a.mat-mdc-button-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: fit-content;
   max-width: 100%;
+  min-height: 40px;
   align-self: flex-start;
   justify-self: start;
+  line-height: 1.2;
+  text-align: center;
   white-space: normal;
 }
 

@@ -1,6 +1,7 @@
 package com.padelMarius.backend.controller;
 
 import com.padelMarius.backend.dto.etatoperationnel.EtatOperationnelAdminResponse;
+import com.padelMarius.backend.dto.etatoperationnel.OccupationHebdomadaireAdminResponse;
 import com.padelMarius.backend.service.EtatOperationnelAdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -30,6 +31,26 @@ public class EtatOperationnelAdminController {
     ) {
         EtatOperationnelAdminResponse response =
                 etatOperationnelAdminService.consulterEtatOperationnel(
+                        date,
+                        siteId
+                );
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/api/admin/etat-operationnel/semaine")
+    @PreAuthorize("@adminAuthorizationService.peutAccederAuSite(authentication, #siteId)")
+    public ResponseEntity<OccupationHebdomadaireAdminResponse>
+    consulterOccupationHebdomadaire(
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date,
+
+            @RequestParam
+            Long siteId
+    ) {
+        OccupationHebdomadaireAdminResponse response =
+                etatOperationnelAdminService.consulterOccupationHebdomadaire(
                         date,
                         siteId
                 );

@@ -4,6 +4,7 @@ import com.padelMarius.backend.dto.auth.AuthAdminResponse;
 import com.padelMarius.backend.dto.auth.AuthJoueurResponse;
 import com.padelMarius.backend.dto.auth.ConnexionAdminRequest;
 import com.padelMarius.backend.dto.auth.ConnexionJoueurRequest;
+import com.padelMarius.backend.dto.auth.RafraichissementTokenResponse;
 import com.padelMarius.backend.entity.Administrateur;
 import com.padelMarius.backend.entity.Membre;
 import com.padelMarius.backend.entity.Site;
@@ -34,7 +35,7 @@ public class AuthService {
     private final JwtService jwtService;
 
     @Transactional(readOnly = true)
-    public AuthJoueurResponse authentifierJoueur(
+    public ResultatAuthentification<AuthJoueurResponse> authentifierJoueur(
             ConnexionJoueurRequest request
     ) {
         if (request == null
@@ -58,11 +59,14 @@ public class AuthService {
                         MESSAGE_IDENTIFIANTS_INVALIDES
                 ));
 
-        return convertirJoueur(membre);
+        return new ResultatAuthentification<>(
+                convertirJoueur(membre),
+                jwtService.genererRefreshTokenJoueur(membre).valeur()
+        );
     }
 
     @Transactional(readOnly = true)
-    public AuthAdminResponse authentifierAdmin(
+    public ResultatAuthentification<AuthAdminResponse> authentifierAdmin(
             ConnexionAdminRequest request
     ) {
         if (request == null
@@ -87,7 +91,47 @@ public class AuthService {
                                 MESSAGE_IDENTIFIANTS_INVALIDES
                         ));
 
-        return convertirAdmin(administrateur);
+        return new ResultatAuthentification<>(
+                convertirAdmin(administrateur),
+                jwtService.genererRefreshTokenAdmin(administrateur).valeur()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public ResultatAuthentification<RafraichissementTokenResponse> rafraichir(
+            String refreshToken
+    ) {
+        if (!StringUtils.hasText(refreshToken)) {
+            throw new AuthentificationException(
+                    "Refresh token obligatoire."
+            );
+        }
+
+        var utilisateur = jwtService.validerRefreshToken(refreshToken);
+
+        if (JwtService.TYPE_UTILISATEUR_JOUEUR.equals(
+                utilisateur.typeUtilisateur()
+        )) {
+            Membre membre = membreRepository
+                    .findByMatricule(utilisateur.sujet())
+                    .filter(Membre::isActif)
+                    .orElseThrow(this::refreshTokenInvalide);
+
+            return renouvelerJoueur(membre);
+        }
+
+        if (JwtService.TYPE_UTILISATEUR_ADMIN.equals(
+                utilisateur.typeUtilisateur()
+        )) {
+            Administrateur administrateur = administrateurRepository
+                    .findByEmailOuLogin(utilisateur.sujet())
+                    .filter(Administrateur::isActif)
+                    .orElseThrow(this::refreshTokenInvalide);
+
+            return renouvelerAdmin(administrateur);
+        }
+
+        throw refreshTokenInvalide();
     }
 
     private void authentifier(
@@ -143,5 +187,51 @@ public class AuthService {
                 token.valeur(),
                 token.expiration()
         );
+    }
+
+    private ResultatAuthentification<RafraichissementTokenResponse>
+    renouvelerJoueur(Membre membre) {
+        JwtService.TokenGenere accessToken =
+                jwtService.genererTokenJoueur(membre);
+        JwtService.TokenGenere refreshToken =
+                jwtService.genererRefreshTokenJoueur(membre);
+
+        return resultatRafraichissement(accessToken, refreshToken);
+    }
+
+    private ResultatAuthentification<RafraichissementTokenResponse>
+    renouvelerAdmin(Administrateur administrateur) {
+        JwtService.TokenGenere accessToken =
+                jwtService.genererTokenAdmin(administrateur);
+        JwtService.TokenGenere refreshToken =
+                jwtService.genererRefreshTokenAdmin(administrateur);
+
+        return resultatRafraichissement(accessToken, refreshToken);
+    }
+
+    private ResultatAuthentification<RafraichissementTokenResponse>
+    resultatRafraichissement(
+            JwtService.TokenGenere accessToken,
+            JwtService.TokenGenere refreshToken
+    ) {
+        return new ResultatAuthentification<>(
+                new RafraichissementTokenResponse(
+                        accessToken.valeur(),
+                        accessToken.expiration()
+                ),
+                refreshToken.valeur()
+        );
+    }
+
+    private AuthentificationException refreshTokenInvalide() {
+        return new AuthentificationException(
+                "Refresh token invalide."
+        );
+    }
+
+    public record ResultatAuthentification<T>(
+            T reponse,
+            String refreshToken
+    ) {
     }
 }

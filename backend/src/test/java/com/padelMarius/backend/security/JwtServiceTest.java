@@ -166,6 +166,70 @@ class JwtServiceTest {
     }
 
     @Test
+    void refreshToken_shouldLastSevenDaysAndContainMinimalIdentity() {
+        JwtService jwtService = new JwtService(
+                SECRET,
+                60,
+                7,
+                clock
+        );
+
+        Membre membre = Membre.builder()
+                .matricule("G1001")
+                .categorieMembre(CategorieMembre.GLOBAL)
+                .actif(true)
+                .build();
+
+        JwtService.TokenGenere token =
+                jwtService.genererRefreshTokenJoueur(membre);
+        JwtUtilisateur utilisateur =
+                jwtService.validerRefreshToken(token.valeur());
+
+        assertEquals("G1001", utilisateur.sujet());
+        assertEquals(
+                JwtService.TYPE_UTILISATEUR_JOUEUR,
+                utilisateur.typeUtilisateur()
+        );
+        assertEquals(null, utilisateur.role());
+        assertEquals(null, utilisateur.siteId());
+        assertEquals(
+                java.time.LocalDateTime.of(2026, 6, 6, 10, 0),
+                token.expiration()
+        );
+    }
+
+    @Test
+    void accessAndRefreshTokens_shouldNotBeInterchangeable() {
+        JwtService jwtService = new JwtService(
+                SECRET,
+                60,
+                7,
+                clock
+        );
+        Membre membre = Membre.builder()
+                .matricule("G1001")
+                .categorieMembre(CategorieMembre.GLOBAL)
+                .actif(true)
+                .build();
+
+        String accessToken = jwtService
+                .genererTokenJoueur(membre)
+                .valeur();
+        String refreshToken = jwtService
+                .genererRefreshTokenJoueur(membre)
+                .valeur();
+
+        assertThrows(
+                AuthentificationException.class,
+                () -> jwtService.validerRefreshToken(accessToken)
+        );
+        assertThrows(
+                AuthentificationException.class,
+                () -> jwtService.validerToken(refreshToken)
+        );
+    }
+
+    @Test
     void application_shouldConfigureJwtExpirationAtSixtyMinutes()
             throws IOException {
         Properties properties = new Properties();
@@ -181,6 +245,12 @@ class JwtServiceTest {
                 "60",
                 properties.getProperty(
                         "padel.jwt.expiration-minutes"
+                )
+        );
+        assertEquals(
+                "7",
+                properties.getProperty(
+                        "padel.jwt.refresh-expiration-days"
                 )
         );
     }

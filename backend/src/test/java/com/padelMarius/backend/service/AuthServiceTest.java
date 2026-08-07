@@ -14,6 +14,7 @@ import com.padelMarius.backend.repository.AdministrateurRepository;
 import com.padelMarius.backend.repository.MembreRepository;
 import com.padelMarius.backend.security.IdentiteAuthentification;
 import com.padelMarius.backend.security.JwtService;
+import com.padelMarius.backend.security.JwtUtilisateur;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,10 +84,17 @@ class AuthServiceTest {
                 .thenReturn(Optional.of(membre));
         when(jwtService.genererTokenJoueur(membre))
                 .thenReturn(token("jwt-joueur"));
+        when(jwtService.genererRefreshTokenJoueur(membre))
+                .thenReturn(token("refresh-joueur"));
 
-        AuthJoueurResponse response = authService.authentifierJoueur(
-                new ConnexionJoueurRequest(" S00001 ", "password")
-        );
+        AuthService.ResultatAuthentification<AuthJoueurResponse> resultat =
+                authService.authentifierJoueur(
+                        new ConnexionJoueurRequest(
+                                " S00001 ",
+                                "password"
+                        )
+                );
+        AuthJoueurResponse response = resultat.reponse();
 
         assertEquals(10L, response.membreId());
         assertEquals("S00001", response.matricule());
@@ -97,6 +105,7 @@ class AuthServiceTest {
         assertEquals("Padel Bruxelles", response.nomSiteRattachement());
         assertEquals(true, response.actif());
         assertEquals("jwt-joueur", response.token());
+        assertEquals("refresh-joueur", resultat.refreshToken());
 
         Authentication authentication = authentificationTransmise();
         assertEquals(
@@ -122,6 +131,8 @@ class AuthServiceTest {
                 .thenReturn(Optional.of(membre));
         when(jwtService.genererTokenJoueur(membre))
                 .thenReturn(token("jwt-joueur"));
+        when(jwtService.genererRefreshTokenJoueur(membre))
+                .thenReturn(token("refresh-joueur"));
 
         authService.authentifierJoueur(
                 new ConnexionJoueurRequest(
@@ -180,16 +191,24 @@ class AuthServiceTest {
                 .thenReturn(Optional.of(administrateur));
         when(jwtService.genererTokenAdmin(administrateur))
                 .thenReturn(token("jwt-admin-global"));
+        when(jwtService.genererRefreshTokenAdmin(administrateur))
+                .thenReturn(token("refresh-admin"));
 
-        AuthAdminResponse response = authService.authentifierAdmin(
-                new ConnexionAdminRequest(" admin-global ", "secret")
-        );
+        AuthService.ResultatAuthentification<AuthAdminResponse> resultat =
+                authService.authentifierAdmin(
+                        new ConnexionAdminRequest(
+                                " admin-global ",
+                                "secret"
+                        )
+                );
+        AuthAdminResponse response = resultat.reponse();
 
         assertEquals(20L, response.administrateurId());
         assertEquals("admin-global", response.login());
         assertEquals(RoleAdministrateur.GLOBAL, response.roleAdministrateur());
         assertEquals(null, response.siteId());
         assertEquals("jwt-admin-global", response.token());
+        assertEquals("refresh-admin", resultat.refreshToken());
 
         Authentication authentication = authentificationTransmise();
         assertEquals(
@@ -216,10 +235,12 @@ class AuthServiceTest {
                 .thenReturn(Optional.of(administrateur));
         when(jwtService.genererTokenAdmin(administrateur))
                 .thenReturn(token("jwt-admin-site"));
+        when(jwtService.genererRefreshTokenAdmin(administrateur))
+                .thenReturn(token("refresh-admin-site"));
 
         AuthAdminResponse response = authService.authentifierAdmin(
                 new ConnexionAdminRequest("admin-bruxelles", "secret-site")
-        );
+        ).reponse();
 
         assertEquals(21L, response.administrateurId());
         assertEquals(RoleAdministrateur.SITE, response.roleAdministrateur());
@@ -259,6 +280,101 @@ class AuthServiceTest {
 
         assertEquals(MESSAGE_IDENTIFIANTS_INVALIDES, exception.getMessage());
         verify(jwtService, never()).genererTokenAdmin(any());
+    }
+
+    @Test
+    void rafraichir_shouldIssueNewPlayerTokens_whenRefreshTokenIsValid() {
+        Membre membre = creerMembre(
+                10L,
+                "G0001",
+                CategorieMembre.GLOBAL,
+                null,
+                true
+        );
+
+        when(jwtService.validerRefreshToken("refresh-valide"))
+                .thenReturn(new JwtUtilisateur(
+                        "G0001",
+                        JwtService.TYPE_UTILISATEUR_JOUEUR,
+                        null,
+                        null
+                ));
+        when(membreRepository.findByMatricule("G0001"))
+                .thenReturn(Optional.of(membre));
+        when(jwtService.genererTokenJoueur(membre))
+                .thenReturn(token("nouvel-access"));
+        when(jwtService.genererRefreshTokenJoueur(membre))
+                .thenReturn(token("nouveau-refresh"));
+
+        var resultat = authService.rafraichir("refresh-valide");
+
+        assertEquals("nouvel-access", resultat.reponse().token());
+        assertEquals(
+                LocalDateTime.of(2026, 5, 30, 12, 0),
+                resultat.reponse().expirationToken()
+        );
+        assertEquals("nouveau-refresh", resultat.refreshToken());
+        verifyNoInteractions(administrateurRepository);
+    }
+
+    @Test
+    void rafraichir_shouldIssueNewAdminTokens_whenRefreshTokenIsValid() {
+        Administrateur administrateur = creerAdministrateur(
+                20L,
+                "admin-global",
+                RoleAdministrateur.GLOBAL,
+                null,
+                true
+        );
+
+        when(jwtService.validerRefreshToken("refresh-admin"))
+                .thenReturn(new JwtUtilisateur(
+                        "admin-global",
+                        JwtService.TYPE_UTILISATEUR_ADMIN,
+                        null,
+                        null
+                ));
+        when(administrateurRepository.findByEmailOuLogin("admin-global"))
+                .thenReturn(Optional.of(administrateur));
+        when(jwtService.genererTokenAdmin(administrateur))
+                .thenReturn(token("nouvel-access-admin"));
+        when(jwtService.genererRefreshTokenAdmin(administrateur))
+                .thenReturn(token("nouveau-refresh-admin"));
+
+        var resultat = authService.rafraichir("refresh-admin");
+
+        assertEquals("nouvel-access-admin", resultat.reponse().token());
+        assertEquals("nouveau-refresh-admin", resultat.refreshToken());
+        verifyNoInteractions(membreRepository);
+    }
+
+    @Test
+    void rafraichir_shouldRejectInactiveAccount() {
+        Membre membre = creerMembre(
+                10L,
+                "G0001",
+                CategorieMembre.GLOBAL,
+                null,
+                false
+        );
+
+        when(jwtService.validerRefreshToken("refresh-valide"))
+                .thenReturn(new JwtUtilisateur(
+                        "G0001",
+                        JwtService.TYPE_UTILISATEUR_JOUEUR,
+                        null,
+                        null
+                ));
+        when(membreRepository.findByMatricule("G0001"))
+                .thenReturn(Optional.of(membre));
+
+        AuthentificationException exception = assertThrows(
+                AuthentificationException.class,
+                () -> authService.rafraichir("refresh-valide")
+        );
+
+        assertEquals("Refresh token invalide.", exception.getMessage());
+        verify(jwtService, never()).genererTokenJoueur(any());
     }
 
     private void autoriserAuthentification() {

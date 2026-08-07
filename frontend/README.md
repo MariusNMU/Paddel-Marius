@@ -11,7 +11,7 @@ src/app/pages/        composants et écrans standalone
 src/app/services/     clients HTTP, façades et états partagés
 src/app/models/       contrats TypeScript des DTO
 src/app/guards/       protection des routes joueur et administrateur
-src/app/interceptors/ ajout du JWT aux appels protégés
+src/app/interceptors/ ajout du token actif aux appels API
 src/app/shared/       utilitaires de présentation et d'erreur
 ```
 

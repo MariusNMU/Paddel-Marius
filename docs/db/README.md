@@ -274,8 +274,10 @@ SITE
 
 Après connexion, le backend génère un JWT signé et limité dans le temps.
 
-Le frontend conserve le token dans son contexte d'authentification et
-l'ajoute aux requêtes protégées avec un interceptor Angular.
+Le frontend conserve le token dans son contexte d'authentification.
+AuthContextService expose le token de l'unique session active et
+l'interceptor Angular l'ajoute aux appels de l'API sans choisir l'identité à
+partir de l'URL.
 
 Header utilisé :
 

@@ -9,9 +9,9 @@ import {
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { AuthContextService } from '../services/auth-context.service';
-import { adminAuthInterceptor } from './admin-auth.interceptor';
+import { authInterceptor } from './auth.interceptor';
 
-describe('adminAuthInterceptor', () => {
+describe('authInterceptor', () => {
   let httpClient: HttpClient;
   let httpTestingController: HttpTestingController;
   let authContextService: AuthContextService;
@@ -22,7 +22,7 @@ describe('adminAuthInterceptor', () => {
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(
-          withInterceptors([adminAuthInterceptor])
+          withInterceptors([authInterceptor])
         ),
         provideHttpClientTesting()
       ]
@@ -43,7 +43,7 @@ describe('adminAuthInterceptor', () => {
   });
 
   it(
-    'doit envoyer uniquement le JWT admin sur un endpoint admin',
+    'doit envoyer le token actif sans déduire le type depuis l URL',
     () => {
       authContextService.definirAdmin({
         administrateurId: 2101,
@@ -57,10 +57,12 @@ describe('adminAuthInterceptor', () => {
         token: 'jwt-admin'
       });
 
-      httpClient.get('/api/admin/membres').subscribe();
+      httpClient
+        .get('/api/membres/G1001/solde')
+        .subscribe();
 
       const request = httpTestingController.expectOne(
-        '/api/admin/membres'
+        '/api/membres/G1001/solde'
       );
 
       expect(
@@ -71,12 +73,12 @@ describe('adminAuthInterceptor', () => {
         request.request.headers.has('X-Admin-Login')
       ).toBe(false);
 
-      request.flush([]);
+      request.flush({});
     }
   );
 
   it(
-    'doit envoyer le JWT joueur sur un endpoint joueur',
+    'doit envoyer le token joueur exposé par le contexte',
     () => {
       authContextService.definirJoueur({
         membreId: 2001,
@@ -113,6 +115,18 @@ describe('adminAuthInterceptor', () => {
   it(
     'ne doit pas modifier une requête extérieure à l API',
     () => {
+      authContextService.definirJoueur({
+        membreId: 2001,
+        matricule: 'G1001',
+        nom: 'Dupont',
+        prenom: 'Marie',
+        categorieMembre: 'GLOBAL',
+        siteRattachementId: null,
+        nomSiteRattachement: null,
+        actif: true,
+        token: 'jwt-joueur'
+      });
+
       httpClient
         .get('https://example.org/status')
         .subscribe();

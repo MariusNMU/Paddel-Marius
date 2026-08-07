@@ -344,8 +344,10 @@ Un administrateur `SITE` est limité à son site de rattachement.
 Après une connexion réussie, le backend génère un JWT signé et limité dans
 le temps.
 
-Le frontend conserve ce token dans son contexte d'authentification. Un
-interceptor Angular l'ajoute aux requêtes protégées :
+Le frontend conserve ce token dans son contexte d'authentification.
+`AuthContextService` expose l'unique token de la session active et
+l'interceptor Angular l'ajoute aux appels de l'API sans déduire l'identité à
+partir de l'URL :
 
 ```http
 Authorization: Bearer <token>

@@ -41,6 +41,11 @@ export class AuthContextService implements OnDestroy {
 
   readonly joueurConnecte = computed(() => this.joueurSignal() !== null);
   readonly adminConnecte = computed(() => this.adminSignal() !== null);
+  readonly token = computed(() =>
+    this.joueurSignal()?.token
+    ?? this.adminSignal()?.token
+    ?? null
+  );
 
   private readonly gererChangementStockage = (event: StorageEvent): void => {
     const concerneAuthentification =

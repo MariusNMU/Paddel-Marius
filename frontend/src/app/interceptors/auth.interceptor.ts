@@ -2,7 +2,7 @@ import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { AuthContextService } from '../services/auth-context.service';
 
-export const adminAuthInterceptor: HttpInterceptorFn = (
+export const authInterceptor: HttpInterceptorFn = (
   request,
   next
 ) => {
@@ -12,9 +12,7 @@ export const adminAuthInterceptor: HttpInterceptorFn = (
     return next(request);
   }
 
-  const token = request.url.includes('/api/admin/')
-    ? authContextService.admin()?.token
-    : authContextService.joueur()?.token;
+  const token = authContextService.token();
 
   if (!token) {
     return next(request);

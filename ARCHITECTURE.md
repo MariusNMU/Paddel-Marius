@@ -515,7 +515,7 @@ frontend/src/app/interceptors
 Interceptor :
 
 ```txt
-admin-auth.interceptor.ts
+auth.interceptor.ts
 ```
 
 Rôle :
@@ -752,10 +752,14 @@ ne remplacent pas ces contrôles.
 `AuthContextService` :
 
 - conserve la session dans `localStorage` ;
+- expose le token de l'unique session active à l'interceptor ;
 - supprime l'autre type de session lors d'une connexion ;
 - écoute l'événement `storage` ;
 - synchronise immédiatement les différents onglets ;
 - nettoie les deux sessions si un état incohérent est détecté.
+
+`auth.interceptor.ts` ajoute ce token aux appels `/api/**`. Il ne choisit
+plus un token admin ou joueur à partir de l'URL demandée.
 
 ### 8.5. Limites connues
 

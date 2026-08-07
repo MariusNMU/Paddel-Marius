@@ -33,6 +33,19 @@ class JwtServiceTest {
     );
 
     @Test
+    void constructor_shouldRejectSecretShorterThanHs256Requirement() {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> new JwtService("trop-court", 60, clock)
+        );
+
+        assertEquals(
+                "Le secret JWT doit contenir au moins 32 octets.",
+                exception.getMessage()
+        );
+    }
+
+    @Test
     void genererTokenAdmin_shouldReturnValidAdminToken() {
         JwtService jwtService = new JwtService(
                 SECRET,

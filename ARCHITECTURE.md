@@ -515,7 +515,7 @@ frontend/src/app/interceptors
 Interceptor :
 
 ```txt
-admin-auth.interceptor.ts
+auth.interceptor.ts
 ```
 
 Rôle :
@@ -545,7 +545,7 @@ http://localhost:8080
 Exemples d'endpoints :
 
 ```http
-GET /api/health
+GET /actuator/health
 POST /api/auth/joueur
 POST /api/auth/admin
 GET /api/disponibilites?siteId=1001&date=<date-demo>
@@ -566,6 +566,10 @@ GET /api/admin/membres
 POST /api/admin/matches/traitement-veille?date=<date-traitement>
 POST /api/admin/matches/traitement-echeance
 ```
+
+Le point de contrôle `/actuator/health` est fourni par Spring Boot Actuator.
+Seul l'endpoint `health` est exposé et les détails internes ne sont pas
+retournés publiquement.
 
 Les endpoints protégés utilisent :
 
@@ -717,8 +721,14 @@ Le backend utilise une `SecurityFilterChain` stateless :
 Le `JwtAuthenticationFilter`, basé sur `OncePerRequestFilter`, est placé
 avant `UsernamePasswordAuthenticationFilter`.
 
-Il valide le JWT, construit les autorités Spring et place l'utilisateur dans
-le `SecurityContext`.
+`JwtService` délègue à JJWT (`io.jsonwebtoken` 0.13.0) la création, la
+signature HS256, le parsing et la validation de l'expiration des tokens. Le
+filtre construit les autorités Spring et place l'utilisateur dans le
+`SecurityContext`.
+
+Les URL publiques sont déclarées uniquement dans `SecurityConfig`. Le filtre
+traite le header `Authorization` lorsqu'il est présent, sans dupliquer les
+règles d'accès de la `SecurityFilterChain`.
 
 ### 8.3. Autorisation métier
 
@@ -742,10 +752,14 @@ ne remplacent pas ces contrôles.
 `AuthContextService` :
 
 - conserve la session dans `localStorage` ;
+- expose le token de l'unique session active à l'interceptor ;
 - supprime l'autre type de session lors d'une connexion ;
 - écoute l'événement `storage` ;
 - synchronise immédiatement les différents onglets ;
 - nettoie les deux sessions si un état incohérent est détecté.
+
+`auth.interceptor.ts` ajoute ce token aux appels `/api/**`. Il ne choisit
+plus un token admin ou joueur à partir de l'URL demandée.
 
 ### 8.5. Limites connues
 

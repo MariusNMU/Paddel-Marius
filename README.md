@@ -344,19 +344,24 @@ Un administrateur `SITE` est limité à son site de rattachement.
 Après une connexion réussie, le backend génère un JWT signé et limité dans
 le temps.
 
-Le frontend conserve ce token dans son contexte d'authentification. Un
-interceptor Angular l'ajoute aux requêtes protégées :
+Le frontend conserve ce token dans son contexte d'authentification.
+`AuthContextService` expose l'unique token de la session active et
+l'interceptor Angular l'ajoute aux appels de l'API sans déduire l'identité à
+partir de l'URL :
 
 ```http
 Authorization: Bearer <token>
 ```
 
-Le backend utilise une SecurityFilterChain stateless. Le
-JwtAuthenticationFilter, basé sur OncePerRequestFilter, valide le JWT et
-place l'utilisateur authentifié dans le SecurityContext Spring.
+Le backend utilise une SecurityFilterChain stateless. La librairie JJWT
+(`io.jsonwebtoken`) génère les tokens, applique la signature HS256 et vérifie
+leur signature ainsi que leur expiration. Le JwtAuthenticationFilter, basé
+sur OncePerRequestFilter, place ensuite l'utilisateur authentifié dans le
+SecurityContext Spring.
 
-Les routes publiques sont explicitement autorisées. Les autres routes sont
-protégées par défaut.
+Les routes publiques sont définies une seule fois dans SecurityConfig. Le
+filtre JWT ne décide pas quelles URL sont publiques. Toutes les autres routes
+sont protégées par défaut.
 
 ### 7.4. Autorisations frontend et backend
 
@@ -391,7 +396,7 @@ Le backend expose une API REST.
 Exemples d'endpoints principaux :
 
 ```http
-GET /api/health
+GET /actuator/health
 POST /api/auth/joueur
 POST /api/auth/admin
 GET /api/disponibilites?siteId=1001&date=<date-demo>
@@ -464,8 +469,11 @@ http://localhost:8080
 Health check :
 
 ```txt
-http://localhost:8080/api/health
+http://localhost:8080/actuator/health
 ```
+
+Ce point de contrôle est fourni par Spring Boot Actuator. Seul l'endpoint
+`health` est exposé sur HTTP et ses détails internes restent masqués.
 
 Swagger :
 
@@ -731,7 +739,7 @@ cd ..
 Cette commande :
 
 - démarre automatiquement le backend Spring Boot avec H2 ;
-- attend le health check http://localhost:8080/api/health ;
+- attend le health check http://localhost:8080/actuator/health ;
 - démarre Angular ;
 - attend http://localhost:4200 ;
 - exécute le parcours Cypress full stack ;

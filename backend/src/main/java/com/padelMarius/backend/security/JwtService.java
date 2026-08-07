@@ -1,29 +1,27 @@
 package com.padelMarius.backend.security;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.padelMarius.backend.entity.Administrateur;
 import com.padelMarius.backend.entity.Membre;
 import com.padelMarius.backend.entity.Site;
 import com.padelMarius.backend.exception.AuthentificationException;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtBuilder;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.WeakKeyException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
+import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.security.GeneralSecurityException;
-import java.security.MessageDigest;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.Base64;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.io.IOException;
+import java.util.Date;
 
 @Service
 public class JwtService {
@@ -31,13 +29,10 @@ public class JwtService {
     public static final String TYPE_UTILISATEUR_JOUEUR = "JOUEUR";
     public static final String TYPE_UTILISATEUR_ADMIN = "ADMIN";
 
-    private static final String ALGORITHME_HMAC = "HmacSHA256";
-    private static final String ALGORITHME_JWT = "HS256";
     private static final String PREFIXE_BEARER = "Bearer ";
 
-    private final String secret;
+    private final SecretKey cleSignature;
     private final Duration dureeValidite;
-    private final ObjectMapper objectMapper;
     private final Clock clock;
 
     public JwtService(
@@ -53,9 +48,18 @@ public class JwtService {
             throw new IllegalArgumentException("La durée de validité JWT doit être positive.");
         }
 
-        this.secret = secret;
+        try {
+            this.cleSignature = Keys.hmacShaKeyFor(
+                    secret.getBytes(StandardCharsets.UTF_8)
+            );
+        } catch (WeakKeyException exception) {
+            throw new IllegalArgumentException(
+                    "Le secret JWT doit contenir au moins 32 octets.",
+                    exception
+            );
+        }
+
         this.dureeValidite = Duration.ofMinutes(expirationMinutes);
-        this.objectMapper = new ObjectMapper();
         this.clock = clock;
     }
 
@@ -114,46 +118,25 @@ public class JwtService {
             throw new AuthentificationException("Token JWT obligatoire.");
         }
 
-        String[] morceaux = token.split("\\.");
+        Claims claims;
 
-        if (morceaux.length != 3) {
-            throw tokenInvalide();
-        }
-
-        String headerBase64 = morceaux[0];
-        String payloadBase64 = morceaux[1];
-        String signatureFournie = morceaux[2];
-
-        String contenuSigne = headerBase64 + "." + payloadBase64;
-        String signatureAttendue = signer(contenuSigne);
-
-        boolean signatureValide = MessageDigest.isEqual(
-                signatureAttendue.getBytes(StandardCharsets.UTF_8),
-                signatureFournie.getBytes(StandardCharsets.UTF_8)
-        );
-
-        if (!signatureValide) {
-            throw tokenInvalide();
-        }
-
-        Map<String, Object> payload = lirePayload(payloadBase64);
-
-        Long expirationEpochSecond = lireLong(payload.get("exp"));
-
-        if (expirationEpochSecond == null) {
-            throw tokenInvalide();
-        }
-
-        Instant maintenant = Instant.now(clock);
-
-        if (!maintenant.isBefore(Instant.ofEpochSecond(expirationEpochSecond))) {
+        try {
+            claims = Jwts.parser()
+                    .verifyWith(cleSignature)
+                    .clock(() -> Date.from(Instant.now(clock)))
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+        } catch (ExpiredJwtException exception) {
             throw new AuthentificationException("Token JWT expiré.");
+        } catch (JwtException | IllegalArgumentException exception) {
+            throw tokenInvalide();
         }
 
-        String sujet = lireString(payload.get("sub"));
-        String typeUtilisateur = lireString(payload.get("typeUtilisateur"));
-        String role = lireString(payload.get("role"));
-        Long siteId = lireLong(payload.get("siteId"));
+        String sujet = claims.getSubject();
+        String typeUtilisateur = lireString(claims.get("typeUtilisateur"));
+        String role = lireString(claims.get("role"));
+        Long siteId = lireLong(claims.get("siteId"));
 
         if (!StringUtils.hasText(sujet) || !StringUtils.hasText(typeUtilisateur)) {
             throw tokenInvalide();
@@ -176,73 +159,28 @@ public class JwtService {
         Instant maintenant = Instant.now(clock);
         Instant expiration = maintenant.plus(dureeValidite);
 
-        Map<String, Object> header = new LinkedHashMap<>();
-        header.put("alg", ALGORITHME_JWT);
-        header.put("typ", "JWT");
+        JwtBuilder builder = Jwts.builder()
+                .subject(sujet)
+                .claim("typeUtilisateur", typeUtilisateur)
+                .issuedAt(Date.from(maintenant))
+                .expiration(Date.from(expiration));
 
-        Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("sub", sujet);
-        payload.put("typeUtilisateur", typeUtilisateur);
-        payload.put("role", role);
-        payload.put("siteId", siteId);
-        payload.put("iat", maintenant.getEpochSecond());
-        payload.put("exp", expiration.getEpochSecond());
+        if (StringUtils.hasText(role)) {
+            builder.claim("role", role);
+        }
 
-        String headerBase64 = encoderJsonBase64(header);
-        String payloadBase64 = encoderJsonBase64(payload);
-        String contenuSigne = headerBase64 + "." + payloadBase64;
-        String signature = signer(contenuSigne);
+        if (siteId != null) {
+            builder.claim("siteId", siteId);
+        }
+
+        String token = builder
+                .signWith(cleSignature, Jwts.SIG.HS256)
+                .compact();
 
         return new TokenGenere(
-                contenuSigne + "." + signature,
+                token,
                 LocalDateTime.ofInstant(expiration, clock.getZone())
         );
-    }
-
-    private String encoderJsonBase64(Map<String, Object> valeur) {
-        try {
-            byte[] json = objectMapper.writeValueAsBytes(valeur);
-
-            return Base64.getUrlEncoder()
-                    .withoutPadding()
-                    .encodeToString(json);
-        } catch (JsonProcessingException exception) {
-            throw new IllegalStateException("Impossible de sérialiser le JWT.", exception);
-        }
-    }
-
-    private Map<String, Object> lirePayload(String payloadBase64) {
-        try {
-            byte[] json = Base64.getUrlDecoder().decode(payloadBase64);
-
-            return objectMapper.readValue(
-                    json,
-                    new TypeReference<Map<String, Object>>() {
-                    }
-            );
-        } catch (IllegalArgumentException | IOException exception) {
-            throw tokenInvalide();
-        }
-    }
-
-    private String signer(String contenu) {
-        try {
-            Mac mac = Mac.getInstance(ALGORITHME_HMAC);
-            SecretKeySpec cle = new SecretKeySpec(
-                    secret.getBytes(StandardCharsets.UTF_8),
-                    ALGORITHME_HMAC
-            );
-
-            mac.init(cle);
-
-            byte[] signature = mac.doFinal(contenu.getBytes(StandardCharsets.UTF_8));
-
-            return Base64.getUrlEncoder()
-                    .withoutPadding()
-                    .encodeToString(signature);
-        } catch (GeneralSecurityException exception) {
-            throw new IllegalStateException("Impossible de signer le JWT.", exception);
-        }
     }
 
     private String lireString(Object valeur) {

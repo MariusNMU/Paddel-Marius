@@ -12,6 +12,7 @@ describe('AuthContextService', () => {
     siteRattachementId: null,
     nomSiteRattachement: null,
     actif: true,
+    token: 'jwt-joueur',
     expirationToken: '2099-12-31T23:59:59'
   };
 
@@ -24,6 +25,7 @@ describe('AuthContextService', () => {
     siteId: null,
     nomSite: null,
     actif: true,
+    token: 'jwt-admin',
     expirationToken: '2099-12-31T23:59:59'
   };
 
@@ -56,6 +58,7 @@ describe('AuthContextService', () => {
     expect(service.admin()).toBeNull();
     expect(service.joueurConnecte()).toBe(false);
     expect(service.adminConnecte()).toBe(false);
+    expect(service.token()).toBeNull();
   });
 
   it('doit définir un joueur connecté et le sauvegarder dans localStorage', () => {
@@ -65,6 +68,7 @@ describe('AuthContextService', () => {
 
     expect(service.joueur()).toEqual(joueur);
     expect(service.joueurConnecte()).toBe(true);
+    expect(service.token()).toBe('jwt-joueur');
     expect(JSON.parse(localStorage.getItem('padel-joueur') ?? '{}')).toEqual(joueur);
   });
 
@@ -75,6 +79,7 @@ describe('AuthContextService', () => {
 
     expect(service.admin()).toEqual(admin);
     expect(service.adminConnecte()).toBe(true);
+    expect(service.token()).toBe('jwt-admin');
     expect(JSON.parse(localStorage.getItem('padel-admin') ?? '{}')).toEqual(admin);
   });
 
@@ -88,6 +93,7 @@ describe('AuthContextService', () => {
     expect(service.admin()).toBeNull();
     expect(service.joueurConnecte()).toBe(true);
     expect(service.adminConnecte()).toBe(false);
+    expect(service.token()).toBe('jwt-joueur');
     expect(JSON.parse(localStorage.getItem('padel-joueur') ?? '{}')).toEqual(joueur);
     expect(localStorage.getItem('padel-admin')).toBeNull();
   });
@@ -102,6 +108,7 @@ describe('AuthContextService', () => {
     expect(service.admin()).toEqual(admin);
     expect(service.joueurConnecte()).toBe(false);
     expect(service.adminConnecte()).toBe(true);
+    expect(service.token()).toBe('jwt-admin');
     expect(localStorage.getItem('padel-joueur')).toBeNull();
     expect(JSON.parse(localStorage.getItem('padel-admin') ?? '{}')).toEqual(admin);
   });
@@ -116,6 +123,7 @@ describe('AuthContextService', () => {
     expect(service.admin()).toBeNull();
     expect(service.joueurConnecte()).toBe(false);
     expect(service.adminConnecte()).toBe(false);
+    expect(service.token()).toBeNull();
     expect(localStorage.getItem('padel-joueur')).toBeNull();
     expect(localStorage.getItem('padel-admin')).toBeNull();
   });
@@ -134,6 +142,7 @@ describe('AuthContextService', () => {
     expect(service.admin()).toBeNull();
     expect(service.joueurConnecte()).toBe(true);
     expect(service.adminConnecte()).toBe(false);
+    expect(service.token()).toBe('jwt-joueur');
   });
 
   it('doit synchroniser la connexion d un admin depuis un autre onglet', () => {
@@ -150,6 +159,7 @@ describe('AuthContextService', () => {
     expect(service.admin()).toEqual(admin);
     expect(service.joueurConnecte()).toBe(false);
     expect(service.adminConnecte()).toBe(true);
+    expect(service.token()).toBe('jwt-admin');
   });
 
   it('doit synchroniser une déconnexion effectuée dans un autre onglet', () => {
@@ -161,6 +171,7 @@ describe('AuthContextService', () => {
 
     expect(service.joueur()).toBeNull();
     expect(service.joueurConnecte()).toBe(false);
+    expect(service.token()).toBeNull();
   });
 
   it('doit déconnecter le joueur', () => {
@@ -171,6 +182,7 @@ describe('AuthContextService', () => {
 
     expect(service.joueur()).toBeNull();
     expect(service.joueurConnecte()).toBe(false);
+    expect(service.token()).toBeNull();
     expect(localStorage.getItem('padel-joueur')).toBeNull();
   });
 
@@ -182,6 +194,7 @@ describe('AuthContextService', () => {
 
     expect(service.admin()).toBeNull();
     expect(service.adminConnecte()).toBe(false);
+    expect(service.token()).toBeNull();
     expect(localStorage.getItem('padel-admin')).toBeNull();
   });
 
@@ -192,6 +205,7 @@ describe('AuthContextService', () => {
 
     expect(service.joueur()).toEqual(joueur);
     expect(service.joueurConnecte()).toBe(true);
+    expect(service.token()).toBe('jwt-joueur');
   });
 
   it('doit supprimer une session joueur expirée au démarrage', () => {

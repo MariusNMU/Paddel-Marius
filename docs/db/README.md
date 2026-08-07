@@ -274,8 +274,10 @@ SITE
 
 Après connexion, le backend génère un JWT signé et limité dans le temps.
 
-Le frontend conserve le token dans son contexte d'authentification et
-l'ajoute aux requêtes protégées avec un interceptor Angular.
+Le frontend conserve le token dans son contexte d'authentification.
+AuthContextService expose le token de l'unique session active et
+l'interceptor Angular l'ajoute aux appels de l'API sans choisir l'identité à
+partir de l'URL.
 
 Header utilisé :
 
@@ -283,12 +285,13 @@ Header utilisé :
 Authorization: Bearer <token>
 ```
 
-Le backend utilise une SecurityFilterChain stateless. Le
-JwtAuthenticationFilter, basé sur OncePerRequestFilter, valide le JWT et
-place l'utilisateur authentifié dans le SecurityContext.
+Le backend utilise une SecurityFilterChain stateless. La librairie JJWT
+(`io.jsonwebtoken`) génère et valide les tokens signés en HS256. Le
+JwtAuthenticationFilter, basé sur OncePerRequestFilter, place l'utilisateur
+authentifié dans le SecurityContext.
 
-Les routes publiques sont explicitement autorisées. Les autres routes sont
-protégées par défaut.
+Les routes publiques sont définies uniquement dans SecurityConfig. Les autres
+routes sont protégées par défaut.
 
 ### Autorisations et session Angular
 
@@ -386,7 +389,7 @@ http://localhost:8080
 Health check :
 
 ```txt
-http://localhost:8080/api/health
+http://localhost:8080/actuator/health
 ```
 
 Swagger :
@@ -619,7 +622,7 @@ Le backend expose une API REST.
 Exemples d'endpoints :
 
 ```http
-GET /api/health
+GET /actuator/health
 POST /api/auth/joueur
 POST /api/auth/admin
 GET /api/disponibilites?siteId=1001&date=<date-demo>

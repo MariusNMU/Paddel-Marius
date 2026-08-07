@@ -108,7 +108,7 @@ class JwtAuthenticationFilterTest {
     }
 
     @Test
-    void shouldSkipJwtValidation_whenPublicEndpointContainsInvalidBearerToken()
+    void shouldRejectInvalidBearerToken_evenWhenEndpointIsPublic()
             throws Exception {
         JwtAuthenticationFilter filter = new JwtAuthenticationFilter(
                 new JwtService(SECRET, 120, clock),
@@ -129,7 +129,10 @@ class JwtAuthenticationFilterTest {
 
         filter.doFilter(request, response, filterChain);
 
-        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getStatus()).isEqualTo(401);
+        assertThat(response.getContentAsString())
+                .contains("AUTHENTIFICATION_INVALIDE")
+                .contains("Token JWT invalide.");
         assertThat(SecurityContextHolder.getContext().getAuthentication())
                 .isNull();
     }

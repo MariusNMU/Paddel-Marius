@@ -13,6 +13,11 @@ public interface FermetureRepository extends JpaRepository<Fermeture, Long> {
 
     List<Fermeture> findByDateFermeture(LocalDate dateFermeture);
 
+    List<Fermeture> findByDateFermetureBetweenOrderByDateFermetureAsc(
+            LocalDate dateDebut,
+            LocalDate dateFin
+    );
+
     List<Fermeture> findBySite(Site site);
 
     List<Fermeture> findBySiteId(Long siteId);

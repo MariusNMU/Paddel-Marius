@@ -3,6 +3,7 @@ package com.padelMarius.backend.service;
 import com.padelMarius.backend.dto.etatoperationnel.EtatOperationnelAdminResponse;
 import com.padelMarius.backend.dto.etatoperationnel.EtatTerrainOperationnel;
 import com.padelMarius.backend.dto.etatoperationnel.MatchEtatAdminResponse;
+import com.padelMarius.backend.dto.etatoperationnel.OccupationHebdomadaireAdminResponse;
 import com.padelMarius.backend.dto.etatoperationnel.TerrainEtatAdminResponse;
 import com.padelMarius.backend.entity.EtatCycleMatch;
 import com.padelMarius.backend.entity.Fermeture;
@@ -22,12 +23,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
@@ -46,18 +50,107 @@ public class EtatOperationnelAdminService {
     ) {
         verifierParametres(date, siteId);
 
-        Site site = siteRepository.findById(siteId)
+        Site site = chargerSite(siteId);
+        List<Terrain> terrains = chargerTerrains(siteId);
+        List<PadelMatch> matches = chargerMatches(
+                date.atStartOfDay(),
+                date.plusDays(1).atStartOfDay(),
+                terrains
+        );
+        Fermeture fermeture = trouverFermeture(
+                date,
+                siteId,
+                fermetureRepository.findByDateFermeture(date)
+        );
+
+        return creerEtatOperationnel(
+                date,
+                site,
+                terrains,
+                matches,
+                fermeture
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public OccupationHebdomadaireAdminResponse consulterOccupationHebdomadaire(
+            LocalDate date,
+            Long siteId
+    ) {
+        verifierParametres(date, siteId);
+
+        LocalDate dateDebut = date.with(
+                TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)
+        );
+        LocalDate dateFin = dateDebut.plusDays(6);
+
+        Site site = chargerSite(siteId);
+        List<Terrain> terrains = chargerTerrains(siteId);
+        List<PadelMatch> matches = chargerMatches(
+                dateDebut.atStartOfDay(),
+                dateFin.plusDays(1).atStartOfDay(),
+                terrains
+        );
+        List<Fermeture> fermetures = fermetureRepository
+                .findByDateFermetureBetweenOrderByDateFermetureAsc(
+                        dateDebut,
+                        dateFin
+                );
+
+        Map<LocalDate, List<PadelMatch>> matchesParJour = matches.stream()
+                .collect(Collectors.groupingBy(
+                        match -> match.getDateHeureDebut().toLocalDate()
+                ));
+
+        List<EtatOperationnelAdminResponse> jours = IntStream.range(0, 7)
+                .mapToObj(indexJour -> {
+                    LocalDate jour = dateDebut.plusDays(indexJour);
+
+                    return creerEtatOperationnel(
+                            jour,
+                            site,
+                            terrains,
+                            matchesParJour.getOrDefault(jour, List.of()),
+                            trouverFermeture(
+                                    jour,
+                                    siteId,
+                                    fermetures
+                            )
+                    );
+                })
+                .toList();
+
+        return new OccupationHebdomadaireAdminResponse(
+                dateDebut,
+                dateFin,
+                site.getId(),
+                site.getNom(),
+                site.isActif(),
+                jours
+        );
+    }
+
+    private Site chargerSite(Long siteId) {
+        return siteRepository.findById(siteId)
                 .orElseThrow(() -> new RessourceIntrouvableException(
                         "Site introuvable avec l'id " + siteId
                 ));
+    }
 
-        List<Terrain> terrains = terrainRepository.findBySiteId(siteId)
+    private List<Terrain> chargerTerrains(Long siteId) {
+        return terrainRepository.findBySiteId(siteId)
                 .stream()
                 .sorted(Comparator.comparing(Terrain::getNumero))
                 .toList();
+    }
 
-        List<PadelMatch> matches = chargerMatches(date, terrains);
-        Fermeture fermeture = trouverFermeture(date, siteId);
+    private EtatOperationnelAdminResponse creerEtatOperationnel(
+            LocalDate date,
+            Site site,
+            List<Terrain> terrains,
+            List<PadelMatch> matches,
+            Fermeture fermeture
+    ) {
 
         Map<Long, List<PadelMatch>> matchesParTerrain = matches.stream()
                 .collect(Collectors.groupingBy(
@@ -104,15 +197,13 @@ public class EtatOperationnelAdminService {
     }
 
     private List<PadelMatch> chargerMatches(
-            LocalDate date,
+            LocalDateTime debutInclus,
+            LocalDateTime finExclusive,
             List<Terrain> terrains
     ) {
         if (terrains.isEmpty()) {
             return List.of();
         }
-
-        LocalDateTime debutInclus = date.atStartOfDay();
-        LocalDateTime finExclusive = date.plusDays(1).atStartOfDay();
 
         return padelMatchRepository
                 .findByTerrainInAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBeforeOrderByDateHeureDebutAsc(
@@ -124,17 +215,21 @@ public class EtatOperationnelAdminService {
 
     private Fermeture trouverFermeture(
             LocalDate date,
-            Long siteId
+            Long siteId,
+            List<Fermeture> fermetures
     ) {
-        List<Fermeture> fermetures =
-                fermetureRepository.findByDateFermeture(date);
-
         return fermetures.stream()
+                .filter(fermeture ->
+                        date.equals(fermeture.getDateFermeture())
+                )
                 .filter(fermeture ->
                         fermeture.getPortee() == PorteeFermeture.GLOBALE
                 )
                 .findFirst()
                 .orElseGet(() -> fermetures.stream()
+                        .filter(fermeture ->
+                                date.equals(fermeture.getDateFermeture())
+                        )
                         .filter(fermeture ->
                                 fermeture.getPortee() == PorteeFermeture.LOCALE
                         )

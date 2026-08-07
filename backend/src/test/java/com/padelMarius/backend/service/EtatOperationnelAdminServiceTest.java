@@ -2,6 +2,7 @@ package com.padelMarius.backend.service;
 
 import com.padelMarius.backend.dto.etatoperationnel.EtatOperationnelAdminResponse;
 import com.padelMarius.backend.dto.etatoperationnel.EtatTerrainOperationnel;
+import com.padelMarius.backend.dto.etatoperationnel.OccupationHebdomadaireAdminResponse;
 import com.padelMarius.backend.entity.EtatCycleMatch;
 import com.padelMarius.backend.entity.Fermeture;
 import com.padelMarius.backend.entity.ModeCreation;
@@ -201,6 +202,99 @@ class EtatOperationnelAdminServiceTest {
                 .isEqualTo(EtatTerrainOperationnel.FERME);
         assertThat(response.terrains().get(1).etatTerrain())
                 .isEqualTo(EtatTerrainOperationnel.INACTIF);
+    }
+
+    @Test
+    void consulterOccupationHebdomadaire_shouldNormalizeWeekAndLoadMatchesOnce() {
+        LocalDate dateDansSemaine = LocalDate.of(2026, 7, 22);
+        LocalDate lundi = LocalDate.of(2026, 7, 20);
+        LocalDate dimanche = LocalDate.of(2026, 7, 26);
+        Site site = creerSite(1001L, true);
+        Terrain terrain = creerTerrain(2001L, "T1", true, site);
+
+        PadelMatch matchLundi = creerMatch(
+                3001L,
+                terrain,
+                LocalDateTime.of(2026, 7, 20, 10, 0),
+                EtatCycleMatch.A_VENIR
+        );
+
+        PadelMatch matchDimanche = creerMatch(
+                3002L,
+                terrain,
+                LocalDateTime.of(2026, 7, 26, 16, 0),
+                EtatCycleMatch.A_VENIR
+        );
+
+        when(siteRepository.findById(1001L))
+                .thenReturn(Optional.of(site));
+
+        when(terrainRepository.findBySiteId(1001L))
+                .thenReturn(List.of(terrain));
+
+        when(padelMatchRepository
+                .findByTerrainInAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBeforeOrderByDateHeureDebutAsc(
+                        List.of(terrain),
+                        lundi.atStartOfDay(),
+                        dimanche.plusDays(1).atStartOfDay()
+                ))
+                .thenReturn(List.of(matchLundi, matchDimanche));
+
+        when(fermetureRepository
+                .findByDateFermetureBetweenOrderByDateFermetureAsc(
+                        lundi,
+                        dimanche
+                ))
+                .thenReturn(List.of());
+
+        when(participationRepository
+                .countByMatchIdAndStatutParticipationNot(
+                        3001L,
+                        StatutParticipation.LIBEREE
+                ))
+                .thenReturn(4L);
+
+        when(participationRepository
+                .countByMatchIdAndStatutParticipationNot(
+                        3002L,
+                        StatutParticipation.LIBEREE
+                ))
+                .thenReturn(2L);
+
+        OccupationHebdomadaireAdminResponse response =
+                etatOperationnelAdminService
+                        .consulterOccupationHebdomadaire(
+                                dateDansSemaine,
+                                1001L
+                        );
+
+        assertThat(response.dateDebut()).isEqualTo(lundi);
+        assertThat(response.dateFin()).isEqualTo(dimanche);
+        assertThat(response.siteId()).isEqualTo(1001L);
+        assertThat(response.nomSite()).isEqualTo("Padel Bruxelles");
+        assertThat(response.jours()).hasSize(7);
+        assertThat(response.jours().getFirst().date()).isEqualTo(lundi);
+        assertThat(response.jours().getLast().date()).isEqualTo(dimanche);
+        assertThat(response.jours().getFirst()
+                .terrains().getFirst().matches()).hasSize(1);
+        assertThat(response.jours().get(1)
+                .terrains().getFirst().matches()).isEmpty();
+        assertThat(response.jours().getLast()
+                .terrains().getFirst().matches().getFirst()
+                .nombreParticipants()).isEqualTo(2);
+
+        verify(padelMatchRepository)
+                .findByTerrainInAndDateHeureDebutGreaterThanEqualAndDateHeureDebutBeforeOrderByDateHeureDebutAsc(
+                        List.of(terrain),
+                        lundi.atStartOfDay(),
+                        dimanche.plusDays(1).atStartOfDay()
+                );
+
+        verify(fermetureRepository)
+                .findByDateFermetureBetweenOrderByDateFermetureAsc(
+                        lundi,
+                        dimanche
+                );
     }
 
     @Test

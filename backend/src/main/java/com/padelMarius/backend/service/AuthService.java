@@ -55,7 +55,8 @@ public class AuthService {
                 request.motDePasse()
         );
 
-        Membre membre = membreRepository.findByMatricule(matricule)
+        Membre membre = membreRepository
+                .findByMatriculeIgnoreCase(matricule)
                 .filter(Membre::isActif)
                 .orElseThrow(() -> new AuthentificationException(
                         MESSAGE_IDENTIFIANTS_INVALIDES
@@ -92,7 +93,8 @@ public class AuthService {
         );
 
         Administrateur administrateur =
-                administrateurRepository.findByEmailOuLogin(login)
+                administrateurRepository
+                        .findByEmailOuLoginIgnoreCase(login)
                         .filter(Administrateur::isActif)
                         .orElseThrow(() -> new AuthentificationException(
                                 MESSAGE_IDENTIFIANTS_INVALIDES
@@ -126,7 +128,7 @@ public class AuthService {
                 utilisateur.typeUtilisateur()
         )) {
             Membre membre = membreRepository
-                    .findByMatricule(utilisateur.sujet())
+                    .findByMatriculeIgnoreCase(utilisateur.sujet())
                     .filter(Membre::isActif)
                     .orElseThrow(this::refreshTokenInvalide);
 
@@ -137,7 +139,7 @@ public class AuthService {
                 utilisateur.typeUtilisateur()
         )) {
             Administrateur administrateur = administrateurRepository
-                    .findByEmailOuLogin(utilisateur.sujet())
+                    .findByEmailOuLoginIgnoreCase(utilisateur.sujet())
                     .filter(Administrateur::isActif)
                     .orElseThrow(this::refreshTokenInvalide);
 

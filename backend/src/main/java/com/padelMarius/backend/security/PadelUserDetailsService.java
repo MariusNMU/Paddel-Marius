@@ -39,7 +39,7 @@ public class PadelUserDetailsService implements UserDetailsService {
     }
 
     private UserDetails chargerJoueur(String matricule) {
-        Membre membre = membreRepository.findByMatricule(matricule)
+        Membre membre = membreRepository.findByMatriculeIgnoreCase(matricule)
                 .filter(this::motDePasseConfigure)
                 .orElseThrow(this::utilisateurInconnu);
 
@@ -65,7 +65,7 @@ public class PadelUserDetailsService implements UserDetailsService {
 
     private UserDetails chargerAdmin(String login) {
         Administrateur administrateur = administrateurRepository
-                .findByEmailOuLogin(login)
+                .findByEmailOuLoginIgnoreCase(login)
                 .filter(this::motDePasseConfigure)
                 .orElseThrow(this::utilisateurInconnu);
 

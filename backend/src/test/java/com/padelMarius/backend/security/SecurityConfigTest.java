@@ -48,6 +48,38 @@ class SecurityConfigTest {
     }
 
     @Test
+    void shouldAuthenticatePlayerWithCaseInsensitiveMatricule()
+            throws Exception {
+        mockMvc.perform(post("/api/auth/joueur")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "matricule": "g1001",
+                                  "motDePasse": "password"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.matricule").value("G1001"))
+                .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
+    void shouldAuthenticateAdminWithCaseInsensitiveLogin()
+            throws Exception {
+        mockMvc.perform(post("/api/auth/admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "login": "ADMIN-GLOBAL",
+                                  "motDePasse": "secret"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.login").value("admin-global"))
+                .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
     void shouldRejectWrongPasswordThroughAuthenticationManager()
             throws Exception {
         mockMvc.perform(post("/api/auth/joueur")

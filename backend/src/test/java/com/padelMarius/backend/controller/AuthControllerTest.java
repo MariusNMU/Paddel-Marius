@@ -262,4 +262,61 @@ class AuthControllerTest {
                 any(ConnexionJoueurRequest.class)
         );
     }
+
+    @Test
+    void shouldReturn400_whenPlayerMatriculeExceedsMaximum() throws Exception {
+        mockMvc.perform(post("/api/auth/joueur")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "matricule": "ABCDEFGHIJK",
+                                  "motDePasse": "password"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code")
+                        .value("VALIDATION_INVALIDE"));
+
+        verify(authService, never()).authentifierJoueur(
+                any(ConnexionJoueurRequest.class)
+        );
+    }
+
+    @Test
+    void shouldReturn400_whenAdminLoginExceedsMaximum() throws Exception {
+        mockMvc.perform(post("/api/auth/admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "login": "%s",
+                                  "motDePasse": "secret"
+                                }
+                                """.formatted("a".repeat(151))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code")
+                        .value("VALIDATION_INVALIDE"));
+
+        verify(authService, never()).authentifierAdmin(
+                any(ConnexionAdminRequest.class)
+        );
+    }
+
+    @Test
+    void shouldReturn400_whenLoginPasswordExceedsMaximum() throws Exception {
+        mockMvc.perform(post("/api/auth/joueur")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "matricule": "G0001",
+                                  "motDePasse": "%s"
+                                }
+                                """.formatted("p".repeat(73))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code")
+                        .value("VALIDATION_INVALIDE"));
+
+        verify(authService, never()).authentifierJoueur(
+                any(ConnexionJoueurRequest.class)
+        );
+    }
 }

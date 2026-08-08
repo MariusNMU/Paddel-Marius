@@ -45,6 +45,8 @@ public interface MembreRepository extends JpaRepository<Membre, Long> {
 
     Optional<Membre> findByMatricule(String matricule);
 
+    Optional<Membre> findByMatriculeIgnoreCase(String matricule);
+
     boolean existsByMatricule(String matricule);
 
     List<Membre> findByMatriculeStartingWith(String prefixe);

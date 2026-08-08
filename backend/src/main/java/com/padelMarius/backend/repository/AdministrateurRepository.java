@@ -11,6 +11,10 @@ public interface AdministrateurRepository extends JpaRepository<Administrateur, 
 
     Optional<Administrateur> findByEmailOuLogin(String emailOuLogin);
 
+    Optional<Administrateur> findByEmailOuLoginIgnoreCase(
+            String emailOuLogin
+    );
+
     boolean existsByEmailOuLogin(String emailOuLogin);
 
     List<Administrateur> findByRoleAdministrateur(RoleAdministrateur roleAdministrateur);

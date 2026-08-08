@@ -37,7 +37,8 @@ class AuthRepositoryTest {
                 .actif(true)
                 .build());
 
-        Optional<Membre> resultat = membreRepository.findByMatricule("G0001");
+        Optional<Membre> resultat = membreRepository
+                .findByMatriculeIgnoreCase("g0001");
 
         assertThat(resultat).isPresent();
         assertThat(resultat.get().getId()).isEqualTo(membre.getId());
@@ -67,7 +68,8 @@ class AuthRepositoryTest {
         );
 
         Optional<Administrateur> resultat =
-                administrateurRepository.findByEmailOuLogin("admin-bruxelles");
+                administrateurRepository
+                        .findByEmailOuLoginIgnoreCase("ADMIN-BRUXELLES");
 
         assertThat(resultat).isPresent();
         assertThat(resultat.get().getId()).isEqualTo(administrateur.getId());

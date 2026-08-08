@@ -106,6 +106,7 @@ import { enumLabel } from '../../shared/enum-label.util';
               type="text"
               [(ngModel)]="matricule"
               autocomplete="username"
+              maxlength="10"
               required
             />
           </mat-form-field>
@@ -120,6 +121,7 @@ import { enumLabel } from '../../shared/enum-label.util';
               type="password"
               [(ngModel)]="motDePasse"
               autocomplete="current-password"
+              maxlength="72"
               required
             />
           </mat-form-field>

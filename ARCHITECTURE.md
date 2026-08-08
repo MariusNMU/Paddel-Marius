@@ -318,6 +318,7 @@ Exemples d'erreurs gérées :
 RESSOURCE_INTROUVABLE
 CONFIGURATION_METIER_INVALIDE
 AUTHENTIFICATION_INVALIDE
+TROP_DE_TENTATIVES
 ACCES_REFUSE
 VALIDATION_INVALIDE
 REQUETE_INVALIDE
@@ -712,6 +713,11 @@ Deux portées administratives existent : `GLOBAL` et `SITE`.
 Les mots de passe sont hachés avec BCrypt. Les nouvelles inscriptions
 appliquent une longueur comprise entre 12 et 72 caractères.
 
+Les recherches de matricule et de login utilisées par l'authentification sont
+insensibles à la casse. Les réponses et les JWT reprennent ensuite la valeur
+canonique de l'entité. Les DTO de connexion bornent le matricule à 10
+caractères, le login à 150 et le mot de passe à 72.
+
 `AuthService` transmet les identifiants à l'`AuthenticationManager` de Spring
 Security. Son `DaoAuthenticationProvider` utilise le `PadelUserDetailsService`
 pour charger le joueur ou l'administrateur depuis les repositories, puis le
@@ -731,6 +737,10 @@ Le backend utilise une `SecurityFilterChain` stateless :
 Le `JwtAuthenticationFilter`, basé sur `OncePerRequestFilter`, est placé
 avant `UsernamePasswordAuthenticationFilter`.
 
+`AuthRateLimitFilter` s'exécute avant le filtre JWT pour les trois endpoints
+d'authentification. Il applique une fenêtre fixe, par adresse distante et par
+endpoint, et renvoie `429` avec `Retry-After` après la limite configurée.
+
 `JwtService` délègue à JJWT (`io.jsonwebtoken` 0.13.0) la création, la
 signature HS256, le parsing et la validation de l'expiration des tokens. Le
 filtre recharge le compte via `UserDetailsService`, récupère les autorités
@@ -745,13 +755,16 @@ règles d'accès de la `SecurityFilterChain`.
 - access token : JWT de 60 minutes conservé avec la session Angular ;
 - refresh token : JWT de 7 jours dans un cookie `HttpOnly`,
   `SameSite=Strict`, chemin `/api/auth` ;
-- le refresh token contient uniquement le sujet, le type d'utilisateur et les
-  claims temporels ;
+- l'access token contient uniquement le sujet, le type d'utilisateur, le type
+  de token et les claims temporels ;
+- le refresh token ajoute un `jti` aléatoire ;
 - les deux types de tokens portent un claim distinct et ne sont pas
   interchangeables ;
-- `POST /api/auth/refresh` recharge le compte actif en base, émet un nouvel
-  access token et remplace le cookie ;
-- `POST /api/auth/logout` expire le cookie.
+- `POST /api/auth/refresh` verrouille et révoque l'ancien `jti`, recharge le
+  compte actif en base, puis enregistre le nouveau `jti` dans la même
+  transaction ;
+- `POST /api/auth/logout` révoque le `jti` et expire le cookie ;
+- seul le `jti` et ses métadonnées sont persistés, jamais le JWT brut.
 
 ### 8.4. Autorisation métier
 
@@ -789,13 +802,20 @@ ne remplacent pas ces contrôles.
 une seule fois la requête avec le nouveau token. Un seul refresh est envoyé si
 plusieurs requêtes échouent simultanément.
 
+Si le refresh échoue, le service vérifie qu'aucune nouvelle session n'a
+remplacé l'ancienne, nettoie la session concernée et redirige vers le login
+joueur ou administrateur. Le logout reste localement effectif en cas d'erreur
+réseau et expose alors une alerte globale.
+
 ### 8.6. Limites connues
 
-La sécurité est complète pour le périmètre du MVP, mais elle ne fournit pas :
+La sécurité est complète pour le périmètre du MVP. Les limites restantes sont :
 
-- de liste de révocation serveur des JWT déjà émis ;
-- de persistance serveur des refresh tokens ;
-- de rotation automatique du secret JWT.
+- les access tokens ne sont pas révoqués avant leur expiration ;
+- le rate limiting en mémoire est local à une instance et remis à zéro au
+  redémarrage ;
+- un déploiement multi-instance nécessite un compteur partagé ;
+- le secret JWT ne fait pas l'objet d'une rotation automatique.
 
 La valeur JWT locale par défaut est réservée à la démonstration. Un
 déploiement réel doit fournir `PADEL_JWT_SECRET` depuis l'environnement et
@@ -829,6 +849,9 @@ Hibernate utilise `ddl-auto=validate` et vérifie la correspondance entre le
 schéma et les entités JPA sans modifier les tables.
 
 Le seed H2 est un changeset Liquibase réservé au contexte `demo` et à H2.
+
+La migration `003-create-refresh-token-table.sql` ajoute la table
+`jeton_rafraichissement` utilisée pour la rotation et la révocation serveur.
 
 Les données de démonstration H2 sont calculées relativement à la date du jour afin de rester utilisables pendant la deuxième session.
 

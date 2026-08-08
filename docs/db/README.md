@@ -274,6 +274,11 @@ SITE
 
 Après connexion, le backend génère un JWT signé et limité dans le temps.
 
+L'access token contient uniquement le sujet, le type d'utilisateur, le type
+de token et les claims temporels. Les rôles et le site sont relus en base.
+Le refresh token est placé dans un cookie `HttpOnly` et son `jti` est persisté
+dans `jeton_rafraichissement` afin de permettre la rotation et le logout.
+
 Le frontend conserve le token dans son contexte d'authentification.
 AuthContextService expose le token de l'unique session active et
 l'interceptor Angular l'ajoute aux appels de l'API sans choisir l'identité à
@@ -309,13 +314,15 @@ AuthFacadeService orchestre les connexions et les déconnexions.
 AuthContextService conserve la session et synchronise les changements de
 localStorage entre les onglets.
 
+Les identifiants de connexion sont recherchés sans tenir compte de la casse.
+Les trois endpoints d'authentification sont limités par adresse distante et
+par endpoint ; un dépassement renvoie `429` et `Retry-After`.
+
 ### Limites connues
 
-La sécurité est complète pour le périmètre du MVP, mais elle ne fournit pas :
-
-- de refresh token ;
-- de révocation serveur des JWT déjà émis ;
-- de rotation automatique du secret JWT.
+La sécurité est complète pour le périmètre du MVP. Les access tokens restent
+valides jusqu'à leur expiration, le compteur de tentatives est local à une
+instance et le secret JWT n'est pas renouvelé automatiquement.
 
 La valeur JWT locale est réservée à la démonstration. Un déploiement réel
 doit fournir PADEL_JWT_SECRET depuis l'environnement.
@@ -456,6 +463,7 @@ Changelog et migration initiale :
 ```txt
 backend/src/main/resources/db/changelog/db.changelog-master.yaml
 backend/src/main/resources/db/changelog/changes/001-create-initial-schema.sql
+backend/src/main/resources/db/changelog/changes/003-create-refresh-token-table.sql
 ```
 
 ---

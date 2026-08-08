@@ -13,6 +13,7 @@ import com.padelMarius.backend.exception.AuthentificationException;
 import com.padelMarius.backend.repository.AdministrateurRepository;
 import com.padelMarius.backend.repository.MembreRepository;
 import com.padelMarius.backend.security.IdentiteAuthentification;
+import com.padelMarius.backend.security.JetonRafraichissementService;
 import com.padelMarius.backend.security.JwtService;
 import com.padelMarius.backend.security.JwtUtilisateur;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +33,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -55,6 +57,9 @@ class AuthServiceTest {
     @Mock
     private JwtService jwtService;
 
+    @Mock
+    private JetonRafraichissementService jetonRafraichissementService;
+
     private AuthService authService;
 
     @BeforeEach
@@ -63,7 +68,8 @@ class AuthServiceTest {
                 membreRepository,
                 administrateurRepository,
                 authenticationManager,
-                jwtService
+                jwtService,
+                jetonRafraichissementService
         );
     }
 
@@ -106,6 +112,11 @@ class AuthServiceTest {
         assertEquals(true, response.actif());
         assertEquals("jwt-joueur", response.token());
         assertEquals("refresh-joueur", resultat.refreshToken());
+        verify(jetonRafraichissementService).enregistrer(
+                any(JwtService.TokenGenere.class),
+                eq("S00001"),
+                eq(JwtService.TYPE_UTILISATEUR_JOUEUR)
+        );
 
         Authentication authentication = authentificationTransmise();
         assertEquals(
@@ -209,6 +220,11 @@ class AuthServiceTest {
         assertEquals(null, response.siteId());
         assertEquals("jwt-admin-global", response.token());
         assertEquals("refresh-admin", resultat.refreshToken());
+        verify(jetonRafraichissementService).enregistrer(
+                any(JwtService.TokenGenere.class),
+                eq("admin-global"),
+                eq(JwtService.TYPE_UTILISATEUR_ADMIN)
+        );
 
         Authentication authentication = authentificationTransmise();
         assertEquals(
@@ -312,6 +328,7 @@ class AuthServiceTest {
                 resultat.reponse().expirationToken()
         );
         assertEquals("nouveau-refresh", resultat.refreshToken());
+        verify(jetonRafraichissementService).consommer(any());
         verifyNoInteractions(administrateurRepository);
     }
 
@@ -341,6 +358,7 @@ class AuthServiceTest {
 
         assertEquals("nouvel-access-admin", resultat.reponse().token());
         assertEquals("nouveau-refresh-admin", resultat.refreshToken());
+        verify(jetonRafraichissementService).consommer(any());
         verifyNoInteractions(membreRepository);
     }
 
@@ -369,6 +387,34 @@ class AuthServiceTest {
 
         assertEquals("Refresh token invalide.", exception.getMessage());
         verify(jwtService, never()).genererTokenJoueur(any());
+    }
+
+    @Test
+    void deconnecter_shouldRevokeValidRefreshToken() {
+        when(jwtService.validerRefreshToken("refresh-valide"))
+                .thenReturn(new JwtUtilisateur(
+                        "G0001",
+                        JwtService.TYPE_UTILISATEUR_JOUEUR,
+                        "token-id"
+                ));
+
+        authService.deconnecter("refresh-valide");
+
+        verify(jetonRafraichissementService)
+                .revoquerSiPresent("token-id");
+    }
+
+    @Test
+    void deconnecter_shouldRemainIdempotentForInvalidRefreshToken() {
+        when(jwtService.validerRefreshToken("refresh-invalide"))
+                .thenThrow(new AuthentificationException(
+                        "Token JWT invalide."
+                ));
+
+        authService.deconnecter("refresh-invalide");
+
+        verify(jetonRafraichissementService, never())
+                .revoquerSiPresent(any());
     }
 
     private void autoriserAuthentification() {

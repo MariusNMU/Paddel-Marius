@@ -24,6 +24,8 @@ import java.util.Properties;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class JwtServiceTest {
@@ -77,6 +79,7 @@ class JwtServiceTest {
         assertEquals(JwtService.TYPE_UTILISATEUR_ADMIN, utilisateur.typeUtilisateur());
         assertFalse(lireClaims(token.valeur()).containsKey("role"));
         assertFalse(lireClaims(token.valeur()).containsKey("siteId"));
+        assertNull(utilisateur.identifiantToken());
     }
 
     @Test
@@ -104,6 +107,7 @@ class JwtServiceTest {
         assertEquals(JwtService.TYPE_UTILISATEUR_JOUEUR, utilisateur.typeUtilisateur());
         assertFalse(lireClaims(token.valeur()).containsKey("role"));
         assertFalse(lireClaims(token.valeur()).containsKey("siteId"));
+        assertNull(utilisateur.identifiantToken());
     }
 
     @Test
@@ -197,9 +201,62 @@ class JwtServiceTest {
         );
         assertFalse(lireClaims(token.valeur()).containsKey("role"));
         assertFalse(lireClaims(token.valeur()).containsKey("siteId"));
+        assertNotNull(utilisateur.identifiantToken());
+        assertEquals(
+                token.identifiantToken(),
+                utilisateur.identifiantToken()
+        );
         assertEquals(
                 java.time.LocalDateTime.of(2026, 6, 6, 10, 0),
                 token.expiration()
+        );
+    }
+
+    @Test
+    void refreshTokensGeneratedAtSameTime_shouldHaveDifferentIdentifiers() {
+        JwtService jwtService = new JwtService(
+                SECRET,
+                60,
+                7,
+                clock
+        );
+        Membre membre = Membre.builder()
+                .matricule("G1001")
+                .actif(true)
+                .build();
+
+        JwtService.TokenGenere premier =
+                jwtService.genererRefreshTokenJoueur(membre);
+        JwtService.TokenGenere second =
+                jwtService.genererRefreshTokenJoueur(membre);
+
+        assertNotEquals(premier.identifiantToken(), second.identifiantToken());
+        assertNotEquals(premier.valeur(), second.valeur());
+    }
+
+    @Test
+    void validerRefreshToken_shouldRejectLegacyTokenWithoutIdentifier() {
+        String ancienRefresh = Jwts.builder()
+                .subject("G1001")
+                .claim("typeUtilisateur", JwtService.TYPE_UTILISATEUR_JOUEUR)
+                .claim("typeToken", JwtService.TYPE_TOKEN_RAFRAICHISSEMENT)
+                .issuedAt(java.util.Date.from(Instant.now(clock)))
+                .expiration(java.util.Date.from(
+                        Instant.now(clock).plusSeconds(3600)
+                ))
+                .signWith(
+                        Keys.hmacShaKeyFor(
+                                SECRET.getBytes(StandardCharsets.UTF_8)
+                        ),
+                        Jwts.SIG.HS256
+                )
+                .compact();
+
+        JwtService jwtService = new JwtService(SECRET, 60, clock);
+
+        assertThrows(
+                AuthentificationException.class,
+                () -> jwtService.validerRefreshToken(ancienRefresh)
         );
     }
 

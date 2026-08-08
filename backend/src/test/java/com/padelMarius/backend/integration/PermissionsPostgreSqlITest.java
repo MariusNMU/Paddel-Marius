@@ -2,6 +2,8 @@ package com.padelMarius.backend.integration;
 
 import com.padelMarius.backend.config.PostgresDemoDataSeeder;
 import com.padelMarius.backend.entity.Site;
+import com.padelMarius.backend.entity.JetonRafraichissement;
+import com.padelMarius.backend.repository.JetonRafraichissementRepository;
 import com.padelMarius.backend.repository.SiteRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowableOfType;
@@ -133,6 +136,9 @@ class PermissionsPostgreSqlITest {
 
     @Autowired
     private SiteRepository siteRepository;
+
+    @Autowired
+    private JetonRafraichissementRepository jetonRafraichissementRepository;
 
     @Test
     void liquibase_et_hibernate_doivent_utiliser_des_roles_distincts() {
@@ -257,6 +263,29 @@ class PermissionsPostgreSqlITest {
                 ((SQLException) cause)
                         .getSQLState()
         ).isEqualTo("42501");
+    }
+
+    @Test
+    void padel_app_doit_pouvoir_gerer_les_identifiants_de_refresh() {
+        JetonRafraichissement jeton = new JetonRafraichissement(
+                "550e8400-e29b-41d4-a716-446655440000",
+                LocalDateTime.now().plusDays(7),
+                "G1001",
+                "JOUEUR"
+        );
+
+        jetonRafraichissementRepository.saveAndFlush(jeton);
+
+        assertThat(jetonRafraichissementRepository.findById(
+                jeton.getIdentifiant()
+        )).isPresent();
+
+        jetonRafraichissementRepository.delete(jeton);
+        jetonRafraichissementRepository.flush();
+
+        assertThat(jetonRafraichissementRepository.existsById(
+                jeton.getIdentifiant()
+        )).isFalse();
     }
 
     @Test

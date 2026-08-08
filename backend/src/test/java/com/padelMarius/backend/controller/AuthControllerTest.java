@@ -169,7 +169,11 @@ class AuthControllerTest {
 
     @Test
     void shouldClearRefreshCookieOnLogout() throws Exception {
-        mockMvc.perform(post("/api/auth/logout"))
+        mockMvc.perform(post("/api/auth/logout")
+                        .cookie(new Cookie(
+                                RefreshTokenCookieService.NOM_COOKIE,
+                                "refresh-logout"
+                        )))
                 .andExpect(status().isNoContent())
                 .andExpect(header().string(
                         HttpHeaders.SET_COOKIE,
@@ -179,6 +183,8 @@ class AuthControllerTest {
                                 containsString("HttpOnly")
                         )
                 ));
+
+        verify(authService).deconnecter("refresh-logout");
     }
 
     @Test

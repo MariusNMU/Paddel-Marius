@@ -13,6 +13,7 @@ import com.padelMarius.backend.exception.ConfigurationMetierException;
 import com.padelMarius.backend.repository.AdministrateurRepository;
 import com.padelMarius.backend.repository.MembreRepository;
 import com.padelMarius.backend.security.IdentiteAuthentification;
+import com.padelMarius.backend.security.JetonRafraichissementService;
 import com.padelMarius.backend.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -33,8 +34,9 @@ public class AuthService {
     private final AdministrateurRepository administrateurRepository;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final JetonRafraichissementService jetonRafraichissementService;
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ResultatAuthentification<AuthJoueurResponse> authentifierJoueur(
             ConnexionJoueurRequest request
     ) {
@@ -59,13 +61,18 @@ public class AuthService {
                         MESSAGE_IDENTIFIANTS_INVALIDES
                 ));
 
-        return new ResultatAuthentification<>(
+        JwtService.TokenGenere refreshToken =
+                jwtService.genererRefreshTokenJoueur(membre);
+
+        return resultatAvecRefreshToken(
                 convertirJoueur(membre),
-                jwtService.genererRefreshTokenJoueur(membre).valeur()
+                refreshToken,
+                membre.getMatricule(),
+                JwtService.TYPE_UTILISATEUR_JOUEUR
         );
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ResultatAuthentification<AuthAdminResponse> authentifierAdmin(
             ConnexionAdminRequest request
     ) {
@@ -91,13 +98,18 @@ public class AuthService {
                                 MESSAGE_IDENTIFIANTS_INVALIDES
                         ));
 
-        return new ResultatAuthentification<>(
+        JwtService.TokenGenere refreshToken =
+                jwtService.genererRefreshTokenAdmin(administrateur);
+
+        return resultatAvecRefreshToken(
                 convertirAdmin(administrateur),
-                jwtService.genererRefreshTokenAdmin(administrateur).valeur()
+                refreshToken,
+                administrateur.getEmailOuLogin(),
+                JwtService.TYPE_UTILISATEUR_ADMIN
         );
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ResultatAuthentification<RafraichissementTokenResponse> rafraichir(
             String refreshToken
     ) {
@@ -108,6 +120,7 @@ public class AuthService {
         }
 
         var utilisateur = jwtService.validerRefreshToken(refreshToken);
+        jetonRafraichissementService.consommer(utilisateur);
 
         if (JwtService.TYPE_UTILISATEUR_JOUEUR.equals(
                 utilisateur.typeUtilisateur()
@@ -132,6 +145,23 @@ public class AuthService {
         }
 
         throw refreshTokenInvalide();
+    }
+
+    @Transactional
+    public void deconnecter(String refreshToken) {
+        if (!StringUtils.hasText(refreshToken)) {
+            return;
+        }
+
+        try {
+            var utilisateur = jwtService.validerRefreshToken(refreshToken);
+
+            jetonRafraichissementService.revoquerSiPresent(
+                    utilisateur.identifiantToken()
+            );
+        } catch (AuthentificationException exception) {
+            // Le logout reste idempotent, même avec un cookie expiré ou invalide.
+        }
     }
 
     private void authentifier(
@@ -196,7 +226,12 @@ public class AuthService {
         JwtService.TokenGenere refreshToken =
                 jwtService.genererRefreshTokenJoueur(membre);
 
-        return resultatRafraichissement(accessToken, refreshToken);
+        return resultatRafraichissement(
+                accessToken,
+                refreshToken,
+                membre.getMatricule(),
+                JwtService.TYPE_UTILISATEUR_JOUEUR
+        );
     }
 
     private ResultatAuthentification<RafraichissementTokenResponse>
@@ -206,19 +241,46 @@ public class AuthService {
         JwtService.TokenGenere refreshToken =
                 jwtService.genererRefreshTokenAdmin(administrateur);
 
-        return resultatRafraichissement(accessToken, refreshToken);
+        return resultatRafraichissement(
+                accessToken,
+                refreshToken,
+                administrateur.getEmailOuLogin(),
+                JwtService.TYPE_UTILISATEUR_ADMIN
+        );
     }
 
     private ResultatAuthentification<RafraichissementTokenResponse>
     resultatRafraichissement(
             JwtService.TokenGenere accessToken,
-            JwtService.TokenGenere refreshToken
+            JwtService.TokenGenere refreshToken,
+            String sujet,
+            String typeUtilisateur
     ) {
-        return new ResultatAuthentification<>(
+        return resultatAvecRefreshToken(
                 new RafraichissementTokenResponse(
                         accessToken.valeur(),
                         accessToken.expiration()
                 ),
+                refreshToken,
+                sujet,
+                typeUtilisateur
+        );
+    }
+
+    private <T> ResultatAuthentification<T> resultatAvecRefreshToken(
+            T reponse,
+            JwtService.TokenGenere refreshToken,
+            String sujet,
+            String typeUtilisateur
+    ) {
+        jetonRafraichissementService.enregistrer(
+                refreshToken,
+                sujet,
+                typeUtilisateur
+        );
+
+        return new ResultatAuthentification<>(
+                reponse,
                 refreshToken.valeur()
         );
     }

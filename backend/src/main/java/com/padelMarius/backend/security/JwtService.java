@@ -22,6 +22,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.UUID;
 
 @Service
 public class JwtService {
@@ -196,16 +197,20 @@ public class JwtService {
                 claims.get(CLAIM_TYPE_UTILISATEUR)
         );
         String typeToken = lireString(claims.get(CLAIM_TYPE_TOKEN));
+        String identifiantToken = claims.getId();
 
         if (!StringUtils.hasText(sujet)
                 || !StringUtils.hasText(typeUtilisateur)
-                || !typeTokenAttendu.equals(typeToken)) {
+                || !typeTokenAttendu.equals(typeToken)
+                || (TYPE_TOKEN_RAFRAICHISSEMENT.equals(typeTokenAttendu)
+                && !StringUtils.hasText(identifiantToken))) {
             throw tokenInvalide();
         }
 
         return new JwtUtilisateur(
                 sujet,
-                typeUtilisateur
+                typeUtilisateur,
+                identifiantToken
         );
     }
 
@@ -217,6 +222,9 @@ public class JwtService {
     ) {
         Instant maintenant = Instant.now(clock);
         Instant expiration = maintenant.plus(dureeValidite);
+        String identifiantToken = TYPE_TOKEN_RAFRAICHISSEMENT.equals(
+                typeToken
+        ) ? UUID.randomUUID().toString() : null;
 
         JwtBuilder builder = Jwts.builder()
                 .subject(sujet)
@@ -225,13 +233,18 @@ public class JwtService {
                 .issuedAt(Date.from(maintenant))
                 .expiration(Date.from(expiration));
 
+        if (identifiantToken != null) {
+            builder.id(identifiantToken);
+        }
+
         String token = builder
                 .signWith(cleSignature, Jwts.SIG.HS256)
                 .compact();
 
         return new TokenGenere(
                 token,
-                LocalDateTime.ofInstant(expiration, clock.getZone())
+                LocalDateTime.ofInstant(expiration, clock.getZone()),
+                identifiantToken
         );
     }
 
@@ -265,7 +278,15 @@ public class JwtService {
 
     public record TokenGenere(
             String valeur,
-            LocalDateTime expiration
+            LocalDateTime expiration,
+            String identifiantToken
     ) {
+
+        public TokenGenere(
+                String valeur,
+                LocalDateTime expiration
+        ) {
+            this(valeur, expiration, null);
+        }
     }
 }

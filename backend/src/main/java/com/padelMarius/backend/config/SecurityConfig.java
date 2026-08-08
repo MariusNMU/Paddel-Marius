@@ -1,6 +1,8 @@
 package com.padelMarius.backend.config;
 
+import com.padelMarius.backend.security.AuthRateLimitFilter;
 import com.padelMarius.backend.security.JwtAuthenticationFilter;
+import com.padelMarius.backend.security.LimiteurTentativesAuthentification;
 import com.padelMarius.backend.security.JwtService;
 import com.padelMarius.backend.security.SecurityErrorWriter;
 import jakarta.servlet.DispatcherType;
@@ -55,9 +57,20 @@ public class SecurityConfig {
     }
 
     @Bean
+    public AuthRateLimitFilter authRateLimitFilter(
+            LimiteurTentativesAuthentification limiteur
+    ) {
+        return new AuthRateLimitFilter(
+                limiteur,
+                securityErrorWriter
+        );
+    }
+
+    @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            JwtAuthenticationFilter jwtAuthenticationFilter
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            AuthRateLimitFilter authRateLimitFilter
     ) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -126,6 +139,10 @@ public class SecurityConfig {
                 .addFilterBefore(
                         jwtAuthenticationFilter,
                         UsernamePasswordAuthenticationFilter.class
+                )
+                .addFilterBefore(
+                        authRateLimitFilter,
+                        JwtAuthenticationFilter.class
                 )
                 .build();
     }

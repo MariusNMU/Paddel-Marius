@@ -2,7 +2,6 @@ import {
   effect,
   Injectable
 } from '@angular/core';
-import { Router } from '@angular/router';
 import {
   catchError,
   EMPTY,
@@ -12,6 +11,7 @@ import {
   timeout
 } from 'rxjs';
 import { AuthJoueurResponse } from '../models/auth.model';
+import { AuthFacadeService } from './auth-facade.service';
 import { AuthContextService } from './auth-context.service';
 import { InvitationApiService } from './invitation-api.service';
 import { InvitationNotificationService } from './invitation-notification.service';
@@ -30,12 +30,12 @@ export class AppShellFacadeService {
   constructor(
     private readonly authContextService:
     AuthContextService,
+    private readonly authFacadeService:
+    AuthFacadeService,
     private readonly invitationApiService:
     InvitationApiService,
     private readonly invitationNotificationService:
-    InvitationNotificationService,
-    private readonly router:
-    Router
+    InvitationNotificationService
   ) {
     effect(() => {
       const joueur =
@@ -88,22 +88,23 @@ export class AppShellFacadeService {
       .nombreInvitationsRecues();
   }
 
+  get messageErreurDeconnexion() {
+    return this.authFacadeService
+      .messageErreurDeconnexion;
+  }
+
   deconnecterJoueur(): void {
     this.changementJoueur$.next();
     this.invitationNotificationService
       .reinitialiser();
 
-    this.authContextService
+    this.authFacadeService
       .deconnecterJoueur();
-
-    void this.router.navigate(['/accueil']);
   }
 
   deconnecterAdmin(): void {
-    this.authContextService
+    this.authFacadeService
       .deconnecterAdmin();
-
-    void this.router.navigate(['/accueil']);
   }
 
   private synchroniserAvecJoueur(

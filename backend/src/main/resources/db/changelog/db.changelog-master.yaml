@@ -4,3 +4,5 @@ databaseChangeLog:
   - include:
       file: data.sql
       relativeToChangelogFile: false
+  - include:
+      file: db/changelog/changes/003-create-refresh-token-table.sql

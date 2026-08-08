@@ -195,6 +195,7 @@ describe('AuthFacadeService', () => {
     expect(authContextService.deconnecterJoueur).toHaveBeenCalled();
     expect(authApiService.deconnecter).toHaveBeenCalled();
     expect(service.messageSuccesJoueur()).toContain('Joueur déconnecté');
+    expect(service.messageErreurDeconnexion()).toBeNull();
     expect(router.navigate).toHaveBeenCalledWith(['/accueil']);
   });
 
@@ -206,6 +207,23 @@ describe('AuthFacadeService', () => {
     expect(authContextService.deconnecterAdmin).toHaveBeenCalled();
     expect(authApiService.deconnecter).toHaveBeenCalled();
     expect(service.messageSuccesAdmin()).toContain('Admin déconnecté');
+    expect(service.messageErreurDeconnexion()).toBeNull();
+    expect(router.navigate).toHaveBeenCalledWith(['/accueil']);
+  });
+
+  it('doit signaler un échec réseau sans restaurer la session locale', () => {
+    authContextService.joueur.mockReturnValue(joueur);
+    authApiService.deconnecter.mockReturnValue(
+      throwError(() => new Error('réseau indisponible'))
+    );
+
+    service.deconnecterJoueur();
+
+    expect(authContextService.deconnecterJoueur)
+      .toHaveBeenCalledTimes(1);
+    expect(service.messageErreurDeconnexion()).toBe(
+      'La session locale est fermée, mais le serveur n’a pas pu révoquer le refresh token.'
+    );
     expect(router.navigate).toHaveBeenCalledWith(['/accueil']);
   });
 });

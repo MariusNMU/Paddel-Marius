@@ -49,11 +49,11 @@ class PadelUserDetailsServiceTest {
                 .actif(true)
                 .build();
 
-        when(membreRepository.findByMatricule("G1001"))
+        when(membreRepository.findByMatriculeIgnoreCase("g1001"))
                 .thenReturn(Optional.of(membre));
 
         UserDetails resultat = userDetailsService.loadUserByUsername(
-                IdentiteAuthentification.joueur("G1001")
+                IdentiteAuthentification.joueur("g1001")
         );
 
         assertThat(resultat.getUsername()).isEqualTo("JOUEUR:G1001");
@@ -77,11 +77,13 @@ class PadelUserDetailsServiceTest {
                 .actif(true)
                 .build();
 
-        when(administrateurRepository.findByEmailOuLogin("admin-bruxelles"))
+        when(administrateurRepository.findByEmailOuLoginIgnoreCase(
+                "ADMIN-BRUXELLES"
+        ))
                 .thenReturn(Optional.of(administrateur));
 
         UserDetails resultat = userDetailsService.loadUserByUsername(
-                IdentiteAuthentification.admin("admin-bruxelles")
+                IdentiteAuthentification.admin("ADMIN-BRUXELLES")
         );
 
         assertThat(resultat.getUsername())
@@ -104,7 +106,7 @@ class PadelUserDetailsServiceTest {
                 .actif(false)
                 .build();
 
-        when(membreRepository.findByMatricule("G1001"))
+        when(membreRepository.findByMatriculeIgnoreCase("G1001"))
                 .thenReturn(Optional.of(membre));
 
         UserDetails resultat = userDetailsService.loadUserByUsername(
@@ -116,7 +118,9 @@ class PadelUserDetailsServiceTest {
 
     @Test
     void shouldRejectUnknownAccountOrMissingPassword() {
-        when(administrateurRepository.findByEmailOuLogin("admin-inconnu"))
+        when(administrateurRepository.findByEmailOuLoginIgnoreCase(
+                "admin-inconnu"
+        ))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userDetailsService.loadUserByUsername(

@@ -13,6 +13,7 @@ import com.padelMarius.backend.exception.AuthentificationException;
 import com.padelMarius.backend.repository.AdministrateurRepository;
 import com.padelMarius.backend.repository.MembreRepository;
 import com.padelMarius.backend.security.IdentiteAuthentification;
+import com.padelMarius.backend.security.JetonRafraichissementService;
 import com.padelMarius.backend.security.JwtService;
 import com.padelMarius.backend.security.JwtUtilisateur;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +33,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -55,6 +57,9 @@ class AuthServiceTest {
     @Mock
     private JwtService jwtService;
 
+    @Mock
+    private JetonRafraichissementService jetonRafraichissementService;
+
     private AuthService authService;
 
     @BeforeEach
@@ -63,7 +68,8 @@ class AuthServiceTest {
                 membreRepository,
                 administrateurRepository,
                 authenticationManager,
-                jwtService
+                jwtService,
+                jetonRafraichissementService
         );
     }
 
@@ -80,7 +86,7 @@ class AuthServiceTest {
                 true
         );
 
-        when(membreRepository.findByMatricule("S00001"))
+        when(membreRepository.findByMatriculeIgnoreCase("s00001"))
                 .thenReturn(Optional.of(membre));
         when(jwtService.genererTokenJoueur(membre))
                 .thenReturn(token("jwt-joueur"));
@@ -90,7 +96,7 @@ class AuthServiceTest {
         AuthService.ResultatAuthentification<AuthJoueurResponse> resultat =
                 authService.authentifierJoueur(
                         new ConnexionJoueurRequest(
-                                " S00001 ",
+                                " s00001 ",
                                 "password"
                         )
                 );
@@ -106,10 +112,15 @@ class AuthServiceTest {
         assertEquals(true, response.actif());
         assertEquals("jwt-joueur", response.token());
         assertEquals("refresh-joueur", resultat.refreshToken());
+        verify(jetonRafraichissementService).enregistrer(
+                any(JwtService.TokenGenere.class),
+                eq("S00001"),
+                eq(JwtService.TYPE_UTILISATEUR_JOUEUR)
+        );
 
         Authentication authentication = authentificationTransmise();
         assertEquals(
-                IdentiteAuthentification.joueur("S00001"),
+                IdentiteAuthentification.joueur("s00001"),
                 authentication.getPrincipal()
         );
         assertEquals("password", authentication.getCredentials());
@@ -127,7 +138,7 @@ class AuthServiceTest {
                 true
         );
 
-        when(membreRepository.findByMatricule("G0001"))
+        when(membreRepository.findByMatriculeIgnoreCase("G0001"))
                 .thenReturn(Optional.of(membre));
         when(jwtService.genererTokenJoueur(membre))
                 .thenReturn(token("jwt-joueur"));
@@ -187,7 +198,9 @@ class AuthServiceTest {
                 true
         );
 
-        when(administrateurRepository.findByEmailOuLogin("admin-global"))
+        when(administrateurRepository.findByEmailOuLoginIgnoreCase(
+                "ADMIN-GLOBAL"
+        ))
                 .thenReturn(Optional.of(administrateur));
         when(jwtService.genererTokenAdmin(administrateur))
                 .thenReturn(token("jwt-admin-global"));
@@ -197,7 +210,7 @@ class AuthServiceTest {
         AuthService.ResultatAuthentification<AuthAdminResponse> resultat =
                 authService.authentifierAdmin(
                         new ConnexionAdminRequest(
-                                " admin-global ",
+                                " ADMIN-GLOBAL ",
                                 "secret"
                         )
                 );
@@ -209,10 +222,15 @@ class AuthServiceTest {
         assertEquals(null, response.siteId());
         assertEquals("jwt-admin-global", response.token());
         assertEquals("refresh-admin", resultat.refreshToken());
+        verify(jetonRafraichissementService).enregistrer(
+                any(JwtService.TokenGenere.class),
+                eq("admin-global"),
+                eq(JwtService.TYPE_UTILISATEUR_ADMIN)
+        );
 
         Authentication authentication = authentificationTransmise();
         assertEquals(
-                IdentiteAuthentification.admin("admin-global"),
+                IdentiteAuthentification.admin("ADMIN-GLOBAL"),
                 authentication.getPrincipal()
         );
         assertEquals("secret", authentication.getCredentials());
@@ -231,7 +249,9 @@ class AuthServiceTest {
                 true
         );
 
-        when(administrateurRepository.findByEmailOuLogin("admin-bruxelles"))
+        when(administrateurRepository.findByEmailOuLoginIgnoreCase(
+                "admin-bruxelles"
+        ))
                 .thenReturn(Optional.of(administrateur));
         when(jwtService.genererTokenAdmin(administrateur))
                 .thenReturn(token("jwt-admin-site"));
@@ -268,7 +288,9 @@ class AuthServiceTest {
     @Test
     void authentifierAdmin_shouldRejectAccountMissingAfterAuthentication() {
         autoriserAuthentification();
-        when(administrateurRepository.findByEmailOuLogin("admin-global"))
+        when(administrateurRepository.findByEmailOuLoginIgnoreCase(
+                "admin-global"
+        ))
                 .thenReturn(Optional.empty());
 
         AuthentificationException exception = assertThrows(
@@ -295,11 +317,9 @@ class AuthServiceTest {
         when(jwtService.validerRefreshToken("refresh-valide"))
                 .thenReturn(new JwtUtilisateur(
                         "G0001",
-                        JwtService.TYPE_UTILISATEUR_JOUEUR,
-                        null,
-                        null
+                        JwtService.TYPE_UTILISATEUR_JOUEUR
                 ));
-        when(membreRepository.findByMatricule("G0001"))
+        when(membreRepository.findByMatriculeIgnoreCase("G0001"))
                 .thenReturn(Optional.of(membre));
         when(jwtService.genererTokenJoueur(membre))
                 .thenReturn(token("nouvel-access"));
@@ -314,6 +334,7 @@ class AuthServiceTest {
                 resultat.reponse().expirationToken()
         );
         assertEquals("nouveau-refresh", resultat.refreshToken());
+        verify(jetonRafraichissementService).consommer(any());
         verifyNoInteractions(administrateurRepository);
     }
 
@@ -330,11 +351,11 @@ class AuthServiceTest {
         when(jwtService.validerRefreshToken("refresh-admin"))
                 .thenReturn(new JwtUtilisateur(
                         "admin-global",
-                        JwtService.TYPE_UTILISATEUR_ADMIN,
-                        null,
-                        null
+                        JwtService.TYPE_UTILISATEUR_ADMIN
                 ));
-        when(administrateurRepository.findByEmailOuLogin("admin-global"))
+        when(administrateurRepository.findByEmailOuLoginIgnoreCase(
+                "admin-global"
+        ))
                 .thenReturn(Optional.of(administrateur));
         when(jwtService.genererTokenAdmin(administrateur))
                 .thenReturn(token("nouvel-access-admin"));
@@ -345,6 +366,7 @@ class AuthServiceTest {
 
         assertEquals("nouvel-access-admin", resultat.reponse().token());
         assertEquals("nouveau-refresh-admin", resultat.refreshToken());
+        verify(jetonRafraichissementService).consommer(any());
         verifyNoInteractions(membreRepository);
     }
 
@@ -361,11 +383,9 @@ class AuthServiceTest {
         when(jwtService.validerRefreshToken("refresh-valide"))
                 .thenReturn(new JwtUtilisateur(
                         "G0001",
-                        JwtService.TYPE_UTILISATEUR_JOUEUR,
-                        null,
-                        null
+                        JwtService.TYPE_UTILISATEUR_JOUEUR
                 ));
-        when(membreRepository.findByMatricule("G0001"))
+        when(membreRepository.findByMatriculeIgnoreCase("G0001"))
                 .thenReturn(Optional.of(membre));
 
         AuthentificationException exception = assertThrows(
@@ -375,6 +395,34 @@ class AuthServiceTest {
 
         assertEquals("Refresh token invalide.", exception.getMessage());
         verify(jwtService, never()).genererTokenJoueur(any());
+    }
+
+    @Test
+    void deconnecter_shouldRevokeValidRefreshToken() {
+        when(jwtService.validerRefreshToken("refresh-valide"))
+                .thenReturn(new JwtUtilisateur(
+                        "G0001",
+                        JwtService.TYPE_UTILISATEUR_JOUEUR,
+                        "token-id"
+                ));
+
+        authService.deconnecter("refresh-valide");
+
+        verify(jetonRafraichissementService)
+                .revoquerSiPresent("token-id");
+    }
+
+    @Test
+    void deconnecter_shouldRemainIdempotentForInvalidRefreshToken() {
+        when(jwtService.validerRefreshToken("refresh-invalide"))
+                .thenThrow(new AuthentificationException(
+                        "Token JWT invalide."
+                ));
+
+        authService.deconnecter("refresh-invalide");
+
+        verify(jetonRafraichissementService, never())
+                .revoquerSiPresent(any());
     }
 
     private void autoriserAuthentification() {

@@ -131,6 +131,7 @@ Paddel-Marius/
         db.changelog-master.yaml
         changes/
           001-create-initial-schema.sql
+          003-create-refresh-token-table.sql
       data.sql
 
     src/test/java/com/padelMarius/backend/
@@ -318,6 +319,9 @@ Il n'y a pas de login séparé pour les joueurs.
 
 Le mot de passe est utilisé pour sécuriser l'authentification de session.
 
+Les matricules sont recherchés sans tenir compte de la casse. Un matricule
+saisi en minuscules renvoie néanmoins la valeur canonique stockée en base.
+
 Le backend ne stocke pas les mots de passe en clair.  
 Il stocke uniquement des hash BCrypt.
 
@@ -340,6 +344,10 @@ SITE
 Un administrateur `GLOBAL` peut gérer tous les sites.
 
 Un administrateur `SITE` est limité à son site de rattachement.
+
+Les logins administrateur sont également recherchés sans tenir compte de la
+casse. Les entrées sont bornées à 10 caractères pour un matricule, 150 pour
+un login et 72 pour un mot de passe de connexion.
 
 ### 7.3. JWT et Spring Security
 
@@ -364,6 +372,16 @@ Authorization: Bearer <token>
 Après un `401`, l'interceptor appelle `/api/auth/refresh`, remplace l'access
 token puis rejoue une seule fois la requête initiale. Plusieurs erreurs `401`
 simultanées partagent le même appel de refresh.
+
+L'access token ne contient que le sujet, le type d'utilisateur, le type de
+token et les claims temporels. Les rôles, le statut et le site sont relus en
+base. Chaque refresh token possède un `jti` dont seul l'identifiant est
+persisté ; l'ancien `jti` est révoqué atomiquement lors de la rotation et au
+logout. Le JWT brut n'est jamais stocké en base.
+
+Si le refresh échoue, Angular efface la session et redirige immédiatement
+vers la page de connexion adaptée. Une erreur réseau pendant le logout
+n'empêche pas le nettoyage local et est affichée dans une alerte globale.
 
 Le backend utilise une SecurityFilterChain stateless. La librairie JJWT
 (`io.jsonwebtoken`) génère les tokens, applique la signature HS256 et vérifie
@@ -398,6 +416,11 @@ pas rester actives simultanément dans les onglets du navigateur.
 Les mots de passe sont hachés avec BCrypt. Une nouvelle inscription impose
 un mot de passe de 12 à 72 caractères et une confirmation identique.
 Les refus de connexion utilisent un message générique.
+
+Les endpoints de connexion joueur, de connexion administrateur et de refresh
+sont limités par défaut à cinq requêtes par fenêtre de dix minutes, par
+adresse distante et par endpoint. Un dépassement renvoie `429`, un header
+`Retry-After` et le code `TROP_DE_TENTATIVES`.
 
 ---
 
@@ -557,6 +580,7 @@ Le changelog principal et la migration initiale se trouvent dans :
 ```txt
 backend/src/main/resources/db/changelog/db.changelog-master.yaml
 backend/src/main/resources/db/changelog/changes/001-create-initial-schema.sql
+backend/src/main/resources/db/changelog/changes/003-create-refresh-token-table.sql
 ```
 
 ### 10.2. Artefacts DB
@@ -787,6 +811,7 @@ README.md
 ARCHITECTURE.md
 EXPLOITATION.md
 DEMO.md
+docs/security/authentication-hardening.md
 ```
 
 ### `ARCHITECTURE.md`

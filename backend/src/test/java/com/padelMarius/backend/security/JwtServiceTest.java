@@ -7,18 +7,25 @@ import com.padelMarius.backend.entity.Membre;
 import com.padelMarius.backend.entity.RoleAdministrateur;
 import com.padelMarius.backend.entity.Site;
 import com.padelMarius.backend.exception.AuthentificationException;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class JwtServiceTest {
@@ -70,8 +77,9 @@ class JwtServiceTest {
 
         assertEquals("admin-bruxelles", utilisateur.sujet());
         assertEquals(JwtService.TYPE_UTILISATEUR_ADMIN, utilisateur.typeUtilisateur());
-        assertEquals("SITE", utilisateur.role());
-        assertEquals(1001L, utilisateur.siteId());
+        assertFalse(lireClaims(token.valeur()).containsKey("role"));
+        assertFalse(lireClaims(token.valeur()).containsKey("siteId"));
+        assertNull(utilisateur.identifiantToken());
     }
 
     @Test
@@ -97,8 +105,9 @@ class JwtServiceTest {
 
         assertEquals("G1001", utilisateur.sujet());
         assertEquals(JwtService.TYPE_UTILISATEUR_JOUEUR, utilisateur.typeUtilisateur());
-        assertEquals("GLOBAL", utilisateur.role());
-        assertEquals(null, utilisateur.siteId());
+        assertFalse(lireClaims(token.valeur()).containsKey("role"));
+        assertFalse(lireClaims(token.valeur()).containsKey("siteId"));
+        assertNull(utilisateur.identifiantToken());
     }
 
     @Test
@@ -190,11 +199,64 @@ class JwtServiceTest {
                 JwtService.TYPE_UTILISATEUR_JOUEUR,
                 utilisateur.typeUtilisateur()
         );
-        assertEquals(null, utilisateur.role());
-        assertEquals(null, utilisateur.siteId());
+        assertFalse(lireClaims(token.valeur()).containsKey("role"));
+        assertFalse(lireClaims(token.valeur()).containsKey("siteId"));
+        assertNotNull(utilisateur.identifiantToken());
+        assertEquals(
+                token.identifiantToken(),
+                utilisateur.identifiantToken()
+        );
         assertEquals(
                 java.time.LocalDateTime.of(2026, 6, 6, 10, 0),
                 token.expiration()
+        );
+    }
+
+    @Test
+    void refreshTokensGeneratedAtSameTime_shouldHaveDifferentIdentifiers() {
+        JwtService jwtService = new JwtService(
+                SECRET,
+                60,
+                7,
+                clock
+        );
+        Membre membre = Membre.builder()
+                .matricule("G1001")
+                .actif(true)
+                .build();
+
+        JwtService.TokenGenere premier =
+                jwtService.genererRefreshTokenJoueur(membre);
+        JwtService.TokenGenere second =
+                jwtService.genererRefreshTokenJoueur(membre);
+
+        assertNotEquals(premier.identifiantToken(), second.identifiantToken());
+        assertNotEquals(premier.valeur(), second.valeur());
+    }
+
+    @Test
+    void validerRefreshToken_shouldRejectLegacyTokenWithoutIdentifier() {
+        String ancienRefresh = Jwts.builder()
+                .subject("G1001")
+                .claim("typeUtilisateur", JwtService.TYPE_UTILISATEUR_JOUEUR)
+                .claim("typeToken", JwtService.TYPE_TOKEN_RAFRAICHISSEMENT)
+                .issuedAt(java.util.Date.from(Instant.now(clock)))
+                .expiration(java.util.Date.from(
+                        Instant.now(clock).plusSeconds(3600)
+                ))
+                .signWith(
+                        Keys.hmacShaKeyFor(
+                                SECRET.getBytes(StandardCharsets.UTF_8)
+                        ),
+                        Jwts.SIG.HS256
+                )
+                .compact();
+
+        JwtService jwtService = new JwtService(SECRET, 60, clock);
+
+        assertThrows(
+                AuthentificationException.class,
+                () -> jwtService.validerRefreshToken(ancienRefresh)
         );
     }
 
@@ -266,5 +328,16 @@ class JwtServiceTest {
         ReflectionTestUtils.setField(site, "id", id);
 
         return site;
+    }
+
+    private Claims lireClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(Keys.hmacShaKeyFor(
+                        SECRET.getBytes(StandardCharsets.UTF_8)
+                ))
+                .clock(() -> java.util.Date.from(Instant.now(clock)))
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }

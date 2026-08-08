@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Router } from '@angular/router';
 import {
   catchError,
   finalize,
@@ -20,7 +21,8 @@ export class AuthRefreshService {
 
   constructor(
     private readonly authApiService: AuthApiService,
-    private readonly authContextService: AuthContextService
+    private readonly authContextService: AuthContextService,
+    private readonly router: Router
   ) {
   }
 
@@ -29,6 +31,12 @@ export class AuthRefreshService {
       return this.rafraichissementEnCours$;
     }
 
+    const tokenAvantRafraichissement =
+      this.authContextService.token();
+    const routeConnexion = this.authContextService.admin()
+      ? ['/admin/login']
+      : ['/joueur'];
+
     const rafraichissement$ = this.authApiService.rafraichir().pipe(
       tap(rafraichissement => {
         this.authContextService.mettreAJourToken(
@@ -36,7 +44,14 @@ export class AuthRefreshService {
         );
       }),
       catchError(error => {
-        this.authContextService.deconnecterTout();
+        if (
+          this.authContextService.token()
+          === tokenAvantRafraichissement
+        ) {
+          this.authContextService.deconnecterTout();
+          void this.router.navigate(routeConnexion);
+        }
+
         return throwError(() => error);
       }),
       finalize(() => {

@@ -80,6 +80,16 @@ describe('JoueurAuthComponent', () => {
     expect(component.motDePasse).toBe('');
   });
 
+  it('doit borner les champs comme le DTO backend', () => {
+    const matricule: HTMLInputElement =
+      fixture.nativeElement.querySelector('input[name="matricule"]');
+    const motDePasse: HTMLInputElement =
+      fixture.nativeElement.querySelector('input[name="motDePasse"]');
+
+    expect(matricule.maxLength).toBe(10);
+    expect(motDePasse.maxLength).toBe(72);
+  });
+
   it('doit transmettre la demande de connexion à la façade', () => {
     component.matricule = ' TEST001 ';
     component.motDePasse = ' motdepasse-test ';

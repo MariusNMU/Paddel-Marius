@@ -50,6 +50,7 @@ class LiquibaseMigrationTest {
                 "FERMETURE",
                 "MEMBRE",
                 "ADMINISTRATEUR",
+                "JETON_RAFRAICHISSEMENT",
                 "PADEL_MATCH",
                 "PARTICIPATION",
                 "DETTE",

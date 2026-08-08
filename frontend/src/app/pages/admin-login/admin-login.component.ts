@@ -99,6 +99,8 @@ import { enumLabel } from '../../shared/enum-label.util';
               name="login"
               type="text"
               [(ngModel)]="login"
+              autocomplete="username"
+              maxlength="150"
               required
             >
           </mat-form-field>
@@ -111,6 +113,8 @@ import { enumLabel } from '../../shared/enum-label.util';
               name="motDePasse"
               type="password"
               [(ngModel)]="motDePasse"
+              autocomplete="current-password"
+              maxlength="72"
               required
             >
           </mat-form-field>

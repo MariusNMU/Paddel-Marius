@@ -11,9 +11,14 @@ describe('App', () => {
   let nombreInvitationsSignal:
     ReturnType<typeof signal<number>>;
 
+  let messageErreurDeconnexionSignal:
+    ReturnType<typeof signal<string | null>>;
+
   let facade: {
     nombreInvitationsRecues:
       Signal<number>;
+    messageErreurDeconnexion:
+      Signal<string | null>;
     joueurConnecte:
       ReturnType<typeof vi.fn>;
     adminConnecte:
@@ -31,10 +36,16 @@ describe('App', () => {
   beforeEach(async () => {
     nombreInvitationsSignal =
       signal(0);
+    messageErreurDeconnexionSignal =
+      signal<string | null>(null);
 
     facade = {
       nombreInvitationsRecues:
         nombreInvitationsSignal
+          .asReadonly(),
+
+      messageErreurDeconnexion:
+        messageErreurDeconnexionSignal
           .asReadonly(),
 
       joueurConnecte:
@@ -137,6 +148,30 @@ describe('App', () => {
       expect(
         compiled.querySelector('mat-toolbar')
       ).toBeTruthy();
+    }
+  );
+
+  it(
+    'doit afficher l erreur réseau de déconnexion comme alerte',
+    () => {
+      messageErreurDeconnexionSignal.set(
+        'Le serveur n a pas pu révoquer la session.'
+      );
+
+      const fixture =
+        TestBed.createComponent(App);
+
+      fixture.detectChanges();
+
+      const alerte: HTMLElement | null =
+        fixture.nativeElement.querySelector(
+          '[role="alert"]'
+        );
+
+      expect(alerte).toBeTruthy();
+      expect(alerte?.textContent).toContain(
+        'Le serveur n a pas pu révoquer la session.'
+      );
     }
   );
 

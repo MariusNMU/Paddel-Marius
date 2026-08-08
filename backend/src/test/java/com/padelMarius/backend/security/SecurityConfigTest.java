@@ -48,6 +48,38 @@ class SecurityConfigTest {
     }
 
     @Test
+    void shouldAuthenticatePlayerWithCaseInsensitiveMatricule()
+            throws Exception {
+        mockMvc.perform(post("/api/auth/joueur")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "matricule": "g1001",
+                                  "motDePasse": "password"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.matricule").value("G1001"))
+                .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
+    void shouldAuthenticateAdminWithCaseInsensitiveLogin()
+            throws Exception {
+        mockMvc.perform(post("/api/auth/admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "login": "ADMIN-GLOBAL",
+                                  "motDePasse": "secret"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.login").value("admin-global"))
+                .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
     void shouldRejectWrongPasswordThroughAuthenticationManager()
             throws Exception {
         mockMvc.perform(post("/api/auth/joueur")
@@ -94,6 +126,68 @@ class SecurityConfigTest {
                 .andExpect(result -> assertThat(
                         result.getResponse().getHeader(SET_COOKIE)
                 ).contains("HttpOnly", "SameSite=Strict"));
+    }
+
+    @Test
+    void shouldRejectRefreshTokenAfterItHasBeenRotated() throws Exception {
+        MvcResult connexion = connecterJoueur();
+        String ancienRefresh = lireValeurCookie(
+                connexion.getResponse().getHeader(SET_COOKIE)
+        );
+
+        MvcResult rotation = mockMvc.perform(post("/api/auth/refresh")
+                        .cookie(new Cookie(
+                                RefreshTokenCookieService.NOM_COOKIE,
+                                ancienRefresh
+                        )))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String nouveauRefresh = lireValeurCookie(
+                rotation.getResponse().getHeader(SET_COOKIE)
+        );
+
+        assertThat(nouveauRefresh).isNotEqualTo(ancienRefresh);
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .cookie(new Cookie(
+                                RefreshTokenCookieService.NOM_COOKIE,
+                                ancienRefresh
+                        )))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code")
+                        .value("AUTHENTIFICATION_INVALIDE"));
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .cookie(new Cookie(
+                                RefreshTokenCookieService.NOM_COOKIE,
+                                nouveauRefresh
+                        )))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldRejectRefreshTokenAfterLogout() throws Exception {
+        MvcResult connexion = connecterJoueur();
+        String refreshToken = lireValeurCookie(
+                connexion.getResponse().getHeader(SET_COOKIE)
+        );
+
+        mockMvc.perform(post("/api/auth/logout")
+                        .cookie(new Cookie(
+                                RefreshTokenCookieService.NOM_COOKIE,
+                                refreshToken
+                        )))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .cookie(new Cookie(
+                                RefreshTokenCookieService.NOM_COOKIE,
+                                refreshToken
+                        )))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code")
+                        .value("AUTHENTIFICATION_INVALIDE"));
     }
 
     @Test
@@ -288,7 +382,19 @@ class SecurityConfigTest {
     }
 
     private String authenticatePlayerAndReadToken() throws Exception {
-        MvcResult result = mockMvc.perform(post("/api/auth/joueur")
+        MvcResult result = connecterJoueur();
+
+        JsonNode body = objectMapper.readTree(result.getResponse()
+                .getContentAsString());
+
+        String token = body.get("token").asText();
+        assertThat(token).isNotBlank();
+
+        return token;
+    }
+
+    private MvcResult connecterJoueur() throws Exception {
+        return mockMvc.perform(post("/api/auth/joueur")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -298,14 +404,6 @@ class SecurityConfigTest {
                                 """))
                 .andExpect(status().isOk())
                 .andReturn();
-
-        JsonNode body = objectMapper.readTree(result.getResponse()
-                .getContentAsString());
-
-        String token = body.get("token").asText();
-        assertThat(token).isNotBlank();
-
-        return token;
     }
 
     private String authenticateAdminAndReadToken(String login) throws Exception {

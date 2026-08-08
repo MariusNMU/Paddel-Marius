@@ -202,6 +202,7 @@ participation
 paiement
 dette
 penalite
+jeton_rafraichissement
 ```
 
 ### Point de sécurité

@@ -815,6 +815,11 @@ connexion administrateur par login et mot de passe
 authentification déléguée à AuthenticationManager et UserDetailsService
 access token JWT signé et limité à 60 minutes
 refresh token de 7 jours dans un cookie HttpOnly
+access token limité aux claims nécessaires ; rôles et site relus en base
+rotation du refresh avec jti persisté et révocation de l'ancien token
+logout avec révocation serveur et suppression locale immédiate
+limitation des connexions et refresh à 5 requêtes par 10 minutes
+identifiants de connexion insensibles à la casse
 génération et validation JWT déléguées à io.jsonwebtoken (JJWT)
 SecurityFilterChain stateless
 filtre JWT OncePerRequestFilter
@@ -829,8 +834,8 @@ backend responsable de l'autorisation définitive
 Limites assumées pour le MVP :
 
 ```text
-pas de liste de révocation serveur des JWT déjà émis
-pas de persistance serveur des refresh tokens
+pas de révocation anticipée des access tokens
+rate limiting local à une seule instance et remis à zéro au redémarrage
 secret local de démonstration et cookie non-Secure à remplacer dans un déploiement HTTPS
 ```
 
@@ -851,6 +856,7 @@ Exemples de codes :
 RESSOURCE_INTROUVABLE
 CONFIGURATION_METIER_INVALIDE
 AUTHENTIFICATION_INVALIDE
+TROP_DE_TENTATIVES
 ACCES_REFUSE
 VALIDATION_INVALIDE
 REQUETE_INVALIDE

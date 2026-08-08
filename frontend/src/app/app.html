@@ -198,6 +198,12 @@
   </aside>
 
   <main class="main-content">
+    @if (facade.messageErreurDeconnexion()) {
+      <p class="erreur-deconnexion" role="alert">
+        {{ facade.messageErreurDeconnexion() }}
+      </p>
+    }
+
     <router-outlet></router-outlet>
   </main>
 </div>

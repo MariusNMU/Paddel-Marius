@@ -58,7 +58,14 @@ public class AuthController {
     }
 
     @PostMapping("/api/auth/logout")
-    public ResponseEntity<Void> deconnecter() {
+    public ResponseEntity<Void> deconnecter(
+            @CookieValue(
+                    name = RefreshTokenCookieService.NOM_COOKIE,
+                    required = false
+            ) String refreshToken
+    ) {
+        authService.deconnecter(refreshToken);
+
         return ResponseEntity.noContent()
                 .header(
                         HttpHeaders.SET_COOKIE,

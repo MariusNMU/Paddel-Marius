@@ -80,6 +80,16 @@ describe('AdminLoginComponent', () => {
     expect(component.motDePasse).toBe('');
   });
 
+  it('doit borner les champs comme le DTO backend', () => {
+    const login: HTMLInputElement =
+      fixture.nativeElement.querySelector('input[name="login"]');
+    const motDePasse: HTMLInputElement =
+      fixture.nativeElement.querySelector('input[name="motDePasse"]');
+
+    expect(login.maxLength).toBe(150);
+    expect(motDePasse.maxLength).toBe(72);
+  });
+
   it('doit transmettre la demande de connexion à la façade', () => {
     component.login = ' admin-test ';
     component.motDePasse = 'motdepasse-test';

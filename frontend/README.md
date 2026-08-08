@@ -24,6 +24,12 @@ remplace l'access token puis rejoue une fois la requête initiale. Le refresh
 token reste dans un cookie `HttpOnly` et n'est jamais accessible au code
 Angular.
 
+Si le refresh échoue, la session concernée est supprimée et l'utilisateur est
+redirigé vers le login joueur ou administrateur. Le logout nettoie toujours
+la session locale ; une erreur réseau de révocation est affichée dans une
+alerte globale. Les formulaires appliquent les mêmes tailles maximales que les
+DTO backend et les identifiants sont acceptés sans distinction de casse.
+
 ## Prérequis et installation
 
 Depuis la racine du projet :

@@ -8,6 +8,7 @@ import {
   provideHttpClientTesting
 } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import { AuthContextService } from '../services/auth-context.service';
 import { authInterceptor } from './auth.interceptor';
 
@@ -15,16 +16,27 @@ describe('authInterceptor', () => {
   let httpClient: HttpClient;
   let httpTestingController: HttpTestingController;
   let authContextService: AuthContextService;
+  let router: {
+    navigate: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     localStorage.clear();
+
+    router = {
+      navigate: vi.fn().mockResolvedValue(true)
+    };
 
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(
           withInterceptors([authInterceptor])
         ),
-        provideHttpClientTesting()
+        provideHttpClientTesting(),
+        {
+          provide: Router,
+          useValue: router
+        }
       ]
     });
 
@@ -322,6 +334,57 @@ describe('authInterceptor', () => {
       );
 
       httpTestingController.expectNone('/api/auth/refresh');
+    }
+  );
+
+  it(
+    'doit vider la session et rediriger si le refresh échoue',
+    () => {
+      authContextService.definirJoueur({
+        membreId: 2001,
+        matricule: 'G1001',
+        nom: 'Dupont',
+        prenom: 'Marie',
+        categorieMembre: 'GLOBAL',
+        siteRattachementId: null,
+        nomSiteRattachement: null,
+        actif: true,
+        token: 'jwt-expire',
+        expirationToken: '2020-01-01T00:00:00'
+      });
+
+      httpClient
+        .get('/api/membres/G1001/solde')
+        .subscribe({
+          error: () => undefined
+        });
+
+      const premiereRequete = httpTestingController.expectOne(
+        '/api/membres/G1001/solde'
+      );
+
+      premiereRequete.flush(
+        { code: 'AUTHENTIFICATION_INVALIDE' },
+        {
+          status: 401,
+          statusText: 'Unauthorized'
+        }
+      );
+
+      const refresh = httpTestingController.expectOne(
+        '/api/auth/refresh'
+      );
+
+      refresh.flush(
+        { code: 'AUTHENTIFICATION_INVALIDE' },
+        {
+          status: 401,
+          statusText: 'Unauthorized'
+        }
+      );
+
+      expect(authContextService.token()).toBeNull();
+      expect(router.navigate).toHaveBeenCalledWith(['/joueur']);
     }
   );
 });

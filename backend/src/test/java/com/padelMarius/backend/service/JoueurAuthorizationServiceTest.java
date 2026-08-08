@@ -343,9 +343,7 @@ class JoueurAuthorizationServiceTest {
     private Authentication authenticationJoueur(String matricule) {
         JwtUtilisateur utilisateur = new JwtUtilisateur(
                 matricule,
-                JwtService.TYPE_UTILISATEUR_JOUEUR,
-                CategorieMembre.GLOBAL.name(),
-                null
+                JwtService.TYPE_UTILISATEUR_JOUEUR
         );
 
         return new UsernamePasswordAuthenticationToken(
@@ -358,9 +356,7 @@ class JoueurAuthorizationServiceTest {
     private Authentication authenticationAdmin() {
         JwtUtilisateur utilisateur = new JwtUtilisateur(
                 "admin-global",
-                JwtService.TYPE_UTILISATEUR_ADMIN,
-                CategorieMembre.GLOBAL.name(),
-                null
+                JwtService.TYPE_UTILISATEUR_ADMIN
         );
 
         return new UsernamePasswordAuthenticationToken(

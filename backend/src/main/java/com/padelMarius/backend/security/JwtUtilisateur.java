@@ -4,9 +4,7 @@ import org.springframework.security.core.AuthenticatedPrincipal;
 
 public record JwtUtilisateur(
         String sujet,
-        String typeUtilisateur,
-        String role,
-        Long siteId
+        String typeUtilisateur
 ) implements AuthenticatedPrincipal {
 
     @Override

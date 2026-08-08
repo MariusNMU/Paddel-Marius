@@ -2,7 +2,6 @@ package com.padelMarius.backend.security;
 
 import com.padelMarius.backend.entity.Administrateur;
 import com.padelMarius.backend.entity.Membre;
-import com.padelMarius.backend.entity.Site;
 import com.padelMarius.backend.exception.AuthentificationException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -96,15 +95,9 @@ public class JwtService {
     public TokenGenere genererTokenJoueur(Membre membre) {
         verifierJoueur(membre);
 
-        Site site = membre.getSiteRattachement();
-
         return genererToken(
                 membre.getMatricule(),
                 TYPE_UTILISATEUR_JOUEUR,
-                membre.getCategorieMembre() == null
-                        ? null
-                        : membre.getCategorieMembre().name(),
-                site == null ? null : site.getId(),
                 TYPE_TOKEN_ACCES,
                 dureeValiditeAcces
         );
@@ -113,15 +106,9 @@ public class JwtService {
     public TokenGenere genererTokenAdmin(Administrateur administrateur) {
         verifierAdmin(administrateur);
 
-        Site site = administrateur.getSite();
-
         return genererToken(
                 administrateur.getEmailOuLogin(),
                 TYPE_UTILISATEUR_ADMIN,
-                administrateur.getRoleAdministrateur() == null
-                        ? null
-                        : administrateur.getRoleAdministrateur().name(),
-                site == null ? null : site.getId(),
                 TYPE_TOKEN_ACCES,
                 dureeValiditeAcces
         );
@@ -133,8 +120,6 @@ public class JwtService {
         return genererToken(
                 membre.getMatricule(),
                 TYPE_UTILISATEUR_JOUEUR,
-                null,
-                null,
                 TYPE_TOKEN_RAFRAICHISSEMENT,
                 dureeValiditeRafraichissement
         );
@@ -148,8 +133,6 @@ public class JwtService {
         return genererToken(
                 administrateur.getEmailOuLogin(),
                 TYPE_UTILISATEUR_ADMIN,
-                null,
-                null,
                 TYPE_TOKEN_RAFRAICHISSEMENT,
                 dureeValiditeRafraichissement
         );
@@ -213,8 +196,6 @@ public class JwtService {
                 claims.get(CLAIM_TYPE_UTILISATEUR)
         );
         String typeToken = lireString(claims.get(CLAIM_TYPE_TOKEN));
-        String role = lireString(claims.get("role"));
-        Long siteId = lireLong(claims.get("siteId"));
 
         if (!StringUtils.hasText(sujet)
                 || !StringUtils.hasText(typeUtilisateur)
@@ -224,17 +205,13 @@ public class JwtService {
 
         return new JwtUtilisateur(
                 sujet,
-                typeUtilisateur,
-                role,
-                siteId
+                typeUtilisateur
         );
     }
 
     private TokenGenere genererToken(
             String sujet,
             String typeUtilisateur,
-            String role,
-            Long siteId,
             String typeToken,
             Duration dureeValidite
     ) {
@@ -247,14 +224,6 @@ public class JwtService {
                 .claim(CLAIM_TYPE_TOKEN, typeToken)
                 .issuedAt(Date.from(maintenant))
                 .expiration(Date.from(expiration));
-
-        if (StringUtils.hasText(role)) {
-            builder.claim("role", role);
-        }
-
-        if (siteId != null) {
-            builder.claim("siteId", siteId);
-        }
 
         String token = builder
                 .signWith(cleSignature, Jwts.SIG.HS256)
@@ -288,22 +257,6 @@ public class JwtService {
 
     private String lireString(Object valeur) {
         return valeur == null ? null : String.valueOf(valeur);
-    }
-
-    private Long lireLong(Object valeur) {
-        if (valeur == null) {
-            return null;
-        }
-
-        if (valeur instanceof Number nombre) {
-            return nombre.longValue();
-        }
-
-        try {
-            return Long.parseLong(String.valueOf(valeur));
-        } catch (NumberFormatException exception) {
-            throw tokenInvalide();
-        }
     }
 
     private AuthentificationException tokenInvalide() {

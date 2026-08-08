@@ -221,9 +221,7 @@ class AdminAuthorizationServiceTest {
     ) {
         JwtUtilisateur utilisateur = new JwtUtilisateur(
                 login,
-                JwtService.TYPE_UTILISATEUR_ADMIN,
-                role,
-                siteId
+                JwtService.TYPE_UTILISATEUR_ADMIN
         );
 
         return new UsernamePasswordAuthenticationToken(

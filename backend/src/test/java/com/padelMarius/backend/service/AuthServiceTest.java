@@ -295,9 +295,7 @@ class AuthServiceTest {
         when(jwtService.validerRefreshToken("refresh-valide"))
                 .thenReturn(new JwtUtilisateur(
                         "G0001",
-                        JwtService.TYPE_UTILISATEUR_JOUEUR,
-                        null,
-                        null
+                        JwtService.TYPE_UTILISATEUR_JOUEUR
                 ));
         when(membreRepository.findByMatricule("G0001"))
                 .thenReturn(Optional.of(membre));
@@ -330,9 +328,7 @@ class AuthServiceTest {
         when(jwtService.validerRefreshToken("refresh-admin"))
                 .thenReturn(new JwtUtilisateur(
                         "admin-global",
-                        JwtService.TYPE_UTILISATEUR_ADMIN,
-                        null,
-                        null
+                        JwtService.TYPE_UTILISATEUR_ADMIN
                 ));
         when(administrateurRepository.findByEmailOuLogin("admin-global"))
                 .thenReturn(Optional.of(administrateur));
@@ -361,9 +357,7 @@ class AuthServiceTest {
         when(jwtService.validerRefreshToken("refresh-valide"))
                 .thenReturn(new JwtUtilisateur(
                         "G0001",
-                        JwtService.TYPE_UTILISATEUR_JOUEUR,
-                        null,
-                        null
+                        JwtService.TYPE_UTILISATEUR_JOUEUR
                 ));
         when(membreRepository.findByMatricule("G0001"))
                 .thenReturn(Optional.of(membre));

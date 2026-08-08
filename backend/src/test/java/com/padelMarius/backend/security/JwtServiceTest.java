@@ -7,17 +7,22 @@ import com.padelMarius.backend.entity.Membre;
 import com.padelMarius.backend.entity.RoleAdministrateur;
 import com.padelMarius.backend.entity.Site;
 import com.padelMarius.backend.exception.AuthentificationException;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -70,8 +75,8 @@ class JwtServiceTest {
 
         assertEquals("admin-bruxelles", utilisateur.sujet());
         assertEquals(JwtService.TYPE_UTILISATEUR_ADMIN, utilisateur.typeUtilisateur());
-        assertEquals("SITE", utilisateur.role());
-        assertEquals(1001L, utilisateur.siteId());
+        assertFalse(lireClaims(token.valeur()).containsKey("role"));
+        assertFalse(lireClaims(token.valeur()).containsKey("siteId"));
     }
 
     @Test
@@ -97,8 +102,8 @@ class JwtServiceTest {
 
         assertEquals("G1001", utilisateur.sujet());
         assertEquals(JwtService.TYPE_UTILISATEUR_JOUEUR, utilisateur.typeUtilisateur());
-        assertEquals("GLOBAL", utilisateur.role());
-        assertEquals(null, utilisateur.siteId());
+        assertFalse(lireClaims(token.valeur()).containsKey("role"));
+        assertFalse(lireClaims(token.valeur()).containsKey("siteId"));
     }
 
     @Test
@@ -190,8 +195,8 @@ class JwtServiceTest {
                 JwtService.TYPE_UTILISATEUR_JOUEUR,
                 utilisateur.typeUtilisateur()
         );
-        assertEquals(null, utilisateur.role());
-        assertEquals(null, utilisateur.siteId());
+        assertFalse(lireClaims(token.valeur()).containsKey("role"));
+        assertFalse(lireClaims(token.valeur()).containsKey("siteId"));
         assertEquals(
                 java.time.LocalDateTime.of(2026, 6, 6, 10, 0),
                 token.expiration()
@@ -266,5 +271,16 @@ class JwtServiceTest {
         ReflectionTestUtils.setField(site, "id", id);
 
         return site;
+    }
+
+    private Claims lireClaims(String token) {
+        return Jwts.parser()
+                .verifyWith(Keys.hmacShaKeyFor(
+                        SECRET.getBytes(StandardCharsets.UTF_8)
+                ))
+                .clock(() -> java.util.Date.from(Instant.now(clock)))
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
     }
 }

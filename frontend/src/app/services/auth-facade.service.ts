@@ -9,6 +9,9 @@ import { AuthContextService } from './auth-context.service';
   providedIn: 'root'
 })
 export class AuthFacadeService {
+  private static readonly AVERTISSEMENT_DECONNEXION =
+    'La session locale est fermée, mais le serveur n’a pas pu révoquer le refresh token.';
+
   private readonly chargementJoueurSignal = signal(false);
   private readonly messageErreurJoueurSignal = signal<string | null>(null);
   private readonly messageSuccesJoueurSignal = signal<string | null>(null);
@@ -16,6 +19,8 @@ export class AuthFacadeService {
   private readonly chargementAdminSignal = signal(false);
   private readonly messageErreurAdminSignal = signal<string | null>(null);
   private readonly messageSuccesAdminSignal = signal<string | null>(null);
+  private readonly messageErreurDeconnexionSignal =
+    signal<string | null>(null);
 
   get joueur() {
     return this.authContextService.joueur;
@@ -32,6 +37,8 @@ export class AuthFacadeService {
   readonly chargementAdmin = this.chargementAdminSignal.asReadonly();
   readonly messageErreurAdmin = this.messageErreurAdminSignal.asReadonly();
   readonly messageSuccesAdmin = this.messageSuccesAdminSignal.asReadonly();
+  readonly messageErreurDeconnexion =
+    this.messageErreurDeconnexionSignal.asReadonly();
 
   constructor(
     private readonly authApiService: AuthApiService,
@@ -53,6 +60,7 @@ export class AuthFacadeService {
   }
 
   connecterJoueur(matricule: string, motDePasse: string): void {
+    this.messageErreurDeconnexionSignal.set(null);
     this.messageErreurJoueurSignal.set(null);
     this.messageSuccesJoueurSignal.set(null);
 
@@ -90,6 +98,7 @@ export class AuthFacadeService {
   }
 
   connecterAdmin(login: string, motDePasse: string): void {
+    this.messageErreurDeconnexionSignal.set(null);
     this.messageErreurAdminSignal.set(null);
     this.messageSuccesAdminSignal.set(null);
 
@@ -127,6 +136,7 @@ export class AuthFacadeService {
   deconnecterJoueur(): void {
     const joueur = this.authContextService.joueur();
 
+    this.messageErreurDeconnexionSignal.set(null);
     this.authContextService.deconnecterJoueur();
     this.supprimerCookieRefresh();
     this.messageErreurJoueurSignal.set(null);
@@ -142,6 +152,7 @@ export class AuthFacadeService {
   deconnecterAdmin(): void {
     const admin = this.authContextService.admin();
 
+    this.messageErreurDeconnexionSignal.set(null);
     this.authContextService.deconnecterAdmin();
     this.supprimerCookieRefresh();
     this.messageErreurAdminSignal.set(null);
@@ -156,7 +167,12 @@ export class AuthFacadeService {
 
   private supprimerCookieRefresh(): void {
     this.authApiService.deconnecter().pipe(
-      catchError(() => EMPTY)
+      catchError(() => {
+        this.messageErreurDeconnexionSignal.set(
+          AuthFacadeService.AVERTISSEMENT_DECONNEXION
+        );
+        return EMPTY;
+      })
     ).subscribe();
   }
 }

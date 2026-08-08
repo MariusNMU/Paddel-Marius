@@ -5,7 +5,6 @@ import {
   type WritableSignal
 } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Router } from '@angular/router';
 import {
   of,
   Subject,
@@ -16,6 +15,7 @@ import {
   AuthJoueurResponse
 } from '../models/auth.model';
 import { AppShellFacadeService } from './app-shell-facade.service';
+import { AuthFacadeService } from './auth-facade.service';
 import { AuthContextService } from './auth-context.service';
 import { InvitationApiService } from './invitation-api.service';
 
@@ -27,6 +27,9 @@ describe('AppShellFacadeService', () => {
 
   let adminSignal:
     WritableSignal<AuthAdminResponse | null>;
+
+  let messageErreurDeconnexionSignal:
+    WritableSignal<string | null>;
 
   let authContextService: {
     joueur: Signal<AuthJoueurResponse | null>;
@@ -44,8 +47,13 @@ describe('AppShellFacadeService', () => {
       ReturnType<typeof vi.fn>;
   };
 
-  let router: {
-    navigate: ReturnType<typeof vi.fn>;
+  let authFacadeService: {
+    messageErreurDeconnexion:
+      Signal<string | null>;
+    deconnecterJoueur:
+      ReturnType<typeof vi.fn>;
+    deconnecterAdmin:
+      ReturnType<typeof vi.fn>;
   };
 
   const joueur: AuthJoueurResponse = {
@@ -104,6 +112,9 @@ describe('AppShellFacadeService', () => {
         null
       );
 
+    messageErreurDeconnexionSignal =
+      signal<string | null>(null);
+
     authContextService = {
       joueur: joueurSignal.asReadonly(),
       admin: adminSignal.asReadonly(),
@@ -136,9 +147,18 @@ describe('AppShellFacadeService', () => {
         })
     };
 
-    router = {
-      navigate:
-        vi.fn(() => Promise.resolve(true))
+    authFacadeService = {
+      messageErreurDeconnexion:
+        messageErreurDeconnexionSignal
+          .asReadonly(),
+
+      deconnecterJoueur: vi.fn(() => {
+        joueurSignal.set(null);
+      }),
+
+      deconnecterAdmin: vi.fn(() => {
+        adminSignal.set(null);
+      })
     };
 
     TestBed.configureTestingModule({
@@ -149,12 +169,12 @@ describe('AppShellFacadeService', () => {
           useValue: authContextService
         },
         {
-          provide: InvitationApiService,
-          useValue: invitationApiService
+          provide: AuthFacadeService,
+          useValue: authFacadeService
         },
         {
-          provide: Router,
-          useValue: router
+          provide: InvitationApiService,
+          useValue: invitationApiService
         }
       ]
     });
@@ -297,14 +317,14 @@ describe('AppShellFacadeService', () => {
   );
 
   it(
-    'doit déconnecter le joueur et naviguer vers l accueil',
+    'doit déléguer la déconnexion du joueur à la façade auth',
     () => {
       service.initialiser();
 
       service.deconnecterJoueur();
 
       expect(
-        authContextService
+        authFacadeService
           .deconnecterJoueur
       ).toHaveBeenCalled();
 
@@ -312,15 +332,11 @@ describe('AppShellFacadeService', () => {
         service.nombreInvitationsRecues()
       ).toBe(0);
 
-      expect(router.navigate)
-        .toHaveBeenCalledWith([
-          '/accueil'
-        ]);
     }
   );
 
   it(
-    'doit déconnecter l admin et naviguer vers l accueil',
+    'doit déléguer la déconnexion admin à la façade auth',
     () => {
       adminSignal.set(adminGlobal);
       TestBed.tick();
@@ -328,14 +344,22 @@ describe('AppShellFacadeService', () => {
       service.deconnecterAdmin();
 
       expect(
-        authContextService
+        authFacadeService
           .deconnecterAdmin
       ).toHaveBeenCalled();
+    }
+  );
 
-      expect(router.navigate)
-        .toHaveBeenCalledWith([
-          '/accueil'
-        ]);
+  it(
+    'doit exposer l avertissement de déconnexion',
+    () => {
+      messageErreurDeconnexionSignal.set(
+        'Serveur indisponible'
+      );
+
+      expect(
+        service.messageErreurDeconnexion()
+      ).toBe('Serveur indisponible');
     }
   );
 });
